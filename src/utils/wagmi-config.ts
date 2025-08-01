@@ -1,11 +1,5 @@
 import { createConfig, createStorage, http } from '@wagmi/core';
-import {
-  celoAlfajores,
-  mainnet,
-  polygonAmoy,
-  sepolia,
-  zircuitGarfieldTestnet,
-} from '@wagmi/core/chains';
+import { sepolia } from '@wagmi/core/chains';
 
 const memory: Record<string, string> = {};
 
@@ -35,20 +29,10 @@ const storage = {
 };
 
 export const wagmiConfig = createConfig({
-  chains: [
-    mainnet,
-    sepolia,
-    polygonAmoy,
-    celoAlfajores,
-    zircuitGarfieldTestnet,
-  ],
+  chains: [sepolia],
   ssr: true,
   storage: createStorage({ storage }),
   transports: {
-    [mainnet.id]: http(),
     [sepolia.id]: http(),
-    [polygonAmoy.id]: http(),
-    [celoAlfajores.id]: http(),
-    [zircuitGarfieldTestnet.id]: http(),
   },
 });

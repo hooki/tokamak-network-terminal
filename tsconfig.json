@@ -15,6 +15,6 @@
     "sourceMap": true,
     "types": ["node"]
   },
-  "include": ["*.ts"],
+  "include": ["src/**/*.ts", "global.d.ts"],
   "exclude": ["node_modules", "dist"]
 }
