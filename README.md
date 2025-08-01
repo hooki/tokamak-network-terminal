@@ -19,7 +19,7 @@ Add the following code to `~/.gemini/settings.json`. `PATH` is the location of `
   "mcpServers": {
     "tokamak-network": {
       "command": "node",
-      "args": ["[PATH]/dist/index.js"],
+      "args": ["[PATH]/dist/src/index.js"],
       "env": {}
     }
   }
