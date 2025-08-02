@@ -1,5 +1,10 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getAccount, readContract, writeContract } from '@wagmi/core';
+import {
+  getAccount,
+  readContract,
+  waitForTransactionReceipt,
+  writeContract,
+} from '@wagmi/core';
 import { parseAbi, parseUnits } from 'viem';
 import { z } from 'zod';
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
@@ -52,7 +57,7 @@ export function registerApproveTools(server: McpServer) {
           .describe('If true, indicates this is a callback execution'),
       },
     },
-    async ({ token, spender, amount, decimals, isCallback }) => {
+    async ({ token, spender, amount, decimals, callback, isCallback }) => {
       if (token === undefined) {
         return {
           content: [
@@ -129,6 +134,10 @@ export function registerApproveTools(server: McpServer) {
           args: [spender, parsedAmount],
         });
 
+        await waitForTransactionReceipt(wagmiConfig, {
+          hash: tx,
+        });
+
         return {
           content: [
             {
@@ -138,6 +147,7 @@ export function registerApproveTools(server: McpServer) {
                 message: `Successfully approved ${spender} to spend ${
                   amount === 'max' ? 'unlimited' : amount
                 } ${token} tokens (tx: ${tx})`,
+                nextStep: callback,
               }),
             },
           ],
