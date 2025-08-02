@@ -8,6 +8,7 @@ import { isAddress, isAddressEqual, parseAbi, parseUnits } from 'viem';
 import { z } from 'zod';
 import { TON_ADDRESS, WTON_ADDRESS } from '../constants.js';
 import { checkApproval } from '../utils/approve.js';
+import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import { getTokenBalance, getTokenInfo } from '../utils/erc20.js';
 import { createMCPResponse } from '../utils/response.js';
 import { wagmiConfig } from '../utils/wagmi-config.js';
@@ -18,12 +19,11 @@ export function registerTONCommands(server: McpServer) {
     'wrap-ton',
     {
       title: 'Wrap TON tokens to WTON',
-      description: `Wrap a specified amount of TON tokens to WTON.
-You must follow these rules when using tools:
-
-1. If a tool response includes { status: "continue" }, always invoke the "nextStep" tool.
-2. If the response includes { executeNextStepAfter: <seconds> }, wait that time before invoking "nextStep".
-3. If the response includes { callback }, pass it as a parameter when invoking "nextStep".`,
+      description: new DescriptionBuilder(
+        'Wrap(also known as Swap, Convert) a specified amount of TON tokens to WTON.'
+      )
+        .withWalletConnect()
+        .toString(),
       inputSchema: {
         tokenAmount: z.string().describe('The amount of tokens to wrap'),
         transferToAddress: z
@@ -133,12 +133,11 @@ You must follow these rules when using tools:
     'unwrap-wton',
     {
       title: 'Unwrap WTON tokens to TON',
-      description: `Unwrap a specified amount of WTON tokens to TON.
-You must follow these rules when using tools:
-
-1. If a tool response includes { status: "continue" }, always invoke the "nextStep" tool.
-2. If the response includes { executeNextStepAfter: <seconds> }, wait that time before invoking "nextStep".
-3. If the response includes { callback }, pass it as a parameter when invoking "nextStep".`,
+      description: new DescriptionBuilder(
+        'Unwrap(also known as Swap, Convert) a specified amount of WTON tokens to TON.'
+      )
+        .withWalletConnect()
+        .toString(),
       inputSchema: {
         tokenAmount: z.string().describe('The amount of tokens to unwrap'),
         transferToAddress: z
