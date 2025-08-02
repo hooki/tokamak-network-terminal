@@ -3,6 +3,7 @@ import { writeContract } from '@wagmi/core';
 import { parseAbi, parseUnits } from 'viem';
 import { z } from 'zod';
 import { DEPOSIT_MANAGER } from '../constants.js';
+import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import { resolveLayer2Address } from '../utils/layer2.js';
 import { createMCPResponse } from '../utils/response.js';
 import { wagmiConfig } from '../utils/wagmi-config.js';
@@ -13,12 +14,11 @@ export function registerUnstakeTools(server: McpServer) {
     'unstake-tokens',
     {
       title: 'Unstake tokens from Layer2 operator',
-      description: `Unstake a specified amount of tokens from a Layer2 network operator. You can specify the operator by name (e.g., 'hammer', 'level123') or by address.
-You must follow these rules when using tools:
-
-1. If a tool response includes { status: "continue" }, always invoke the "nextStep" tool.
-2. If the response includes { executeNextStepAfter: <seconds> }, wait that time before invoking "nextStep".
-3. If the response includes { callback }, pass it as a parameter when invoking "nextStep".`,
+      description: new DescriptionBuilder(
+        'Unstake a specified amount of tokens from a Layer2 network operator. You can specify the operator by name (e.g., "hammer", "arbitrum") or by address.'
+      )
+        .withWalletConnect()
+        .toString(),
       inputSchema: {
         layer2Identifier: z
           .string()

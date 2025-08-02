@@ -4,6 +4,7 @@ import type { Address } from 'viem';
 import { formatEther, parseAbi } from 'viem';
 import { z } from 'zod';
 import { TOKENS } from '../constants.js';
+import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import { createMCPResponse } from '../utils/response.js';
 import { wagmiConfig } from '../utils/wagmi-config.js';
 
@@ -12,12 +13,11 @@ export function registerTokenTools(server: McpServer) {
     'get-ethereum-balance',
     {
       title: 'Get Ethereum (Native) token balance',
-      description: `Get the Ethereum (Native) token balance of a specific address.
-You must follow these rules when using tools:
-
-1. If a tool response includes { status: "continue" }, always invoke the "nextStep" tool.
-2. If the response includes { executeNextStepAfter: <seconds> }, wait that time before invoking "nextStep".
-3. If the response includes { callback }, pass it as a parameter when invoking "nextStep".`,
+      description: new DescriptionBuilder(
+        'Get the Ethereum (Native) token balance of a specific address.'
+      )
+        .withWalletConnect()
+        .toString(),
       inputSchema: {
         address: z
           .string()
@@ -48,8 +48,11 @@ You must follow these rules when using tools:
     'get-token-balance',
     {
       title: 'Get token balance',
-      description:
-        'Get the token balance of a specific address. You can specify the token by name (e.g., "TON", "WTON") or by address.',
+      description: new DescriptionBuilder(
+        'Get the token balance of a specific address. You can specify the token by name (e.g., "TON", "WTON") or by address.'
+      )
+        .withWalletConnect()
+        .toString(),
       inputSchema: {
         address: z
           .string()
