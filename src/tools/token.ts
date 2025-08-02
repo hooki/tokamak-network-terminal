@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getBalance, readContract } from '@wagmi/core';
+import { getBalance } from '@wagmi/core';
 import type { Address } from 'viem';
-import { formatEther, parseAbi } from 'viem';
+import { formatEther, formatUnits } from 'viem';
 import { z } from 'zod';
 import { TOKENS } from '../constants.js';
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
@@ -95,11 +95,10 @@ export function registerTokenTools(server: McpServer) {
         tokenAddress = TOKENS[tokenAddressOrName as keyof typeof TOKENS];
       }
 
-      const balance = await readContract(wagmiConfig, {
-        abi: parseAbi(['function balanceOf(address) view returns (uint256)']),
-        address: tokenAddress,
-        functionName: 'balanceOf',
-        args: [address],
+      const balance = await getBalance(wagmiConfig, {
+        address,
+        token: tokenAddress,
+        unit: 'ether',
       });
 
       return {
@@ -108,7 +107,7 @@ export function registerTokenTools(server: McpServer) {
             type: 'text' as const,
             text: createMCPResponse({
               status: 'success',
-              message: `${address} balance is ${formatEther(balance)}`,
+              message: `${address} balance is ${formatUnits(balance.value, balance.decimals)}`,
             }),
           },
         ],
