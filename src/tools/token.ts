@@ -5,6 +5,7 @@ import { formatEther, formatUnits } from 'viem';
 import { z } from 'zod';
 import { TOKENS } from '../constants.js';
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
+import { getTokenBalance, getTokenDecimals } from '../utils/erc20.js';
 import { createMCPResponse } from '../utils/response.js';
 import { wagmiConfig } from '../utils/wagmi-config.js';
 
@@ -95,11 +96,10 @@ export function registerTokenTools(server: McpServer) {
         tokenAddress = TOKENS[tokenAddressOrName as keyof typeof TOKENS];
       }
 
-      const balance = await getBalance(wagmiConfig, {
-        address,
-        token: tokenAddress,
-        unit: 'ether',
-      });
+      const [balance, decimals] = await Promise.all([
+        getTokenBalance(tokenAddress, address),
+        getTokenDecimals(tokenAddress),
+      ]);
 
       return {
         content: [
@@ -107,7 +107,7 @@ export function registerTokenTools(server: McpServer) {
             type: 'text' as const,
             text: createMCPResponse({
               status: 'success',
-              message: `${address} balance is ${formatUnits(balance.value, balance.decimals)}`,
+              message: `${address} balance is ${formatUnits(balance, decimals)}`,
             }),
           },
         ],
