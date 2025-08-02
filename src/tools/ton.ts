@@ -7,6 +7,7 @@ import {
 import { isAddress, isAddressEqual, parseAbi, parseUnits } from 'viem';
 import { z } from 'zod';
 import { TON_ADDRESS, WTON_ADDRESS } from '../constants.js';
+import { checkApproval } from '../utils/approve.js';
 import { getTokenBalance, getTokenInfo } from '../utils/erc20.js';
 import { createMCPResponse } from '../utils/response.js';
 import { wagmiConfig } from '../utils/wagmi-config.js';
@@ -36,7 +37,7 @@ You must follow these rules when using tools:
       },
     },
     async ({ tokenAmount, transferToAddress, isCallback }) => {
-      const callbackCommand = `wrap-ton ${tokenAmount}`;
+      const callbackCommand = `wrap-ton ${tokenAmount} and transfer to ${transferToAddress}`;
 
       const walletCheck = await checkWalletConnection(
         isCallback,
@@ -66,15 +67,15 @@ You must follow these rules when using tools:
         };
       }
 
-      const approvalTx = await writeContract(wagmiConfig, {
-        abi: parseAbi(['function approve(address, uint256)']),
-        address: TON_ADDRESS,
-        functionName: 'approve',
-        args: [WTON_ADDRESS, parseUnits(tokenAmount, tokenInfo.decimals)],
-      });
-      await waitForTransactionReceipt(wagmiConfig, {
-        hash: approvalTx,
-      });
+      const approvalCheck = await checkApproval(
+        connectedAddress,
+        TON_ADDRESS,
+        tokenInfo.decimals,
+        WTON_ADDRESS,
+        parseUnits(tokenAmount, tokenInfo.decimals),
+        callbackCommand
+      );
+      if (approvalCheck) return approvalCheck;
 
       if (transferToAddress && isAddress(transferToAddress)) {
         const tx = await writeContract(wagmiConfig, {
@@ -151,7 +152,7 @@ You must follow these rules when using tools:
       },
     },
     async ({ tokenAmount, transferToAddress, isCallback }) => {
-      const callbackCommand = `unwrap-wton ${tokenAmount}`;
+      const callbackCommand = `unwrap-wton ${tokenAmount} and transfer to ${transferToAddress}`;
 
       const walletCheck = await checkWalletConnection(
         isCallback,
@@ -181,15 +182,15 @@ You must follow these rules when using tools:
         };
       }
 
-      const approvalTx = await writeContract(wagmiConfig, {
-        abi: parseAbi(['function approve(address, uint256)']),
-        address: WTON_ADDRESS,
-        functionName: 'approve',
-        args: [WTON_ADDRESS, parseUnits(tokenAmount, tokenInfo.decimals)],
-      });
-      await waitForTransactionReceipt(wagmiConfig, {
-        hash: approvalTx,
-      });
+      const approvalCheck = await checkApproval(
+        connectedAddress,
+        WTON_ADDRESS,
+        tokenInfo.decimals,
+        WTON_ADDRESS,
+        parseUnits(tokenAmount, tokenInfo.decimals),
+        callbackCommand
+      );
+      if (approvalCheck) return approvalCheck;
 
       if (
         transferToAddress &&
