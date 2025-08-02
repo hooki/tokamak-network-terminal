@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { TON_ADDRESS, WTON_ADDRESS } from '../constants.js';
 import { checkApproval } from '../utils/approve.js';
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
-import { getTokenBalance, getTokenInfo } from '../utils/erc20.js';
+import { getTokenBalance, getTokenDecimals } from '../utils/erc20.js';
 import { createMCPResponse } from '../utils/response.js';
 import { wagmiConfig } from '../utils/wagmi-config.js';
 import { checkWalletConnection } from '../utils/wallet.js';
@@ -37,29 +37,27 @@ export function registerTONCommands(server: McpServer) {
       },
     },
     async ({ tokenAmount, transferToAddress, isCallback }) => {
-      const callbackCommand = `wrap-ton ${tokenAmount} and transfer to ${transferToAddress}`;
+      let callbackCommand = `wrap-ton ${tokenAmount}`;
+      if (transferToAddress)
+        callbackCommand += ` and transfer to ${transferToAddress}`;
 
-      const walletCheck = await checkWalletConnection(
-        isCallback,
-        callbackCommand
-      );
-      if (walletCheck) return walletCheck;
-
-      const tokenInfo = await getTokenInfo(TON_ADDRESS);
+      const account = getAccount(wagmiConfig)?.address;
+      if (!account)
+        return await checkWalletConnection(isCallback, callbackCommand);
 
       // Get the connected wallet address
-      const account = getAccount(wagmiConfig);
-      const connectedAddress = account.address as `0x${string}`;
-
       // check if the token amount is greater than the balance
-      const balance = await getTokenBalance(TON_ADDRESS, connectedAddress);
-      if (balance < parseUnits(tokenAmount, tokenInfo.decimals)) {
+      const [balance, decimals] = await Promise.all([
+        getTokenBalance(TON_ADDRESS, account),
+        getTokenDecimals(TON_ADDRESS),
+      ]);
+      if (balance < parseUnits(tokenAmount, decimals)) {
         return {
           content: [
             {
               type: 'text' as const,
               text: createMCPResponse({
-                status: 'failure',
+                status: 'error',
                 message: 'Insufficient balance',
               }),
             },
@@ -68,11 +66,11 @@ export function registerTONCommands(server: McpServer) {
       }
 
       const approvalCheck = await checkApproval(
-        connectedAddress,
+        account,
         TON_ADDRESS,
-        tokenInfo.decimals,
+        decimals,
         WTON_ADDRESS,
-        parseUnits(tokenAmount, tokenInfo.decimals),
+        parseUnits(tokenAmount, decimals),
         callbackCommand
       );
       if (approvalCheck) return approvalCheck;
@@ -82,10 +80,7 @@ export function registerTONCommands(server: McpServer) {
           abi: parseAbi(['function swapFromTONAndTransfer(address, uint256)']),
           address: WTON_ADDRESS,
           functionName: 'swapFromTONAndTransfer',
-          args: [
-            transferToAddress,
-            parseUnits(tokenAmount, tokenInfo.decimals),
-          ],
+          args: [transferToAddress, parseUnits(tokenAmount, decimals)],
         });
 
         await waitForTransactionReceipt(wagmiConfig, {
@@ -107,7 +102,7 @@ export function registerTONCommands(server: McpServer) {
           abi: parseAbi(['function swapFromTON(uint256)']),
           address: WTON_ADDRESS,
           functionName: 'swapFromTON',
-          args: [parseUnits(tokenAmount, tokenInfo.decimals)],
+          args: [parseUnits(tokenAmount, decimals)],
         });
 
         await waitForTransactionReceipt(wagmiConfig, {
@@ -151,29 +146,27 @@ export function registerTONCommands(server: McpServer) {
       },
     },
     async ({ tokenAmount, transferToAddress, isCallback }) => {
-      const callbackCommand = `unwrap-wton ${tokenAmount} and transfer to ${transferToAddress}`;
+      let callbackCommand = `unwrap-wton ${tokenAmount}`;
+      if (transferToAddress)
+        callbackCommand += ` and transfer to ${transferToAddress}`;
 
-      const walletCheck = await checkWalletConnection(
-        isCallback,
-        callbackCommand
-      );
-      if (walletCheck) return walletCheck;
+      const account = getAccount(wagmiConfig)?.address;
+      if (!account)
+        return await checkWalletConnection(isCallback, callbackCommand);
 
-      const tokenInfo = await getTokenInfo(WTON_ADDRESS);
-
-      // Get the connected wallet address
-      const account = getAccount(wagmiConfig);
-      const connectedAddress = account.address as `0x${string}`;
+      const [balance, decimals] = await Promise.all([
+        getTokenBalance(WTON_ADDRESS, account),
+        getTokenDecimals(WTON_ADDRESS),
+      ]);
 
       // check if the token amount is greater than the balance
-      const balance = await getTokenBalance(WTON_ADDRESS, connectedAddress);
-      if (balance < parseUnits(tokenAmount, tokenInfo.decimals)) {
+      if (balance < parseUnits(tokenAmount, decimals)) {
         return {
           content: [
             {
               type: 'text' as const,
               text: createMCPResponse({
-                status: 'failure',
+                status: 'error',
                 message: 'Insufficient balance',
               }),
             },
@@ -182,11 +175,11 @@ export function registerTONCommands(server: McpServer) {
       }
 
       const approvalCheck = await checkApproval(
-        connectedAddress,
+        account,
         WTON_ADDRESS,
-        tokenInfo.decimals,
+        decimals,
         WTON_ADDRESS,
-        parseUnits(tokenAmount, tokenInfo.decimals),
+        parseUnits(tokenAmount, decimals),
         callbackCommand
       );
       if (approvalCheck) return approvalCheck;
@@ -194,16 +187,13 @@ export function registerTONCommands(server: McpServer) {
       if (
         transferToAddress &&
         isAddress(transferToAddress) &&
-        !isAddressEqual(transferToAddress, connectedAddress)
+        !isAddressEqual(transferToAddress, account)
       ) {
         const tx = await writeContract(wagmiConfig, {
           abi: parseAbi(['function swapToTONAndTransfer(address, uint256)']),
           address: WTON_ADDRESS,
           functionName: 'swapToTONAndTransfer',
-          args: [
-            transferToAddress,
-            parseUnits(tokenAmount, tokenInfo.decimals),
-          ],
+          args: [transferToAddress, parseUnits(tokenAmount, decimals)],
         });
 
         await waitForTransactionReceipt(wagmiConfig, {
@@ -226,7 +216,7 @@ export function registerTONCommands(server: McpServer) {
           abi: parseAbi(['function swapToTON(uint256)']),
           address: WTON_ADDRESS,
           functionName: 'swapToTON',
-          args: [parseUnits(tokenAmount, tokenInfo.decimals)],
+          args: [parseUnits(tokenAmount, decimals)],
         });
 
         await waitForTransactionReceipt(wagmiConfig, {

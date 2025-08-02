@@ -1,6 +1,55 @@
-import { getBalance, readContracts } from '@wagmi/core';
-import { type Address, parseAbi } from 'viem';
+import { readContract, readContracts } from '@wagmi/core';
+import { type Address, erc20Abi, parseAbi } from 'viem';
 import { wagmiConfig } from './wagmi-config.js';
+
+export async function getTokenBalance(
+  erc20Address: Address,
+  walletAddress: Address
+) {
+  return readContract(wagmiConfig, {
+    address: erc20Address,
+    abi: erc20Abi,
+    functionName: 'balanceOf',
+    args: [walletAddress],
+  });
+}
+
+export async function getTokenAllowance(
+  erc20Address: Address,
+  walletAddress: Address,
+  spenderAddress: Address
+) {
+  return readContract(wagmiConfig, {
+    address: erc20Address,
+    abi: erc20Abi,
+    functionName: 'allowance',
+    args: [walletAddress, spenderAddress],
+  });
+}
+
+export async function getTokenDecimals(erc20Address: Address) {
+  return readContract(wagmiConfig, {
+    address: erc20Address,
+    abi: erc20Abi,
+    functionName: 'decimals',
+  });
+}
+
+export async function getTokenName(erc20Address: Address) {
+  return readContract(wagmiConfig, {
+    address: erc20Address,
+    abi: erc20Abi,
+    functionName: 'name',
+  });
+}
+
+export async function getTokenSymbol(erc20Address: Address) {
+  return readContract(wagmiConfig, {
+    address: erc20Address,
+    abi: erc20Abi,
+    functionName: 'symbol',
+  });
+}
 
 export async function getTokenInfo(erc20Address: Address) {
   const result = await readContracts(wagmiConfig, {
@@ -42,17 +91,4 @@ export async function getTokenInfo(erc20Address: Address) {
     decimals: result[2].result as number,
     totalSupply: result[3].result as bigint,
   };
-}
-
-export async function getTokenBalance(
-  erc20Address: Address,
-  walletAddress: Address
-) {
-  const balance = await getBalance(wagmiConfig, {
-    address: walletAddress,
-    token: erc20Address,
-    unit: 'ether',
-  });
-
-  return balance.value;
 }
