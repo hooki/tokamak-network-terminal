@@ -3,6 +3,7 @@ import { writeContract } from '@wagmi/core';
 import { encodeAbiParameters, parseAbi, parseEther } from 'viem';
 import { z } from 'zod';
 import { DEPOSIT_MANAGER, TON_ADDRESS, WTON_ADDRESS } from '../constants.js';
+import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import { resolveLayer2Address } from '../utils/layer2.js';
 import { createMCPResponse } from '../utils/response.js';
 import { wagmiConfig } from '../utils/wagmi-config.js';
@@ -13,8 +14,11 @@ export function registerStakeTools(server: McpServer) {
     'stake-tokens',
     {
       title: 'Stake tokens to Layer2 operator',
-      description:
-        "Deposit and stake a specified amount of tokens to a Layer2 network operator. You can specify the operator by name (e.g., 'hammer', 'level123') or by address.",
+      description: new DescriptionBuilder(
+        "Deposit and stake a specified amount of tokens to a Layer2 network operator. You can specify the operator by name (e.g., 'hammer', 'level123') or by address."
+      )
+        .withWalletConnect()
+        .toString(),
       inputSchema: {
         layer2Identifier: z
           .string()
@@ -70,7 +74,11 @@ export function registerStakeTools(server: McpServer) {
     'update-seigniorage',
     {
       title: 'Update seigniorage',
-      description: 'Update the seigniorage of the token for a Layer2 operator',
+      description: new DescriptionBuilder(
+        'Update the seigniorage of the token for a Layer2 operator'
+      )
+        .withWalletConnect()
+        .toString(),
       inputSchema: {
         layer2Identifier: z
           .string()

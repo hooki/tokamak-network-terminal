@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
+import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import { createMCPResponse } from '../utils/response.js';
 import { connectWallet, generateQRCode } from '../utils/wallet.js';
 
@@ -8,7 +9,7 @@ export function registerWalletTools(server: McpServer) {
     'connect-wallet',
     {
       title: 'Connect Wallet',
-      description: 'Connect to a wallet',
+      description: new DescriptionBuilder('Connect to a wallet').toString(),
       inputSchema: {
         callback: z
           .string()

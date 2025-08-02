@@ -1,6 +1,8 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { registerApproveTools } from './tools/approve.js';
 import { registerStakeTools } from './tools/stake.js';
+import { registerSwapTools } from './tools/swap.js';
 import { registerTokenTools } from './tools/token.js';
 import { registerTONCommands } from './tools/ton.js';
 import { registerUnstakeTools } from './tools/unstake.js';
@@ -14,6 +16,8 @@ const server = new McpServer({
 
 registerWalletTools(server);
 registerTokenTools(server);
+registerApproveTools(server);
+registerSwapTools(server);
 registerStakeTools(server);
 registerUnstakeTools(server);
 registerWithdrawTools(server);
