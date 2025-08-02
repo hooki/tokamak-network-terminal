@@ -1,9 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getAccount, readContract, writeContract } from '@wagmi/core';
-import type { Address } from 'viem';
 import { parseAbi, parseUnits } from 'viem';
 import { z } from 'zod';
-import { TOKENS } from '../constants.js';
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import { resolveAddress, resolveTokenAddress } from '../utils/resolve.js';
 import { createMCPResponse } from '../utils/response.js';
