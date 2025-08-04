@@ -104,6 +104,7 @@ export function registerWalletTools(server: McpServer) {
             type: 'text' as const,
             text: `${createMCPResponse({
               status: 'continue',
+              message: 'QR code generated successfully',
               nextStep: 'wait-wallet-connect',
               callback: callback,
             })}\n\n`,
