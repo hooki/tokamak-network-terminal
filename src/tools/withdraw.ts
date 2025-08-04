@@ -18,13 +18,62 @@ import { checkWalletConnection } from '../utils/wallet.js';
 
 export function registerWithdrawTools(server: McpServer) {
   server.registerTool(
+    'get-current-block-number',
+    {
+      title: 'Get current block number',
+      description: new DescriptionBuilder(
+        'Get the current block number for the specified network. This is useful for calculating withdrawal availability.'
+      )
+        .toString(),
+      inputSchema: {
+        network: z
+          .string()
+          .optional()
+          .default('mainnet')
+          .describe('The network to use (mainnet, sepolia, etc.)'),
+      },
+    },
+    async ({ network = 'mainnet' }) => {
+      const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
+
+      try {
+        const blockNumber = await getBlockNumber(wagmiConfig, { chainId });
+        const currentTime = new Date().toISOString();
+
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: createMCPResponse({
+                status: 'success',
+                message: `Current block number on ${network}: ${blockNumber}\nCurrent time (UTC): ${currentTime}`,
+              }),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: createMCPResponse({
+                status: 'error',
+                message: `Failed to get current block number on ${network}: ${error}`,
+              }),
+            },
+          ],
+        };
+      }
+    }
+  );
+
+  server.registerTool(
     'pending-withdrawal-requests',
     {
       title: 'Get pending withdrawal requests',
       description: new DescriptionBuilder(
-        'Get pending withdrawal requests from a Layer2 network operator. You can specify the operator by name (e.g., "hammer", "arbitrum") or by address.'
+        'Get pending withdrawal requests from a Layer2 network operator for a specific wallet address. You can specify the operator by name (e.g., "hammer", "arbitrum") or by address.'
       )
-        .withWalletConnect()
         .toString(),
       inputSchema: {
         network: z
@@ -37,25 +86,29 @@ export function registerWithdrawTools(server: McpServer) {
           .describe(
             "The Layer2 operator identifier - can be a name (e.g., 'hammer', 'tokamak1', 'level') or a full address"
           ),
-        isCallback: z
-          .boolean()
-          .optional()
-          .describe('If true, indicates this is a callback execution'),
+        walletAddress: z
+          .string()
+          .describe('The wallet address to check for withdrawal requests'),
       },
     },
-    async ({ layer2Identifier, network = 'mainnet', isCallback }) => {
+    async ({ layer2Identifier, walletAddress, network = 'mainnet' }) => {
       const targetAddress = resolveLayer2Address(layer2Identifier, network);
       const networkAddresses = getNetworkAddresses(network);
-      const callbackCommand = `pending-withdrawal-requests ${targetAddress} --network ${network}`;
       const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
 
-      const walletCheck = await checkWalletConnection(
-        isCallback,
-        callbackCommand
-      );
-      if (walletCheck && !walletCheck.isConnected) return walletCheck;
-
-      const account = getAccount(wagmiConfig);
+      if (!walletAddress) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: createMCPResponse({
+                status: 'error',
+                message: 'Wallet address is required',
+              }),
+            },
+          ],
+        };
+      }
 
       const abi = parseAbi([
         'function withdrawalRequestIndex(address layer2, address account) view returns (uint256 index)',
@@ -69,14 +122,14 @@ export function registerWithdrawTools(server: McpServer) {
               abi,
               address: networkAddresses.DEPOSIT_MANAGER,
               functionName: 'withdrawalRequestIndex',
-              args: [targetAddress, account.address as `0x${string}`],
+              args: [targetAddress, walletAddress as `0x${string}`],
               chainId,
             },
             {
               abi,
               address: networkAddresses.DEPOSIT_MANAGER,
               functionName: 'numRequests',
-              args: [targetAddress, account.address as `0x${string}`],
+              args: [targetAddress, walletAddress as `0x${string}`],
               chainId,
             },
           ],
@@ -99,7 +152,7 @@ export function registerWithdrawTools(server: McpServer) {
             functionName: 'withdrawalRequest',
             args: [
               targetAddress,
-              account.address as `0x${string}`,
+              walletAddress as `0x${string}`,
               withdrawalRequestIndex + BigInt(i + j),
             ],
             chainId,

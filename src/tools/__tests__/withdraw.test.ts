@@ -85,6 +85,27 @@ describe('withdraw.ts', () => {
   });
 
   describe('registerWithdrawTools', () => {
+    it('should register get-current-block-number tool', () => {
+      registerWithdrawTools(mockServer as any);
+
+      expect(mockServer.registerTool).toHaveBeenCalledWith(
+        'get-current-block-number',
+        expect.objectContaining({
+          title: 'Get current block number',
+          description: expect.stringContaining('Get the current block number'),
+          inputSchema: expect.objectContaining({
+            network: expect.any(Object),
+          }),
+        }),
+        expect.any(Function)
+      );
+    });
+
+    it('should register exactly 3 tools', () => {
+      registerWithdrawTools(mockServer as any);
+
+      expect(mockServer.registerTool).toHaveBeenCalledTimes(3);
+    });
     it('should register pending-withdrawal-requests tool', () => {
       registerWithdrawTools(mockServer as any);
 
@@ -121,10 +142,105 @@ describe('withdraw.ts', () => {
       );
     });
 
-    it('should register exactly 2 tools', () => {
+    it('should register exactly 3 tools', () => {
       registerWithdrawTools(mockServer as any);
 
-      expect(mockServer.registerTool).toHaveBeenCalledTimes(2);
+      expect(mockServer.registerTool).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe('get-current-block-number tool', () => {
+    it('should get current block number successfully', async () => {
+      const mockGetBlockNumber = vi.mocked(await import('@wagmi/core')).getBlockNumber;
+      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+
+      mockGetBlockNumber.mockResolvedValue(BigInt('18456789'));
+      mockCreateMCPResponse.mockReturnValue('success response');
+
+      registerWithdrawTools(mockServer as any);
+
+      const toolCall = mockServer.registerTool.mock.calls.find(
+        (call: any) => call[0] === 'get-current-block-number'
+      );
+      expect(toolCall).toBeDefined();
+      const toolFunction = toolCall![2];
+
+      const result = await toolFunction({
+        network: 'mainnet',
+      });
+
+      expect(mockGetBlockNumber).toHaveBeenCalledWith(
+        { id: 'wagmi-config' },
+        { chainId: 1 }
+      );
+      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
+        status: 'success',
+        message: expect.stringContaining('Current block number on mainnet: 18456789'),
+      });
+      expect(result).toEqual({
+        content: [
+          {
+            type: 'text',
+            text: 'success response',
+          },
+        ],
+      });
+    });
+
+    it('should handle sepolia network', async () => {
+      const mockGetBlockNumber = vi.mocked(await import('@wagmi/core')).getBlockNumber;
+
+      mockGetBlockNumber.mockResolvedValue(BigInt('12345678'));
+
+      registerWithdrawTools(mockServer as any);
+
+      const toolCall = mockServer.registerTool.mock.calls.find(
+        (call: any) => call[0] === 'get-current-block-number'
+      );
+      expect(toolCall).toBeDefined();
+      const toolFunction = toolCall![2];
+
+      await toolFunction({
+        network: 'sepolia',
+      });
+
+      expect(mockGetBlockNumber).toHaveBeenCalledWith(
+        { id: 'wagmi-config' },
+        { chainId: 11155111 }
+      );
+    });
+
+    it('should handle error', async () => {
+      const mockGetBlockNumber = vi.mocked(await import('@wagmi/core')).getBlockNumber;
+      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+
+      mockGetBlockNumber.mockRejectedValue(new Error('Network error'));
+      mockCreateMCPResponse.mockReturnValue('error response');
+
+      registerWithdrawTools(mockServer as any);
+
+      const toolCall = mockServer.registerTool.mock.calls.find(
+        (call: any) => call[0] === 'get-current-block-number'
+      );
+      expect(toolCall).toBeDefined();
+      const toolFunction = toolCall![2];
+
+      const result = await toolFunction({
+        network: 'mainnet',
+      });
+
+      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
+        status: 'error',
+        message: 'Failed to get current block number on mainnet: Error: Network error',
+      });
+      expect(result).toEqual({
+        content: [
+          {
+            type: 'text',
+            text: 'error response',
+          },
+        ],
+      });
     });
   });
 
