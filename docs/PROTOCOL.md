@@ -224,29 +224,50 @@ The Tokamak Network Terminal is an MCP (Model Context Protocol) server that prov
 ### 3. Staking Information Tools
 
 #### `get-staked-amount-user`
-**Title**: Get staked amount for Layer2 operator
-**Description**: Get the amount of tokens staked to a specific Layer2 operator. You can specify the operator by name (e.g., 'hammer', 'tokamak1', 'level') or by address. No wallet connection required.
+**Title**: Get staked amount for Layer2 operator(s)
+**Description**: Get the amount of tokens staked to one or multiple Layer2 operators. You can specify operators by name (e.g., 'hammer', 'tokamak1', 'level') or by address. No wallet connection required.
 **Input Schema**:
 - `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
-- `layer2Identifier`: The Layer2 operator identifier - can be a name (e.g., 'hammer', 'tokamak1', 'level') or a full address
+- `layer2Identifiers`: The Layer2 operator identifier(s) - can be a single name/address or array of names/addresses (e.g., 'hammer', ['hammer', 'level', 'tokamak1'])
 - `walletAddress`: The wallet address to check
 
-**Client Request (Input)**:
+**Client Request (Input) - Single Operator**:
 ```json
 {
-  "layer2Identifier": "hammer",
+  "layer2Identifiers": "hammer",
   "network": "mainnet",
   "walletAddress": "0x1234567890123456789012345678901234567890"
 }
 ```
 
-**Server Response (Output)**:
+**Client Request (Input) - Multiple Operators**:
+```json
+{
+  "layer2Identifiers": ["hammer", "level", "tokamak1"],
+  "network": "mainnet",
+  "walletAddress": "0x1234567890123456789012345678901234567890"
+}
+```
+
+**Server Response (Output) - Single Operator**:
 ```json
 {
   "content": [
     {
       "type": "text",
-      "text": "{\"status\":\"success\",\"message\":\"100.5 staked TON to hammer on mainnet (address: 0x1234567890123456789012345678901234567890)\\n (total staked TON: 1500.75)\"}"
+      "text": "{\"status\":\"success\",\"message\":\"100.5 staked WTON to hammer on mainnet (address: 0x1234567890123456789012345678901234567890)\"}"
+    }
+  ]
+}
+```
+
+**Server Response (Output) - Multiple Operators**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"message\":\"Staked amounts for 0x1234567890123456789012345678901234567890 on mainnet:\\n• hammer: 100.5 WTON\\n• level: 50.25 WTON\\n• tokamak1: 75.0 WTON\"}"
     }
   ]
 }
@@ -273,7 +294,7 @@ The Tokamak Network Terminal is an MCP (Model Context Protocol) server that prov
   "content": [
     {
       "type": "text",
-      "text": "{\"status\":\"success\",\"message\":\"Total 1500.75 TON staked by 0x1234567890123456789012345678901234567890 across all Layer2 operators on mainnet\"}"
+      "text": "{\"status\":\"success\",\"message\":\"Total 1500.75 WTON staked by 0x1234567890123456789012345678901234567890 across all Layer2 operators on mainnet\"}"
     }
   ]
 }
@@ -328,18 +349,44 @@ The Tokamak Network Terminal is an MCP (Model Context Protocol) server that prov
 
 ### 5. Withdraw Tools
 
+#### `get-current-block-number`
+**Title**: Get current block number
+**Description**: Get the current block number for the specified network. This is useful for calculating withdrawal availability. No wallet connection required.
+**Input Schema**:
+- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
+
+**Client Request (Input)**:
+```json
+{
+  "network": "mainnet"
+}
+```
+
+**Server Response (Output)**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"message\":\"Current block number on mainnet: 18456789\\nCurrent time (UTC): 2024-01-15T10:30:45.123Z\"}"
+    }
+  ]
+}
+```
+
 #### `pending-withdrawal-requests`
 **Title**: Get pending withdrawal requests
-**Description**: Get pending withdrawal requests from a Layer2 network operator. You can specify the operator by name (e.g., "hammer", "tokamak1", "level") or by address
+**Description**: Get pending withdrawal requests from a Layer2 network operator for a specific wallet address. You can specify the operator by name (e.g., "hammer", "tokamak1", "level") or by address. No wallet connection required.
 **Input Schema**:
 - `layer2Identifier`: The Layer2 operator identifier - can be a name (e.g., "hammer", "tokamak1", "level") or a full address
+- `walletAddress`: The wallet address to check for withdrawal requests
 - `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
-- `isCallback` (optional): If true, indicates this is a callback execution
 
 **Client Request (Input)**:
 ```json
 {
   "layer2Identifier": "hammer",
+  "walletAddress": "0x1234567890123456789012345678901234567890",
   "network": "mainnet"
 }
 ```
