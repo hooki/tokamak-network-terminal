@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { registerStakingInfoTools } from '../staking-info.js';
+import { registerStakingInfoTools } from '../staking.js';
 
 // Mock MCP Server
 const mockServer = {
@@ -72,23 +72,23 @@ vi.mock('../../utils/wagmi-config.js', () => ({
   wagmiConfig: { id: 'wagmi-config' },
 }));
 
-describe('staking-info.ts', () => {
+describe('staking.ts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   describe('registerStakingInfoTools', () => {
-    it('should register get-staked-amount-user tool', () => {
+    it('should register get-staked-balance tool', () => {
       registerStakingInfoTools(mockServer as any);
 
-      // Check if get-staked-amount-user was registered
+      // Check if get-staked-balance was registered
       const calls = mockServer.registerTool.mock.calls;
-      const stakedAmountUserCall = calls.find((call: any) => call[0] === 'get-staked-amount-user');
+      const stakedBalanceCall = calls.find((call: any) => call[0] === 'get-staked-balance');
 
-      expect(stakedAmountUserCall).toBeDefined();
-      expect(stakedAmountUserCall![1]).toEqual(
+      expect(stakedBalanceCall).toBeDefined();
+      expect(stakedBalanceCall![1]).toEqual(
         expect.objectContaining({
-          title: 'Get staked amount for Layer2 operator(s)',
+          title: 'Get staked balance for Layer2 operator(s)',
           description: expect.stringContaining("Get the amount of staked WTON to one or multiple Layer2 operators. You can specify operators by name (e.g., 'hammer', 'tokamak1', 'level') or by address."),
           inputSchema: expect.objectContaining({
             network: expect.any(Object),
@@ -99,11 +99,11 @@ describe('staking-info.ts', () => {
       );
     });
 
-    it('should register get-total-staked-amount-user tool', () => {
+    it('should register get-total-staked tool', () => {
       registerStakingInfoTools(mockServer as any);
 
       expect(mockServer.registerTool).toHaveBeenCalledWith(
-        'get-total-staked-amount-user',
+        'get-total-staked',
         expect.objectContaining({
           title: 'Get total staked amount for user across all Layer2 operators',
           description: expect.stringContaining('Get the total amount of tokens staked'),
@@ -144,7 +144,7 @@ describe('staking-info.ts', () => {
     });
   });
 
-  describe('get-staked-amount-user tool', () => {
+  describe('get-staked-balance tool', () => {
     it('should return error when wallet address is not provided', async () => {
       const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
       const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
@@ -154,7 +154,7 @@ describe('staking-info.ts', () => {
       registerStakingInfoTools(mockServer as any);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-staked-amount-user'
+        (call: any) => call[0] === 'get-staked-balance'
       );
       expect(toolCall).toBeDefined();
       const toolFunction = toolCall![2];
@@ -196,7 +196,7 @@ describe('staking-info.ts', () => {
       registerStakingInfoTools(mockServer as any);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-staked-amount-user'
+        (call: any) => call[0] === 'get-staked-balance'
       );
       expect(toolCall).toBeDefined();
       const toolFunction = toolCall![2];
@@ -247,7 +247,7 @@ describe('staking-info.ts', () => {
       registerStakingInfoTools(mockServer as any);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-staked-amount-user'
+        (call: any) => call[0] === 'get-staked-balance'
       );
       expect(toolCall).toBeDefined();
       const toolFunction = toolCall![2];
@@ -289,7 +289,7 @@ describe('staking-info.ts', () => {
       registerStakingInfoTools(mockServer as any);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-staked-amount-user'
+        (call: any) => call[0] === 'get-staked-balance'
       );
       expect(toolCall).toBeDefined();
       const toolFunction = toolCall![2];
@@ -343,7 +343,7 @@ describe('staking-info.ts', () => {
     });
   });
 
-  describe('get-total-staked-amount-user tool', () => {
+  describe('get-total-staked tool', () => {
     it('should return error when wallet address is not provided', async () => {
       const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
 
@@ -352,7 +352,7 @@ describe('staking-info.ts', () => {
       registerStakingInfoTools(mockServer as any);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-total-staked-amount-user'
+        (call: any) => call[0] === 'get-total-staked'
       );
       expect(toolCall).toBeDefined();
       const toolFunction = toolCall![2];
@@ -390,7 +390,7 @@ describe('staking-info.ts', () => {
       registerStakingInfoTools(mockServer as any);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-total-staked-amount-user'
+        (call: any) => call[0] === 'get-total-staked'
       );
       expect(toolCall).toBeDefined();
       const toolFunction = toolCall![2];
@@ -440,7 +440,7 @@ describe('staking-info.ts', () => {
       registerStakingInfoTools(mockServer as any);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-total-staked-amount-user'
+        (call: any) => call[0] === 'get-total-staked'
       );
       expect(toolCall).toBeDefined();
       const toolFunction = toolCall![2];

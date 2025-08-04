@@ -223,8 +223,8 @@ The Tokamak Network Terminal is an MCP (Model Context Protocol) server that prov
 
 ### 3. Staking Information Tools
 
-#### `get-staked-amount-user`
-**Title**: Get staked amount for Layer2 operator(s)
+#### `get-staked-balance`
+**Title**: Get staked balance for Layer2 operator(s)
 **Description**: Get the amount of tokens staked to one or multiple Layer2 operators. You can specify operators by name (e.g., 'hammer', 'tokamak1', 'level') or by address. No wallet connection required.
 **Input Schema**:
 - `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
@@ -273,7 +273,7 @@ The Tokamak Network Terminal is an MCP (Model Context Protocol) server that prov
 }
 ```
 
-#### `get-total-staked-amount-user`
+#### `get-total-staked`
 **Title**: Get total staked amount for user across all Layer2 operators
 **Description**: Get the total amount of tokens staked by a specific user across all Layer2 operators. No wallet connection required.
 **Input Schema**:

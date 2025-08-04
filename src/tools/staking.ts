@@ -12,9 +12,9 @@ import { checkWalletConnection } from '../utils/wallet.js';
 
 export function registerStakingInfoTools(server: McpServer) {
   server.registerTool(
-    'get-staked-amount-user',
+    'get-staked-balance',
     {
-      title: 'Get staked amount for Layer2 operator(s)',
+      title: 'Get staked balance for Layer2 operator(s)',
       description: new DescriptionBuilder(
         "Get the amount of staked WTON to one or multiple Layer2 operators. You can specify operators by name (e.g., 'hammer', 'tokamak1', 'level') or by address."
       )
@@ -130,7 +130,7 @@ export function registerStakingInfoTools(server: McpServer) {
   );
 
   server.registerTool(
-    'get-total-staked-amount-user',
+    'get-total-staked',
     {
       title: 'Get total staked amount for user across all Layer2 operators',
       description: new DescriptionBuilder(
