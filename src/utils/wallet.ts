@@ -28,7 +28,7 @@ export async function generateQRCode(uri: string): Promise<string> {
 export async function checkWalletConnection(
   isCallback: boolean | undefined,
   callback: string
-): Promise<WalletCheckResult> {
+): Promise<WalletCheckResult | undefined> {
   const account = getAccount(wagmiConfig);
 
   if (!account.isConnected) {
@@ -47,7 +47,17 @@ export async function checkWalletConnection(
         };
 
     return {
+      isConnected: false,
       content: [{ type: 'text' as const, text: createMCPResponse(response) }],
     };
   }
+
+  // 지갑이 연결되어 있으면 성공 상태 반환
+  return {
+    isConnected: true,
+    content: [{ type: 'text' as const, text: createMCPResponse({
+      status: 'success',
+      message: `Wallet is connected: ${account.address}`,
+    }) }],
+  };
 }
