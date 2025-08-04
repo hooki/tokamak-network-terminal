@@ -113,11 +113,11 @@ describe('withdraw.ts', () => {
         'pending-withdrawal-requests',
         expect.objectContaining({
           title: 'Get pending withdrawal requests',
-          description: expect.stringContaining('with_wallet_connect'),
+          description: expect.stringContaining('Get pending withdrawal requests from a Layer2 network operator'),
           inputSchema: expect.objectContaining({
             network: expect.any(Object),
             layer2Identifier: expect.any(Object),
-            isCallback: expect.any(Object),
+            walletAddress: expect.any(Object),
           }),
         }),
         expect.any(Function)
@@ -245,13 +245,10 @@ describe('withdraw.ts', () => {
   });
 
   describe('pending-withdrawal-requests tool', () => {
-    it('should handle wallet not connected', async () => {
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
+    it('should return error when wallet address is not provided', async () => {
+      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
 
-      mockCheckWalletConnection.mockResolvedValue({
-        isConnected: false,
-        content: [{ type: 'text', text: 'wallet not connected' }],
-      });
+      mockCreateMCPResponse.mockReturnValue('error response');
 
       registerWithdrawTools(mockServer as any);
 
@@ -264,15 +261,20 @@ describe('withdraw.ts', () => {
       const result = await toolFunction({
         layer2Identifier: 'hammer',
         network: 'mainnet',
+        walletAddress: '',
       });
 
-      expect(mockCheckWalletConnection).toHaveBeenCalledWith(
-        undefined,
-        'pending-withdrawal-requests 0xhammermainnetaddress --network mainnet'
-      );
+      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
+        status: 'error',
+        message: 'Wallet address is required',
+      });
       expect(result).toEqual({
-        isConnected: false,
-        content: [{ type: 'text', text: 'wallet not connected' }],
+        content: [
+          {
+            type: 'text',
+            text: 'error response',
+          },
+        ],
       });
     });
 
@@ -304,6 +306,7 @@ describe('withdraw.ts', () => {
       const result = await toolFunction({
         layer2Identifier: 'hammer',
         network: 'mainnet',
+        walletAddress: '0x1234567890123456789012345678901234567890',
       });
 
       expect(mockCreateMCPResponse).toHaveBeenCalledWith({
@@ -354,6 +357,7 @@ describe('withdraw.ts', () => {
       const result = await toolFunction({
         layer2Identifier: 'hammer',
         network: 'mainnet',
+        walletAddress: '0x1234567890123456789012345678901234567890',
       });
 
       expect(mockCreateMCPResponse).toHaveBeenCalledWith({
@@ -396,6 +400,7 @@ describe('withdraw.ts', () => {
       await toolFunction({
         layer2Identifier: 'hammer',
         network: 'sepolia',
+        walletAddress: '0x1234567890123456789012345678901234567890',
       });
 
       expect(mockReadContracts).toHaveBeenCalledWith(
