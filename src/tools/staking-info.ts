@@ -14,9 +14,9 @@ export function registerStakingInfoTools(server: McpServer) {
   server.registerTool(
     'get-staked-amount-user',
     {
-      title: 'Get staked amount for Layer2 operator',
+      title: 'Get staked amount for Layer2 operator(s)',
       description: new DescriptionBuilder(
-        "Get the amount of tokens staked to a specific Layer2 operator. You can specify the operator by name (e.g., 'hammer', 'tokamak1', 'level') or by address."
+        "Get the amount of staked WTON to one or multiple Layer2 operators. You can specify operators by name (e.g., 'hammer', 'tokamak1', 'level') or by address."
       )
         .toString(),
       inputSchema: {
@@ -25,18 +25,20 @@ export function registerStakingInfoTools(server: McpServer) {
           .optional()
           .default('mainnet')
           .describe('The network to use (mainnet, sepolia, etc.)'),
-        layer2Identifier: z
-          .string()
+        layer2Identifiers: z
+          .union([
+            z.string().describe("Single Layer2 operator identifier"),
+            z.array(z.string()).describe("Multiple Layer2 operator identifiers")
+          ])
           .describe(
-            "The Layer2 operator identifier - can be a name (e.g., 'hammer', 'tokamak1', 'level') or a full address"
+            "The Layer2 operator identifier(s) - can be a single name/address or array of names/addresses (e.g., 'hammer', ['hammer', 'level', 'tokamak1'])"
           ),
         walletAddress: z
           .string()
           .describe('The wallet address to check'),
       },
     },
-    async ({ layer2Identifier, walletAddress, network = 'mainnet' }) => {
-      const targetAddress = resolveLayer2Address(layer2Identifier, network);
+    async ({ layer2Identifiers, walletAddress, network = 'mainnet' }) => {
       const networkAddresses = getNetworkAddresses(network);
       const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
 
@@ -54,36 +56,51 @@ export function registerStakingInfoTools(server: McpServer) {
         };
       }
 
+      // Convert single identifier to array for consistent processing
+      const identifiers = Array.isArray(layer2Identifiers) ? layer2Identifiers : [layer2Identifiers];
+
       try {
-        const results = await readContracts(wagmiConfig, {
-          contracts: [
-            {
-              address: networkAddresses.SEIG_MANAGER,
-              abi: parseAbi(['function stakeOf(address,address) view returns (uint256)']),
-              functionName: 'stakeOf',
-              args: [targetAddress, walletAddress as `0x${string}`],
-              chainId,
-            },
-            {
-              address: networkAddresses.SEIG_MANAGER,
-              abi: parseAbi(['function stakeOf(address) view returns (uint256)']),
-              functionName: 'stakeOf',
-              args: [ walletAddress as `0x${string}`],
-              chainId,
-            },
-          ],
-        });
-
-        const stakedAmountInTargetLayer = results[0].result as bigint;
-        const stakedAmountTotal = results[1].result as bigint;
-
-        // Check if results are valid
-        if (stakedAmountInTargetLayer === undefined || stakedAmountTotal === undefined) {
-          throw new Error('Failed to read contract data');
+        // Prepare contracts for all identifiers
+        const contracts = [];
+        for (const identifier of identifiers) {
+          const targetAddress = resolveLayer2Address(identifier, network);
+          contracts.push({
+            address: networkAddresses.SEIG_MANAGER,
+            abi: parseAbi(['function stakeOf(address,address) view returns (uint256)']),
+            functionName: 'stakeOf',
+            args: [targetAddress, walletAddress as `0x${string}`],
+            chainId,
+          });
         }
 
-        const formattedAmount = formatUnits(stakedAmountInTargetLayer, 27);
-        const formattedAmountTotal = formatUnits(stakedAmountTotal, 27);
+        const results = await readContracts(wagmiConfig, { contracts });
+
+        // Process results for each identifier
+        const stakingResults = [];
+        for (let i = 0; i < identifiers.length; i++) {
+          const stakedAmount = results[i].result as bigint;
+
+          if (stakedAmount === undefined) {
+            throw new Error(`Failed to read contract data for ${identifiers[i]}`);
+          }
+
+          const formattedAmount = formatUnits(stakedAmount, 27);
+          stakingResults.push({
+            identifier: identifiers[i],
+            amount: formattedAmount,
+          });
+        }
+
+        // Create response message
+        let message = '';
+        if (identifiers.length === 1) {
+          message = `${stakingResults[0].amount} staked WTON to ${identifiers[0]} on ${network} (address: ${walletAddress})`;
+        } else {
+          message = `Staked amounts for ${walletAddress} on ${network}:\n`;
+          stakingResults.forEach(result => {
+            message += `• ${result.identifier}: ${result.amount} WTON\n`;
+          });
+        }
 
         return {
           content: [
@@ -91,8 +108,7 @@ export function registerStakingInfoTools(server: McpServer) {
               type: 'text' as const,
               text: createMCPResponse({
                 status: 'success',
-                message: `${formattedAmount} staked TON to ${layer2Identifier} on ${network} (address: ${walletAddress})
-                \n (total staked TON: ${formattedAmountTotal})`,
+                message,
               }),
             },
           ],
@@ -104,7 +120,7 @@ export function registerStakingInfoTools(server: McpServer) {
               type: 'text' as const,
               text: createMCPResponse({
                 status: 'error',
-                message: `Failed to get staked amount for ${layer2Identifier} on ${network}: ${error}`,
+                message: `Failed to get staked amounts for ${identifiers.join(', ')} on ${network}: ${error}`,
               }),
             },
           ],
@@ -178,7 +194,7 @@ export function registerStakingInfoTools(server: McpServer) {
               type: 'text' as const,
               text: createMCPResponse({
                 status: 'success',
-                message: `Total ${formattedAmount} TON staked by ${walletAddress} across all Layer2 operators on ${network}`,
+                message: `Total ${formattedAmount} WTON staked by ${walletAddress} across all Layer2 operators on ${network}`,
               }),
             },
           ],
@@ -204,7 +220,7 @@ export function registerStakingInfoTools(server: McpServer) {
     {
       title: 'Get total staked amount for Layer2 operator',
       description: new DescriptionBuilder(
-        "Get the total amount of tokens staked to a specific Layer2 operator across all users."
+        "Get the total amount of staked WTON to a specific Layer2 operator across all users."
       )
         .toString(),
       inputSchema: {
@@ -254,7 +270,7 @@ export function registerStakingInfoTools(server: McpServer) {
               type: 'text' as const,
               text: createMCPResponse({
                 status: 'success',
-                message: `Total ${formattedAmount} tokens staked to ${layer2Identifier} on ${network}`,
+                message: `Total ${formattedAmount} WTON staked to ${layer2Identifier} on ${network}`,
               }),
             },
           ],

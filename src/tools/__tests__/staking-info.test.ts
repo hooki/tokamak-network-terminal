@@ -81,35 +81,21 @@ describe('staking-info.ts', () => {
     it('should register get-staked-amount-user tool', () => {
       registerStakingInfoTools(mockServer as any);
 
-      expect(mockServer.registerTool).toHaveBeenCalledWith(
-        'get-staked-amount-user',
+      // Check if get-staked-amount-user was registered
+      const calls = mockServer.registerTool.mock.calls;
+      const stakedAmountUserCall = calls.find((call: any) => call[0] === 'get-staked-amount-user');
+
+      expect(stakedAmountUserCall).toBeDefined();
+      expect(stakedAmountUserCall![1]).toEqual(
         expect.objectContaining({
-          title: 'Get staked amount for Layer2 operator',
-          description: expect.stringContaining('Get the amount of tokens staked'),
+          title: 'Get staked amount for Layer2 operator(s)',
+          description: expect.stringContaining("Get the amount of staked WTON to one or multiple Layer2 operators. You can specify operators by name (e.g., 'hammer', 'tokamak1', 'level') or by address."),
           inputSchema: expect.objectContaining({
             network: expect.any(Object),
-            layer2Identifier: expect.any(Object),
+            layer2Identifiers: expect.any(Object),
             walletAddress: expect.any(Object),
           }),
-        }),
-        expect.any(Function)
-      );
-    });
-
-    it('should register get-total-staked-layer tool', () => {
-      registerStakingInfoTools(mockServer as any);
-
-      expect(mockServer.registerTool).toHaveBeenCalledWith(
-        'get-total-staked-layer',
-        expect.objectContaining({
-          title: 'Get total staked amount for Layer2 operator',
-          description: expect.stringContaining('Get the total amount of tokens staked'),
-          inputSchema: expect.objectContaining({
-            network: expect.any(Object),
-            layer2Identifier: expect.any(Object),
-          }),
-        }),
-        expect.any(Function)
+        })
       );
     });
 
@@ -129,6 +115,27 @@ describe('staking-info.ts', () => {
         expect.any(Function)
       );
     });
+
+    it('should register get-total-staked-layer tool', () => {
+      registerStakingInfoTools(mockServer as any);
+
+      // Check if get-total-staked-layer was registered (it should be the 3rd call)
+      const calls = mockServer.registerTool.mock.calls;
+      const totalStakedLayerCall = calls.find((call: any) => call[0] === 'get-total-staked-layer');
+
+      expect(totalStakedLayerCall).toBeDefined();
+      expect(totalStakedLayerCall![1]).toEqual(
+        expect.objectContaining({
+          title: 'Get total staked amount for Layer2 operator',
+          description: expect.stringContaining('Get the total amount of staked WTON'),
+          inputSchema: expect.objectContaining({
+            network: expect.any(Object),
+            layer2Identifier: expect.any(Object),
+          }),
+        })
+      );
+    });
+
 
     it('should register exactly 3 tools', () => {
       registerStakingInfoTools(mockServer as any);
@@ -195,7 +202,7 @@ describe('staking-info.ts', () => {
       const toolFunction = toolCall![2];
 
       const result = await toolFunction({
-        layer2Identifier: 'hammer',
+        layer2Identifiers: 'hammer',
         walletAddress: '0x1234567890123456789012345678901234567890',
         network: 'mainnet',
       });
@@ -211,19 +218,12 @@ describe('staking-info.ts', () => {
               args: ['0xhammermainnetaddress', '0x1234567890123456789012345678901234567890'],
               chainId: 1,
             },
-            {
-              address: '0x0b55a0f463b6defb81c6063973763951712d0e5f',
-              abi: ['function stakeOf(address) view returns (uint256)'],
-              functionName: 'stakeOf',
-              args: ['0x1234567890123456789012345678901234567890'],
-              chainId: 1,
-            },
           ],
         }
       );
       expect(mockCreateMCPResponse).toHaveBeenCalledWith({
         status: 'success',
-        message: expect.stringContaining('100.0 staked TON to hammer on mainnet'),
+        message: '100.0 staked WTON to hammer on mainnet (address: 0x1234567890123456789012345678901234567890)',
       });
       expect(result).toEqual({
         content: [
@@ -241,7 +241,6 @@ describe('staking-info.ts', () => {
 
       mockReadContracts.mockResolvedValue([
         { result: BigInt('100000000000000000000000000'), status: 'success' },
-        { result: BigInt('500000000000000000000000000'), status: 'success' },
       ] as any);
       mockFormatUnits.mockReturnValue('100.0');
 
@@ -254,7 +253,7 @@ describe('staking-info.ts', () => {
       const toolFunction = toolCall![2];
 
       await toolFunction({
-        layer2Identifier: 'hammer',
+        layer2Identifiers: 'hammer',
         walletAddress: '0x1234567890123456789012345678901234567890',
         network: 'sepolia',
       });
@@ -269,6 +268,78 @@ describe('staking-info.ts', () => {
           ]),
         })
       );
+    });
+
+    it('should handle multiple layer2 identifiers', async () => {
+      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+      const mockFormatUnits = vi.mocked(await import('viem')).formatUnits;
+      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+
+      mockReadContracts.mockResolvedValue([
+        { result: BigInt('100000000000000000000000000'), status: 'success' }, // hammer
+        { result: BigInt('50000000000000000000000000'), status: 'success' },  // level
+        { result: BigInt('75000000000000000000000000'), status: 'success' },  // tokamak1
+      ] as any);
+      mockFormatUnits
+        .mockReturnValueOnce('100.0') // hammer
+        .mockReturnValueOnce('50.0')  // level
+        .mockReturnValueOnce('75.0'); // tokamak1
+      mockCreateMCPResponse.mockReturnValue('success response');
+
+      registerStakingInfoTools(mockServer as any);
+
+      const toolCall = mockServer.registerTool.mock.calls.find(
+        (call: any) => call[0] === 'get-staked-amount-user'
+      );
+      expect(toolCall).toBeDefined();
+      const toolFunction = toolCall![2];
+
+      const result = await toolFunction({
+        layer2Identifiers: ['hammer', 'level', 'tokamak1'],
+        walletAddress: '0x1234567890123456789012345678901234567890',
+        network: 'mainnet',
+      });
+
+      expect(mockReadContracts).toHaveBeenCalledWith(
+        { id: 'wagmi-config' },
+        {
+          contracts: [
+            {
+              address: '0x0b55a0f463b6defb81c6063973763951712d0e5f',
+              abi: ['function stakeOf(address,address) view returns (uint256)'],
+              functionName: 'stakeOf',
+              args: ['0xhammermainnetaddress', '0x1234567890123456789012345678901234567890'],
+              chainId: 1,
+            },
+            {
+              address: '0x0b55a0f463b6defb81c6063973763951712d0e5f',
+              abi: ['function stakeOf(address,address) view returns (uint256)'],
+              functionName: 'stakeOf',
+              args: ['0xlevelmainnetaddress', '0x1234567890123456789012345678901234567890'],
+              chainId: 1,
+            },
+            {
+              address: '0x0b55a0f463b6defb81c6063973763951712d0e5f',
+              abi: ['function stakeOf(address,address) view returns (uint256)'],
+              functionName: 'stakeOf',
+              args: ['0xtokamak1mainnetaddress', '0x1234567890123456789012345678901234567890'],
+              chainId: 1,
+            },
+          ],
+        }
+      );
+      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
+        status: 'success',
+        message: expect.stringContaining('Staked amounts for 0x1234567890123456789012345678901234567890 on mainnet'),
+      });
+      expect(result).toEqual({
+        content: [
+          {
+            type: 'text',
+            text: 'success response',
+          },
+        ],
+      });
     });
   });
 
@@ -345,7 +416,7 @@ describe('staking-info.ts', () => {
       );
       expect(mockCreateMCPResponse).toHaveBeenCalledWith({
         status: 'success',
-        message: 'Total 1000.0 TON staked by 0x1234567890123456789012345678901234567890 across all Layer2 operators on mainnet',
+        message: 'Total 1000.0 WTON staked by 0x1234567890123456789012345678901234567890 across all Layer2 operators on mainnet',
       });
       expect(result).toEqual({
         content: [
@@ -439,7 +510,7 @@ describe('staking-info.ts', () => {
       );
       expect(mockCreateMCPResponse).toHaveBeenCalledWith({
         status: 'success',
-        message: 'Total 1000.0 tokens staked to hammer on mainnet',
+        message: 'Total 1000.0 WTON staked to hammer on mainnet',
       });
       expect(result).toEqual({
         content: [
