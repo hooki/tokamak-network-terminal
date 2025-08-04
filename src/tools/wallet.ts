@@ -104,18 +104,22 @@ export function registerWalletTools(server: McpServer) {
             type: 'text' as const,
             text: `${createMCPResponse({
               status: 'continue',
-              message: 'QR code generated successfully',
+              message: 'Wallet connection options generated',
               nextStep: 'wait-wallet-connect',
               callback: callback,
             })}\n\n`,
           },
           {
             type: 'text' as const,
-            text: 'Please scan the QR code with your wallet to connect\n\n',
+            text: '📱 **Mobile Users**: Scan the QR code below with your MetaMask app\n\n',
           },
           {
             type: 'text' as const,
             text: qrCodeText,
+          },
+          {
+            type: 'text' as const,
+            text: '\n\n⚠️ **Note**: Make sure you have MetaMask app installed on your mobile device',
           },
         ],
       };

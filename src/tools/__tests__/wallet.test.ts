@@ -222,7 +222,7 @@ describe('wallet.ts', () => {
       expect(mockGenerateQRCode).toHaveBeenCalledWith('test-uri');
       expect(mockCreateMCPResponse).toHaveBeenCalledWith({
         status: 'continue',
-        message: 'QR code generated successfully',
+        message: 'Wallet connection options generated',
         nextStep: 'wait-wallet-connect',
         callback: 'test-callback',
       });
@@ -234,11 +234,15 @@ describe('wallet.ts', () => {
           },
           {
             type: 'text',
-            text: 'Please scan the QR code with your wallet to connect\n\n',
+            text: '📱 **Mobile Users**: Scan the QR code below with your MetaMask app\n\n',
           },
           {
             type: 'text',
             text: 'qr-code-text',
+          },
+          {
+            type: 'text',
+            text: '\n\n⚠️ **Note**: Make sure you have MetaMask app installed on your mobile device',
           },
         ],
       });
