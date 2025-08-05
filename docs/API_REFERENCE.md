@@ -361,6 +361,48 @@ interface MCPResponse {
 type Layer2Operators = Record<string, Layer2Operator>;
 ```
 
+## Agenda Tools
+
+### Get Multiple Agendas
+```typescript
+server.registerTool(
+  'get-agendas',
+  {
+    title: 'Get multiple agendas',
+    description: new DescriptionBuilder(
+      'Get multiple agendas within a specified range. If no range is specified, returns the latest 50 agendas. Maximum 50 agendas per request. Parameters: start (optional) - Starting agenda ID, end (optional) - Ending agenda ID, network (optional) - Network to query (mainnet, sepolia).'
+    ).toString(),
+    inputSchema: {
+      network: z.string().optional().default('mainnet').describe('The network to use (mainnet, sepolia, etc.)'),
+      start: z.string().optional().describe('Starting agenda ID (inclusive). If not provided, will get latest agendas'),
+      end: z.string().optional().describe('Ending agenda ID (inclusive). If not provided, will get up to 50 agendas from start'),
+    },
+  },
+  async ({ start, end, network = 'mainnet' }) => {
+    // Implementation
+  }
+);
+```
+
+### Get Agenda Count
+```typescript
+server.registerTool(
+  'get-agenda-count',
+  {
+    title: 'Get total agenda count',
+    description: new DescriptionBuilder(
+      'Get the total number of agendas on the specified network. This returns the count of all agendas that have been created.'
+    ).toString(),
+    inputSchema: {
+      network: z.string().optional().default('mainnet').describe('The network to use (mainnet, sepolia, etc.)'),
+    },
+  },
+  async ({ network = 'mainnet' }) => {
+    // Implementation
+  }
+);
+```
+
 ## Dependencies
 
 - `@modelcontextprotocol/sdk`: MCP server implementation

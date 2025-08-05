@@ -380,6 +380,79 @@ The Tokamak Network Terminal is an MCP (Model Context Protocol) server that prov
 }
 ```
 
+#### `get-agendas`
+**Title**: Get multiple agendas
+**Description**: Get multiple agendas within a specified range. If no range is specified, returns the latest 50 agendas. Maximum 50 agendas per request. Parameters: start (optional) - Starting agenda ID, end (optional) - Ending agenda ID, network (optional) - Network to query (mainnet, sepolia).
+**Input Schema**:
+- `start` (optional): Starting agenda ID (inclusive). If not provided, will get latest agendas
+- `end` (optional): Ending agenda ID (inclusive). If not provided, will get up to 50 agendas from start
+- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
+
+**Client Request (Input) - Latest 50 agendas**:
+```json
+{
+  "network": "mainnet"
+}
+```
+
+**Client Request (Input) - Range query**:
+```json
+{
+  "start": "0",
+  "end": "10",
+  "network": "mainnet"
+}
+```
+
+**Server Response (Output)**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"message\":\"📋 **Agendas 0-10 on mainnet**\\nCommittee Version: undefined\\nTotal Found: 11\\n\\n**Agenda 10**\\n• Status: Active\\n• Created: 2024-01-15T10:30:00.000Z\\n• Notice End: 2024-01-20T10:30:00.000Z\\n• Voting Period: 604800 seconds\\n• Voting Start: 2024-01-20T10:30:00.000Z\\n• Voting End: 2024-01-27T10:30:00.000Z\\n• Executable Limit: 2024-02-03T10:30:00.000Z\\n• Executed: No\\n• Executed Time: Not set\\n• Yes Votes: 1000\\n• No Votes: 200\\n• Abstain Votes: 50\\n• Total Votes: 1250\\n• Voters Count: 15\\n\\n**Agenda 9**\\n• Status: Active\\n• Created: 2024-01-14T10:30:00.000Z\\n• Notice End: 2024-01-19T10:30:00.000Z\\n• Voting Period: 604800 seconds\\n• Voting Start: 2024-01-19T10:30:00.000Z\\n• Voting End: 2024-01-26T10:30:00.000Z\\n• Executable Limit: 2024-02-02T10:30:00.000Z\\n• Executed: No\\n• Executed Time: Not set\\n• Yes Votes: 800\\n• No Votes: 150\\n• Abstain Votes: 30\\n• Total Votes: 980\\n• Voters Count: 12\"}"
+    }
+  ]
+}
+```
+
+**Error Response**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"error\",\"message\":\"Start ID 100 is out of range. Total agendas: 16\"}"
+    }
+  ]
+}
+```
+
+#### `get-agenda-count`
+**Title**: Get total agenda count
+**Description**: Get the total number of agendas on the specified network. This returns the count of all agendas that have been created.
+**Input Schema**:
+- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
+
+**Client Request (Input)**:
+```json
+{
+  "network": "mainnet"
+}
+```
+
+**Server Response (Output)**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"message\":\"📊 **Agenda Count on mainnet**\\nTotal Agendas: 16\\nCommittee Version: undefined\\nRange: 0-15\"}"
+    }
+  ]
+}
+```
+
 ### 5. Unstake Tools
 
 #### `unstake-tokens`

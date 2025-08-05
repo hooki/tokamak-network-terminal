@@ -1,5 +1,8 @@
 import type { Address } from 'viem';
 
+// 아젠다 관련 상수
+export const MAX_AGENDAS_PER_REQUEST = 50;
+
 // 네트워크별 토큰 주소
 const TOKENS: Record<string, Record<string, Address>> = {
   mainnet: {
