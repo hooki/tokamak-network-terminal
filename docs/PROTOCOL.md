@@ -327,7 +327,60 @@ The Tokamak Network Terminal is an MCP (Model Context Protocol) server that prov
 }
 ```
 
-### 4. Unstake Tools
+### 4. Agenda Tools
+
+#### `get-agenda`
+**Title**: Get agenda details
+**Description**: Get detailed information about a specific agenda. This includes agenda status, voting period, and other relevant details. Supports both Version 1 (basic) and Version 2 (advanced) committee systems.
+**Input Schema**:
+- `agendaId` (required): The agenda ID to get details for
+- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
+
+**Client Request (Input)**:
+```json
+{
+  "agendaId": "0",
+  "network": "mainnet"
+}
+```
+
+**Server Response (Output) - Version 1**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"message\":\"Agenda 0 Details on mainnet (Version 1):\\n• Status: Active\\n• Created: 2024-01-15T10:30:00.000Z\\n• Notice End: 2024-01-20T10:30:00.000Z\\n• Voting Period: 604800 seconds\\n• Voting Start: 2024-01-20T10:30:00.000Z\\n• Voting End: 2024-01-27T10:30:00.000Z\\n• Executable Limit: 2024-02-03T10:30:00.000Z\\n• Executed: No\\n• Executed Time: Not set\\n• Yes Votes: 1000\\n• No Votes: 200\\n• Abstain Votes: 50\\n• Total Votes: 1250\\n• Voters Count: 15\\n• Voters: 1. 0x1234567890123456789012345678901234567890\\n   2. 0x2345678901234567890123456789012345678901\"}"
+    }
+  ]
+}
+```
+
+**Server Response (Output) - Version 2**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"message\":\"Agenda 0 Details on mainnet (Committee v2.0.0):\\n• Status: VOTING\\n• Result: ACCEPT\\n• Created: 2024-01-15T10:30:00.000Z\\n• Notice End: 2024-01-20T10:30:00.000Z\\n• Voting Period: 604800 seconds\\n• Voting Start: 2024-01-20T10:30:00.000Z\\n• Voting End: 2024-01-27T10:30:00.000Z\\n• Executable Limit: 2024-02-03T10:30:00.000Z\\n• Executed: No\\n• Executed Time: Not set\\n• Yes Votes: 1000\\n• No Votes: 200\\n• Abstain Votes: 50\\n• Total Votes: 1250\\n• Voters Count: 15\\n• Voters: 1. 0x1234567890123456789012345678901234567890\\n   2. 0x2345678901234567890123456789012345678901\"}"
+    }
+  ]
+}
+```
+
+**Error Response**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"error\",\"message\":\"Agenda 999 not found on mainnet\"}"
+    }
+  ]
+}
+```
+
+### 5. Unstake Tools
 
 #### `unstake-tokens`
 **Title**: Unstake tokens from Layer2 operator
