@@ -1,8 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { writeContract } from '@wagmi/core';
+import { writeContract, readContracts, getAccount } from '@wagmi/core';
 import { parseAbi, parseUnits } from 'viem';
 import { z } from 'zod';
-import { DEPOSIT_MANAGER } from '../constants.js';
+import { mainnet, sepolia } from '@wagmi/core/chains';
+import { getNetworkAddresses } from '../constants.js';
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import { resolveLayer2Address } from '../utils/layer2.js';
 import { createMCPResponse } from '../utils/response.js';
@@ -20,6 +21,11 @@ export function registerUnstakeTools(server: McpServer) {
         .withWalletConnect()
         .toString(),
       inputSchema: {
+        network: z
+          .string()
+          .optional()
+          .default('mainnet')
+          .describe('The network to use (mainnet, sepolia, etc.)'),
         layer2Identifier: z
           .string()
           .describe(
@@ -32,21 +38,53 @@ export function registerUnstakeTools(server: McpServer) {
           .describe('If true, indicates this is a callback execution'),
       },
     },
-    async ({ layer2Identifier, tokenAmount, isCallback }) => {
-      const targetAddress = resolveLayer2Address(layer2Identifier);
-      const callbackCommand = `unstake-tokens ${targetAddress} ${tokenAmount}`;
+    async ({ layer2Identifier, tokenAmount, network = 'mainnet', isCallback }) => {
+      const targetAddress = resolveLayer2Address(layer2Identifier, network);
+      const networkAddresses = getNetworkAddresses(network);
+      const callbackCommand = `unstake-tokens ${targetAddress} ${tokenAmount} --network ${network}`;
+      const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
 
       const walletCheck = await checkWalletConnection(
         isCallback,
         callbackCommand
       );
-      if (walletCheck) return walletCheck;
+      if (walletCheck && !walletCheck.isConnected) return walletCheck;
+      const account = getAccount(wagmiConfig)?.address;
+
+      // 스테이킹된 금액이 충분한지 확인한다.
+      const results = await readContracts(wagmiConfig, {
+        contracts: [
+          {
+            address: networkAddresses.SEIG_MANAGER,
+            abi: parseAbi(['function stakeOf(address,address) view returns (uint256)']),
+            functionName: 'stakeOf',
+            args: [targetAddress, account as `0x${string}`],
+            chainId,
+          },
+        ],
+      });
+
+      const stakedAmount = results[0].result as bigint;
+      if (stakedAmount < parseUnits(tokenAmount, 27)) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: createMCPResponse({
+                status: 'error',
+                message: `Insufficient staked amount of ${layer2Identifier} on ${network} (staked amount: ${stakedAmount}, token amount: ${tokenAmount})`,
+              }),
+            },
+          ],
+        };
+      }
 
       const tx = await writeContract(wagmiConfig, {
         abi: parseAbi(['function requestWithdrawal(address, uint256)']),
-        address: DEPOSIT_MANAGER,
+        address: networkAddresses.DEPOSIT_MANAGER,
         functionName: 'requestWithdrawal',
         args: [targetAddress, parseUnits(tokenAmount, 27)],
+        chainId,
       });
 
       return {
@@ -55,7 +93,7 @@ export function registerUnstakeTools(server: McpServer) {
             type: 'text' as const,
             text: createMCPResponse({
               status: 'success',
-              message: `Unstake tokens successfully(tx: ${tx})`,
+              message: `Unstake tokens successfully on ${network} (tx: ${tx})`,
             }),
           },
         ],

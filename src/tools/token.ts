@@ -1,9 +1,10 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getBalance } from '@wagmi/core';
+import { getBalance, readContracts } from '@wagmi/core';
+import { mainnet, sepolia } from '@wagmi/core/chains';
 import type { Address } from 'viem';
-import { formatEther, formatUnits } from 'viem';
+import { formatEther, formatUnits, parseAbi } from 'viem';
 import { z } from 'zod';
-import { TOKENS } from '../constants.js';
+import { getNetworkTokens } from '../constants.js';
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import { getTokenBalance, getTokenDecimals } from '../utils/erc20.js';
 import { createMCPResponse } from '../utils/response.js';
@@ -20,15 +21,22 @@ export function registerTokenTools(server: McpServer) {
         .withWalletConnect()
         .toString(),
       inputSchema: {
+        network: z
+          .string()
+          .optional()
+          .default('mainnet')
+          .describe('The network to use (mainnet, sepolia, etc.)'),
         address: z
           .string()
           .describe('The address to get the balance of')
           .transform((address) => address as Address),
       },
     },
-    async ({ address }: { address: Address }) => {
+    async ({ address, network = 'mainnet' }: { address: Address; network?: string }) => {
+      const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
       const balance = await getBalance(wagmiConfig, {
         address: address,
+        chainId,
       });
 
       return {
@@ -37,7 +45,7 @@ export function registerTokenTools(server: McpServer) {
             type: 'text' as const,
             text: createMCPResponse({
               status: 'success',
-              message: `${address} balance is ${formatEther(balance.value)}`,
+              message: `${address} balance is ${formatEther(balance.value)} on ${network}`,
             }),
           },
         ],
@@ -55,6 +63,11 @@ export function registerTokenTools(server: McpServer) {
         .withWalletConnect()
         .toString(),
       inputSchema: {
+        network: z
+          .string()
+          .optional()
+          .default('mainnet')
+          .describe('The network to use (mainnet, sepolia, etc.)'),
         address: z
           .string()
           .describe('The address to get the balance of')
@@ -71,35 +84,56 @@ export function registerTokenTools(server: McpServer) {
     async ({
       address,
       tokenAddressOrName,
+      network = 'mainnet',
     }: {
       address: Address;
       tokenAddressOrName: Address | string;
+      network?: string;
     }) => {
+      const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
       let tokenAddress: Address;
+      const networkTokens = getNetworkTokens(network);
+
       if (tokenAddressOrName.startsWith('0x')) {
         tokenAddress = tokenAddressOrName as Address;
       } else {
-        if (!(tokenAddressOrName in TOKENS)) {
+        if (!(tokenAddressOrName in networkTokens)) {
           return {
             content: [
               {
                 type: 'text' as const,
                 text: createMCPResponse({
                   status: 'error',
-                  message: 'Invalid token name',
+                  message: `Invalid token name on ${network}`,
                 }),
               },
             ],
           };
         }
 
-        tokenAddress = TOKENS[tokenAddressOrName as keyof typeof TOKENS];
+        tokenAddress = networkTokens[tokenAddressOrName as keyof typeof networkTokens];
       }
 
-      const [balance, decimals] = await Promise.all([
-        getTokenBalance(tokenAddress, address),
-        getTokenDecimals(tokenAddress),
-      ]);
+      const results = await readContracts(wagmiConfig, {
+        contracts: [
+          {
+            address: tokenAddress,
+            abi: parseAbi(['function balanceOf(address) view returns (uint256)']),
+            functionName: 'balanceOf',
+            args: [address],
+            chainId,
+          },
+          {
+            address: tokenAddress,
+            abi: parseAbi(['function decimals() view returns (uint8)']),
+            functionName: 'decimals',
+            chainId,
+          },
+        ],
+      });
+
+      const balance = results[0].result as bigint;
+      const decimals = results[1].result as number;
 
       return {
         content: [
@@ -107,7 +141,7 @@ export function registerTokenTools(server: McpServer) {
             type: 'text' as const,
             text: createMCPResponse({
               status: 'success',
-              message: `${address} balance is ${formatUnits(balance, decimals)}`,
+              message: `${address} balance is ${formatUnits(balance, decimals)} on ${network}`,
             }),
           },
         ],

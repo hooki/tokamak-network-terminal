@@ -1,10 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import {
-  getAccount,
-  readContract,
-  waitForTransactionReceipt,
-  writeContract,
-} from '@wagmi/core';
+import { getAccount, readContract, writeContract } from '@wagmi/core';
+import { mainnet, sepolia } from '@wagmi/core/chains';
+import type { Address } from 'viem';
 import { parseAbi, parseUnits } from 'viem';
 import { z } from 'zod';
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
@@ -24,18 +21,21 @@ export function registerApproveTools(server: McpServer) {
         .withWalletConnect()
         .toString(),
       inputSchema: {
+        network: z
+          .string()
+          .optional()
+          .default('mainnet')
+          .describe('The network to use (mainnet, sepolia, etc.)'),
         token: z
           .string()
           .describe(
             'The token address or name to approve spending for (e.g., "TON", "WTON", or a contract address)'
-          )
-          .transform(resolveTokenAddress),
+          ),
         spender: z
           .string()
           .describe(
             'The address or name of the spender(e.g., "TON", "WTON", or a contract address) that will be approved to spend the tokens'
-          )
-          .transform(resolveAddress),
+          ),
         amount: z
           .string()
           .describe(
@@ -57,29 +57,33 @@ export function registerApproveTools(server: McpServer) {
           .describe('If true, indicates this is a callback execution'),
       },
     },
-    async ({ token, spender, amount, decimals, callback, isCallback }) => {
-      if (token === undefined) {
+    async ({ token, spender, amount, network = 'mainnet', decimals, callback, isCallback }) => {
+      const resolvedToken = resolveTokenAddress(token, network);
+      const resolvedSpender = resolveAddress(spender, network);
+      const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
+
+      if (resolvedToken === undefined) {
         return {
           content: [
             {
               type: 'text' as const,
               text: createMCPResponse({
                 status: 'error',
-                message: 'UNKNOWN TOKEN',
+                message: `UNKNOWN TOKEN on ${network}`,
               }),
             },
           ],
         };
       }
 
-      if (spender === undefined) {
+      if (resolvedSpender === undefined) {
         return {
           content: [
             {
               type: 'text' as const,
               text: createMCPResponse({
                 status: 'error',
-                message: 'UNKNOWN SPENDER',
+                message: `UNKNOWN SPENDER on ${network}`,
               }),
             },
           ],
@@ -90,7 +94,7 @@ export function registerApproveTools(server: McpServer) {
       if (account.address === undefined)
         return checkWalletConnection(
           isCallback,
-          `approve ${token} for ${spender} amount ${amount}`
+          `approve ${token} for ${spender} amount ${amount} --network ${network}`
         );
 
       let parsedAmount: bigint;
@@ -105,8 +109,9 @@ export function registerApproveTools(server: McpServer) {
             decimals ??
               (await readContract(wagmiConfig, {
                 abi: parseAbi(['function decimals() view returns (uint8)']),
-                address: token,
+                address: resolvedToken,
                 functionName: 'decimals',
+                chainId,
               }))
           );
         } catch {
@@ -116,7 +121,7 @@ export function registerApproveTools(server: McpServer) {
                 type: 'text' as const,
                 text: createMCPResponse({
                   status: 'error',
-                  message: `Invalid amount format: ${amount}`,
+                  message: `Invalid amount format on ${network}`,
                 }),
               },
             ],
@@ -124,47 +129,25 @@ export function registerApproveTools(server: McpServer) {
         }
       }
 
-      try {
-        const tx = await writeContract(wagmiConfig, {
-          abi: parseAbi([
-            'function approve(address spender, uint256 amount) external returns (bool)',
-          ]),
-          address: token,
-          functionName: 'approve',
-          args: [spender, parsedAmount],
-        });
+      const tx = await writeContract(wagmiConfig, {
+        abi: parseAbi(['function approve(address, uint256)']),
+        address: resolvedToken,
+        functionName: 'approve',
+        args: [resolvedSpender, parsedAmount],
+        chainId,
+      });
 
-        await waitForTransactionReceipt(wagmiConfig, {
-          hash: tx,
-        });
-
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: createMCPResponse({
-                status: 'success',
-                message: `Successfully approved ${spender} to spend ${
-                  amount === 'max' ? 'unlimited' : amount
-                } ${token} tokens (tx: ${tx})`,
-                nextStep: callback,
-              }),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: createMCPResponse({
-                status: 'error',
-                message: `Failed to approve token spending: ${error instanceof Error ? error.message : 'Unknown error'}`,
-              }),
-            },
-          ],
-        };
-      }
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: createMCPResponse({
+              status: 'success',
+              message: `Approve ${amount} tokens from ${token} to ${spender} successfully on ${network} (tx: ${tx})`,
+            }),
+          },
+        ],
+      };
     }
   );
 }

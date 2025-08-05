@@ -1,5 +1,5 @@
 import { createConfig, createStorage, http } from '@wagmi/core';
-import { sepolia } from '@wagmi/core/chains';
+import { mainnet, sepolia } from '@wagmi/core/chains';
 
 const memory: Record<string, string> = {};
 
@@ -29,10 +29,11 @@ const storage = {
 };
 
 export const wagmiConfig = createConfig({
-  chains: [sepolia],
+  chains: [mainnet, sepolia],
   ssr: true,
   storage: createStorage({ storage }),
   transports: {
+    [mainnet.id]: http(),
     [sepolia.id]: http(),
   },
 });

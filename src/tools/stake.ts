@@ -1,8 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { writeContract } from '@wagmi/core';
+import { mainnet, sepolia } from '@wagmi/core/chains';
 import { encodeAbiParameters, parseAbi, parseEther } from 'viem';
 import { z } from 'zod';
-import { DEPOSIT_MANAGER, TON_ADDRESS, WTON_ADDRESS } from '../constants.js';
+import { DEPOSIT_MANAGER, TON_ADDRESS, WTON_ADDRESS, getNetworkAddresses } from '../constants.js';
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import { resolveLayer2Address } from '../utils/layer2.js';
 import { createMCPResponse } from '../utils/response.js';
@@ -20,10 +21,15 @@ export function registerStakeTools(server: McpServer) {
         .withWalletConnect()
         .toString(),
       inputSchema: {
+        network: z
+          .string()
+          .optional()
+          .default('mainnet')
+          .describe('The network to use (mainnet, sepolia, etc.)'),
         layer2Identifier: z
           .string()
           .describe(
-            "The Layer2 operator identifier - can be a name (e.g., 'hammer', 'arbitrum') or a full address"
+            "The Layer2 operator identifier - can be a name (e.g., 'hammer', 'tokamak1, 'level') or a full address"
           ),
         tokenAmount: z.string().describe('The amount of tokens to stake'),
         isCallback: z
@@ -32,28 +38,31 @@ export function registerStakeTools(server: McpServer) {
           .describe('If true, indicates this is a callback execution'),
       },
     },
-    async ({ layer2Identifier, tokenAmount, isCallback }) => {
-      const targetAddress = resolveLayer2Address(layer2Identifier);
-      const callbackCommand = `stake-tokens ${targetAddress} ${tokenAmount}`;
+    async ({ layer2Identifier, tokenAmount, network = 'mainnet', isCallback }) => {
+      const targetAddress = resolveLayer2Address(layer2Identifier, network);
+      const networkAddresses = getNetworkAddresses(network);
+      const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
+      const callbackCommand = `stake-tokens ${targetAddress} ${tokenAmount} --network ${network}`;
 
       const walletCheck = await checkWalletConnection(
         isCallback,
         callbackCommand
       );
-      if (walletCheck) return walletCheck;
+      if (walletCheck && !walletCheck.isConnected) return walletCheck;
 
       const tx = await writeContract(wagmiConfig, {
         abi: parseAbi(['function approveAndCall(address, uint256, bytes)']),
-        address: TON_ADDRESS,
+        address: networkAddresses.TON_ADDRESS,
         functionName: 'approveAndCall',
         args: [
-          WTON_ADDRESS,
+          networkAddresses.WTON_ADDRESS,
           parseEther(tokenAmount),
           encodeAbiParameters(
             [{ type: 'address' }, { type: 'address' }],
-            [DEPOSIT_MANAGER, targetAddress]
+            [networkAddresses.DEPOSIT_MANAGER, targetAddress]
           ),
         ],
+        chainId,
       });
 
       return {
@@ -62,7 +71,7 @@ export function registerStakeTools(server: McpServer) {
             type: 'text' as const,
             text: createMCPResponse({
               status: 'success',
-              message: `Stake tokens successfully(tx: ${tx})`,
+              message: `Stake tokens successfully on ${network} (tx: ${tx})`,
             }),
           },
         ],
@@ -80,6 +89,11 @@ export function registerStakeTools(server: McpServer) {
         .withWalletConnect()
         .toString(),
       inputSchema: {
+        network: z
+          .string()
+          .optional()
+          .default('mainnet')
+          .describe('The network to use (mainnet, sepolia, etc.)'),
         layer2Identifier: z
           .string()
           .describe(
@@ -91,21 +105,23 @@ export function registerStakeTools(server: McpServer) {
           .describe('If true, indicates this is a callback execution'),
       },
     },
-    async ({ layer2Identifier, isCallback }) => {
-      const targetAddress = resolveLayer2Address(layer2Identifier);
-      const callbackCommand = `update-seigniorage ${targetAddress}`;
+    async ({ layer2Identifier, network = 'mainnet', isCallback }) => {
+      const targetAddress = resolveLayer2Address(layer2Identifier, network);
+      const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
+      const callbackCommand = `update-seigniorage ${targetAddress} --network ${network}`;
 
       const walletCheck = await checkWalletConnection(
         isCallback,
         callbackCommand
       );
-      if (walletCheck) return walletCheck;
+      if (walletCheck && !walletCheck.isConnected) return walletCheck;
 
       const tx = await writeContract(wagmiConfig, {
         abi: parseAbi(['function updateSeigniorage()']),
         address: targetAddress,
         functionName: 'updateSeigniorage',
         args: [],
+        chainId,
       });
 
       return {
@@ -114,7 +130,7 @@ export function registerStakeTools(server: McpServer) {
             type: 'text' as const,
             text: createMCPResponse({
               status: 'success',
-              message: `Update seigniorage successfully(tx: ${tx})`,
+              message: `Update seigniorage successfully on ${network} (tx: ${tx})`,
             }),
           },
         ],
