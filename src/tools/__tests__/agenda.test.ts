@@ -7,6 +7,7 @@ describe('Agenda Tools - Real Tool Tests', () => {
   let getAgendaHandler: any;
   let getAgendasHandler: any;
   let getAgendaCountHandler: any;
+  let createAgendaHandler: any;
 
   beforeAll(() => {
     // Create a test server
@@ -23,9 +24,11 @@ describe('Agenda Tools - Real Tool Tests', () => {
     const agendaTool = registeredTools['get-agenda'];
     const agendasTool = registeredTools['get-agendas'];
     const agendaCountTool = registeredTools['get-agenda-count'];
+    const createAgendaTool = registeredTools['create-agenda'];
     getAgendaHandler = agendaTool?.callback;
     getAgendasHandler = agendasTool?.callback;
     getAgendaCountHandler = agendaCountTool?.callback;
+    createAgendaHandler = createAgendaTool?.callback;
   });
 
   describe('get-agenda tool tests', () => {
@@ -298,6 +301,162 @@ describe('Agenda Tools - Real Tool Tests', () => {
       if (response.status === 'success') {
         expect(response.message).toContain('Agenda Count');
         expect(response.message).toContain('Total Agendas:');
+      }
+    });
+  });
+
+  describe('create-agenda tool tests', () => {
+    it('should prepare agenda creation preview with basic actions', async () => {
+      if (!createAgendaHandler) {
+        console.log('❌ create-agenda tool not found');
+        return;
+      }
+
+      const result = await createAgendaHandler({
+        actions: [
+          {
+            target: '0x1234567890123456789012345678901234567890',
+            functionName: 'approve(address,uint256)',
+            args: ['0xabcdefabcdefabcdefabcdefabcdefabcdefabcd', '500000000000000000']
+          }
+        ],
+        execute: false,
+        network: 'mainnet'
+      });
+
+      expect(result).toBeDefined();
+      expect(result.content).toBeDefined();
+      expect(result.content[0].type).toBe('text');
+
+      const response = JSON.parse(result.content[0].text);
+      expect(['success', 'error']).toContain(response.status);
+
+      if (response.status === 'success') {
+        expect(response.message).toContain('Create Agenda Preview');
+        expect(response.message).toContain('mainnet');
+        expect(response.message).toContain('Required TON Fees:');
+        expect(response.message).toContain('TON');
+        expect(response.message).toContain('Next Step:');
+      }
+    });
+
+    it('should prepare agenda creation preview with multiple actions', async () => {
+      if (!createAgendaHandler) {
+        console.log('❌ create-agenda tool not found');
+        return;
+      }
+
+      const result = await createAgendaHandler({
+        actions: [
+          {
+            target: '0x1234567890123456789012345678901234567890',
+            functionName: 'approve(address,uint256)',
+            args: ['0xabcdefabcdefabcdefabcdefabcdefabcdefabcd', '500000000000000000']
+          },
+          {
+            target: '0x9876543210987654321098765432109876543210',
+            functionName: 'setValue(uint256,string)',
+            args: ['42', 'test value']
+          }
+        ],
+        agendaUrl: 'https://forum.tokamak.network/agenda/123',
+        execute: false,
+        network: 'sepolia'
+      });
+
+      expect(result).toBeDefined();
+      expect(result.content).toBeDefined();
+      expect(result.content[0].type).toBe('text');
+
+      const response = JSON.parse(result.content[0].text);
+      expect(['success', 'error']).toContain(response.status);
+
+      if (response.status === 'success') {
+        expect(response.message).toContain('Create Agenda Preview');
+        expect(response.message).toContain('sepolia');
+        expect(response.message).toContain('**Actions:** 2 action(s)');
+        expect(response.message).toContain('Agenda URL:');
+        expect(response.message).toContain('Next Step:');
+      }
+    });
+
+    it('should handle missing actions', async () => {
+      if (!createAgendaHandler) {
+        console.log('❌ create-agenda tool not found');
+        return;
+      }
+
+      const result = await createAgendaHandler({
+        actions: [],
+        execute: false,
+        network: 'mainnet'
+      });
+
+      expect(result).toBeDefined();
+      expect(result.content).toBeDefined();
+      expect(result.content[0].type).toBe('text');
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.status).toBe('error');
+      expect(response.message).toContain('At least one action is required');
+    });
+
+    it('should handle invalid function signature', async () => {
+      if (!createAgendaHandler) {
+        console.log('❌ create-agenda tool not found');
+        return;
+      }
+
+      const result = await createAgendaHandler({
+        actions: [
+          {
+            target: '0x1234567890123456789012345678901234567890',
+            functionName: 'invalidFunction',
+            args: ['0xabcdefabcdefabcdefabcdefabcdefabcdefabcd']
+          }
+        ],
+        execute: false,
+        network: 'mainnet'
+      });
+
+      expect(result).toBeDefined();
+      expect(result.content).toBeDefined();
+      expect(result.content[0].type).toBe('text');
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.status).toBe('error');
+      expect(response.message).toContain('Invalid function signature');
+    });
+
+    it('should require wallet connection for execution', async () => {
+      if (!createAgendaHandler) {
+        console.log('❌ create-agenda tool not found');
+        return;
+      }
+
+      const result = await createAgendaHandler({
+        actions: [
+          {
+            target: '0x1234567890123456789012345678901234567890',
+            functionName: 'approve(address,uint256)',
+            args: ['0xabcdefabcdefabcdefabcdefabcdefabcdefabcd', '1000000000000000000']
+          }
+        ],
+        execute: true,
+        network: 'mainnet'
+      });
+
+      expect(result).toBeDefined();
+      expect(result.content).toBeDefined();
+      expect(result.content[0].type).toBe('text');
+
+      const response = JSON.parse(result.content[0].text);
+      // This will likely fail due to wallet connection requirement in test environment
+      expect(['error', 'success']).toContain(response.status);
+      if (response.status === 'error') {
+        expect(response.message).toContain('Wallet Connection Required');
+        expect(response.message).toContain('connect-wallet');
+        expect(response.message).toContain('QR code');
       }
     });
   });

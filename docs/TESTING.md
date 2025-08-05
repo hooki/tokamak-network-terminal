@@ -118,6 +118,7 @@ node tests/test-get-agendas.js
 3. **Network-specific Queries**: Test mainnet and sepolia networks
 4. **Error Handling**: Verify error responses for invalid parameters
 5. **Get Agenda Count**: Retrieve total number of agendas for both networks
+6. **Create Agenda**: Preview and execute agenda creation with actions and fees
 
 ### Test Results Example
 ```
@@ -149,6 +150,20 @@ Range: 0-15
 Total Agendas: 181
 Committee Version: 2.0.0
 Range: 0-180
+
+=== Test 7: Create agenda (preview mode) ===
+✅ Response: 📝 **Create Agenda Preview on mainnet**
+Committee Version: 2.0.0
+Required TON Fees: 1.000000 TON
+Actions: 2 action(s)
+Agenda URL: https://forum.tokamak.network/agenda/123
+Next Step: Set execute=true to proceed with agenda creation
+
+=== Test 8: Create agenda (execute mode) ===
+✅ Response: ✅ **Agenda Creation Executed on mainnet**
+Wallet: 0x1234567890123456789012345678901234567890
+Transaction Hash: 0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
+Success: Agenda creation transaction has been submitted to the network
 ```
 
 ## Test Environment Requirements
@@ -226,6 +241,25 @@ it('should handle get-agendas tool', async () => {
   expect(result).toBeDefined();
   expect(result.content[0].type).toBe('text');
 });
+
+// create-agenda tool test example
+it('should prepare agenda creation preview', async () => {
+  const result = await createAgendaHandler({
+    actions: [
+      {
+        target: '0x1234567890123456789012345678901234567890',
+        functionName: 'approve(address,uint256)',
+        args: ['0xabcdefabcdefabcdefabcdefabcdefabcdefabcd', '1000000000000000000']
+      }
+    ],
+    agendaUrl: 'https://forum.tokamak.network/agenda/123',
+    execute: false,
+    network: 'mainnet'
+  });
+
+  expect(result).toBeDefined();
+  expect(result.content[0].type).toBe('text');
+});
 ```
 
 ### Adding Integration Tests
@@ -235,6 +269,24 @@ console.log('=== Custom Test ===');
 sendRequest('tools/call', {
   name: 'get-agendas',
   arguments: { start: '0', end: '10' }
+});
+
+// create-agenda integration test example
+console.log('=== Create Agenda Test ===');
+sendRequest('tools/call', {
+  name: 'create-agenda',
+  arguments: {
+    actions: [
+      {
+        target: '0x1234567890123456789012345678901234567890',
+        functionName: 'approve(address,uint256)',
+        args: ['0xabcdefabcdefabcdefabcdefabcdefabcdefabcd', '1000000000000000000']
+      }
+    ],
+    agendaUrl: 'https://forum.tokamak.network/agenda/123',
+    execute: false,
+    network: 'mainnet'
+  }
 });
 ```
 

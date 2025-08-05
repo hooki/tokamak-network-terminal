@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { readContracts } from '@wagmi/core';
 import { mainnet, sepolia } from '@wagmi/core/chains';
 import { z } from 'zod';
+import { encodeAbiParameters, encodeFunctionData } from 'viem';
 import { getNetworkAddresses } from '../constants.js';
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import { createMCPResponse, createErrorResponse, createSuccessResponse, createResponse } from '../utils/response.js';
@@ -10,6 +11,8 @@ import { getAgendaResultText, getAgendaStatusText, getAgendaStatusTextV1, create
 import { wagmiConfig } from '../utils/wagmi-config.js';
 import { daoAgendaManagerAbi } from '../abis/daoAgendaManager.js';
 import { daoCommitteeAbi } from '../abis/daoCommittee.js';
+import { agendaManagerAbi } from '../abis/agendaManager.js';
+import { tonAbi } from '../abis/ton.js';
 import { MAX_AGENDAS_PER_REQUEST } from '../constants.js';
 
 export function registerAgendaTools(server: McpServer) {
@@ -486,6 +489,271 @@ export function registerAgendaTools(server: McpServer) {
         } catch (error) {
             return createErrorResponse(`Failed to get agendas on ${network}: ${error}`);
         }
+    }
+  );
+
+  server.registerTool(
+    'create-agenda',
+    {
+      title: 'Create a new agenda',
+      description: new DescriptionBuilder(
+        'Create a new agenda with specified actions. Use execute=false for preview, execute=true to submit transaction. Requires TON tokens for fees.'
+      ).toString(),
+      inputSchema: {
+        network: z.string().optional().default('mainnet').describe('The network to use (mainnet, sepolia, etc.)'),
+        actions: z.array(z.object({
+          target: z.string().describe('Target contract address'),
+          functionName: z.string().describe('Function signature (e.g., "transfer(address,uint256)")'),
+          args: z.array(z.any()).describe('Function arguments array'),
+        })).describe('Array of actions to execute'),
+        agendaUrl: z.string().optional().describe('URL for agenda notice and snapshot (Version 2 only, optional)'),
+        execute: z.boolean().optional().default(true).describe('Set to true to execute the transaction, false for preview only'),
+      },
+    },
+    async ({ actions, agendaUrl, network = 'mainnet', execute = false }) => {
+      const networkAddresses = getNetworkAddresses(network);
+      const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
+
+      try {
+        // Validate inputs
+        if (!actions || actions.length === 0) {
+          return createErrorResponse('At least one action is required');
+        }
+
+        // Generate callData from actions
+        const targets: string[] = [];
+        const callData: string[] = [];
+
+        for (const action of actions) {
+          if (!action.target || !action.functionName) {
+            return createErrorResponse('Each action must have target and functionName');
+          }
+
+          targets.push(action.target);
+
+          try {
+            // Create a minimal ABI for the function
+            const functionSignature = action.functionName;
+            const functionName = functionSignature.split('(')[0];
+            const params = functionSignature.match(/\((.*)\)/)?.[1] || '';
+
+            if (!params) {
+              return createErrorResponse(`Invalid function signature: ${functionSignature}`);
+            }
+
+            const paramTypes = params.split(',').map(p => p.trim());
+            const abi = [{
+              inputs: paramTypes.map((type, index) => ({
+                name: `arg${index}`,
+                type: type
+              })),
+              name: functionName,
+              outputs: [],
+              stateMutability: 'nonpayable',
+              type: 'function'
+            }];
+
+            const encodedData = encodeFunctionData({
+              abi,
+              functionName,
+              args: action.args || []
+            });
+
+            callData.push(encodedData);
+          } catch (error) {
+            return createErrorResponse(`Failed to encode function ${action.functionName}: ${error}`);
+          }
+        }
+
+        // Read agenda creation fees and periods
+        const results = await readContracts(wagmiConfig, {
+          contracts: [
+            {
+              address: networkAddresses.AGENDA_MANAGER,
+              abi: agendaManagerAbi,
+              functionName: 'createAgendaFees',
+              args: [],
+              chainId,
+            },
+            {
+              address: networkAddresses.AGENDA_MANAGER,
+              abi: agendaManagerAbi,
+              functionName: 'minimumNoticePeriodSeconds',
+              args: [],
+              chainId,
+            },
+            {
+              address: networkAddresses.AGENDA_MANAGER,
+              abi: agendaManagerAbi,
+              functionName: 'minimumVotingPeriodSeconds',
+              args: [],
+              chainId,
+            },
+            {
+              address: networkAddresses.DAO_COMMITTEE,
+              abi: daoCommitteeAbi,
+              functionName: 'version',
+              args: [],
+              chainId,
+            },
+          ],
+        });
+
+        // Check for errors
+        const [feesResult, noticePeriodResult, votingPeriodResult, versionResult] = results;
+
+        if (feesResult.error) {
+          return createErrorResponse(`Failed to get agenda creation fees: ${feesResult.error.message}`);
+        }
+
+        if (noticePeriodResult.error) {
+          return createErrorResponse(`Failed to get minimum notice period: ${noticePeriodResult.error.message}`);
+        }
+
+        if (votingPeriodResult.error) {
+          return createErrorResponse(`Failed to get minimum voting period: ${votingPeriodResult.error.message}`);
+        }
+
+        const requiredFees = feesResult.result as bigint;
+        const noticePeriod = noticePeriodResult.result as bigint;
+        const votingPeriod = votingPeriodResult.result as bigint;
+        const isVersion2 = !versionResult.error && versionResult.result;
+
+        // Prepare extraData based on version
+        let extraData: string;
+
+        // Convert targets and callData to proper types
+        const targetAddresses = targets as `0x${string}`[];
+        const callDataArray = callData as `0x${string}`[];
+
+        if (isVersion2) {
+          // Version 2: Include agenda URL
+          const agendaUrlParam = agendaUrl || '';
+
+          extraData = encodeAbiParameters([
+            { name: 'targetAddresses', type: 'address[]' },
+            { name: 'minimumNoticePeriodSeconds', type: 'uint128' },
+            { name: 'minimumVotingPeriodSeconds', type: 'uint128' },
+            { name: 'executeImmediately', type: 'bool' },
+            { name: 'callDataArray', type: 'bytes[]' },
+            { name: 'agendaUrl', type: 'string' }
+          ], [
+            targetAddresses,
+            noticePeriod,
+            votingPeriod,
+            true,
+            callDataArray,
+            agendaUrlParam
+          ]);
+        } else {
+          // Version 1: No agenda URL
+          extraData = encodeAbiParameters([
+            { name: 'targetAddresses', type: 'address[]' },
+            { name: 'minimumNoticePeriodSeconds', type: 'uint128' },
+            { name: 'minimumVotingPeriodSeconds', type: 'uint128' },
+            { name: 'executeImmediately', type: 'bool' },
+            { name: 'callDataArray', type: 'bytes[]' }
+          ], [
+            targetAddresses,
+            noticePeriod,
+            votingPeriod,
+            true,
+            callDataArray
+          ]);
+
+        }
+
+        // If execute is false, show preview only
+        if (!execute) {
+          const tonFees = Number(requiredFees) / Math.pow(10, 18);
+          const message = `📝 **Create Agenda Preview on ${network}**\n\n` +
+            `**Committee Version:** ${isVersion2 ? '2.0.0' : '1.0.0'}\n` +
+            `**Required TON Fees:** ${tonFees.toFixed(6)} TON\n` +
+            `**Notice Period:** ${noticePeriod.toString()} seconds\n` +
+            `**Voting Period:** ${votingPeriod.toString()} seconds\n` +
+            `**Actions:** ${actions.length} action(s)\n` +
+            (agendaUrl ? `**Agenda URL:** ${agendaUrl}\n` : '') +
+            `\n**Actions Details:**\n` +
+            actions.map((action, index) =>
+              `${index + 1}. ${action.target} -> ${action.functionName}(${action.args?.join(', ') || ''})`
+            ).join('\n') +
+            `\n\n**Transaction Details:**\n` +
+            `- Contract: ${networkAddresses.TON_ADDRESS}\n` +
+            `- Function: approveAndCall\n` +
+            `- Spender: ${networkAddresses.WTON_ADDRESS}\n` +
+            `- Amount: ${tonFees.toFixed(6)} TON\n` +
+            `- Extra Data: ${extraData}\n\n` +
+            `⚠️ **Next Step:** Set execute=true to proceed with agenda creation.`;
+
+          return createSuccessResponse(message);
+        }
+
+        // If execute is true, proceed with transaction
+        // Check wallet connection
+        const { getAccount } = await import('@wagmi/core');
+        const connectedAccount = getAccount(wagmiConfig);
+
+        if (!connectedAccount?.isConnected) {
+          const message = `🔗 **Wallet Connection Required**\n\n` +
+            `To create an agenda, you need to connect your wallet first.\n\n` +
+            `**Next Steps:**\n` +
+            `1. Call the \`connect-wallet\` tool to generate a QR code\n` +
+            `2. Scan the QR code with your MetaMask mobile app\n` +
+            `3. Once connected, call this tool again with the same parameters\n\n` +
+            `**Current Agenda Details:**\n` +
+            `- Network: ${network}\n` +
+            `- Actions: ${actions.length} action(s)\n` +
+            `- Required Fees: ${(Number(requiredFees) / Math.pow(10, 18)).toFixed(6)} TON\n` +
+            (agendaUrl ? `- Agenda URL: ${agendaUrl}\n` : '') +
+            `\n💡 **Tip:** Use \`execute=false\` to preview agenda details without connecting wallet.`;
+
+          return createErrorResponse(message);
+        }
+
+        // Check TON balance
+        const { readContract } = await import('@wagmi/core');
+        const tonBalance = await readContract(wagmiConfig, {
+          address: networkAddresses.TON_ADDRESS,
+          abi: tonAbi,
+          functionName: 'balanceOf',
+          args: [connectedAccount.address as `0x${string}`],
+          chainId,
+        });
+
+        const tonFees = Number(requiredFees) / Math.pow(10, 18);
+        const userTonBalance = Number(tonBalance) / Math.pow(10, 18);
+
+        if (tonBalance < requiredFees) {
+          return createErrorResponse(
+            `Insufficient TON balance for agenda creation.\n` +
+            `Required: ${tonFees.toFixed(6)} TON\n` +
+            `Available: ${userTonBalance.toFixed(6)} TON\n` +
+            `Missing: ${(tonFees - userTonBalance).toFixed(6)} TON`
+          );
+        }
+
+        // Execute the transaction
+        const { writeContract } = await import('@wagmi/core');
+        const hash = await writeContract(wagmiConfig, {
+          address: networkAddresses.TON_ADDRESS,
+          abi: tonAbi,
+          functionName: 'approveAndCall',
+          args: [networkAddresses.DAO_COMMITTEE, requiredFees, extraData as `0x${string}`],
+          chainId,
+        });
+
+        const message = `✅ **Agenda Creation Executed on ${network}**\n\n` +
+          `**Wallet:** ${connectedAccount.address}\n` +
+          `**TON Balance:** ${userTonBalance.toFixed(6)} TON\n` +
+          `**Required Fees:** ${tonFees.toFixed(6)} TON\n` +
+          `**Transaction Hash:** ${hash}\n\n` +
+          `🎉 **Success:** Agenda creation transaction has been submitted to the network.`;
+
+        return createSuccessResponse(message);
+
+      } catch (error) {
+        return createErrorResponse(`Failed to ${execute ? 'execute' : 'prepare'} agenda creation on ${network}: ${error}`);
+      }
     }
   );
 }

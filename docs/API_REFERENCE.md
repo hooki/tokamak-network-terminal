@@ -403,6 +403,32 @@ server.registerTool(
 );
 ```
 
+### Create Agenda
+```typescript
+server.registerTool(
+  'create-agenda',
+  {
+    title: 'Create a new agenda',
+    description: new DescriptionBuilder(
+      'Create a new agenda with specified actions. Use execute=true to submit transaction, execute=false for preview only. Requires TON tokens for fees.'
+    ).toString(),
+    inputSchema: {
+      network: z.string().optional().default('mainnet').describe('The network to use (mainnet, sepolia, etc.)'),
+      actions: z.array(z.object({
+        target: z.string().describe('Target contract address'),
+        functionName: z.string().describe('Function signature (e.g., "transfer(address,uint256)")'),
+        args: z.array(z.any()).describe('Function arguments array'),
+      })).describe('Array of actions to execute'),
+      agendaUrl: z.string().optional().describe('URL for agenda notice and snapshot (Version 2 only, optional)'),
+              execute: z.boolean().optional().default(true).describe('Set to true to execute the transaction, false for preview only'),
+    },
+  },
+        async ({ actions, agendaUrl, network = 'mainnet', execute = true }) => {
+    // Implementation with preview and execute modes
+  }
+);
+```
+
 ## Dependencies
 
 - `@modelcontextprotocol/sdk`: MCP server implementation

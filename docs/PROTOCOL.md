@@ -327,6 +327,110 @@ The Tokamak Network Terminal is an MCP (Model Context Protocol) server that prov
 }
 ```
 
+### 4. Unstake Tools
+
+#### `unstake-tokens`
+**Title**: Unstake tokens from Layer2 operator
+**Description**: Unstake a specified amount of tokens from a Layer2 network operator. You can specify the operator by name (e.g., "hammer", "arbitrum") or by address
+**Input Schema**:
+- `layer2Identifier`: The Layer2 operator identifier - can be a name (e.g., 'hammer', 'arbitrum') or a full address
+- `tokenAmount`: The amount of tokens to unstake
+- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
+- `isCallback` (optional): If true, indicates this is a callback execution
+
+**Client Request (Input)**:
+```json
+{
+  "layer2Identifier": "hammer",
+  "tokenAmount": "5",
+  "network": "mainnet"
+}
+```
+
+### 5. Withdraw Tools
+
+#### `get-current-block-number`
+**Title**: Get current block number
+**Description**: Get the current block number for the specified network. This is useful for calculating withdrawal availability. No wallet connection required.
+**Input Schema**:
+- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
+
+**Client Request (Input)**:
+```json
+{
+  "network": "mainnet"
+}
+```
+
+**Server Response (Output)**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"message\":\"Current block number on mainnet: 18456789\\nCurrent time (UTC): 2024-01-15T10:30:45.123Z\"}"
+    }
+  ]
+}
+```
+
+#### `pending-withdrawal-requests`
+**Title**: Get pending withdrawal requests
+**Description**: Get pending withdrawal requests from a Layer2 network operator for a specific wallet address. You can specify the operator by name (e.g., "hammer", "tokamak1", "level") or by address. No wallet connection required.
+**Input Schema**:
+- `layer2Identifier`: The Layer2 operator identifier - can be a name (e.g., "hammer", "tokamak1", "level") or a full address
+- `walletAddress`: The wallet address to check for withdrawal requests
+- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
+
+**Client Request (Input)**:
+```json
+{
+  "layer2Identifier": "hammer",
+  "walletAddress": "0x1234567890123456789012345678901234567890",
+  "network": "mainnet"
+}
+```
+
+**Server Response (Output)**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"message\":\"[{\\\"withdrawableBlockNumber\\\":\\\"12345678\\\",\\\"amount\\\":\\\"100.5\\\",\\\"processed\\\":false}]\"}"
+    }
+  ]
+}
+```
+
+#### `withdraw-tokens`
+**Title**: Withdraw tokens
+**Description**: Withdraw tokens from a Layer2 network operator
+**Input Schema**:
+- `layer2Identifier`: The Layer2 operator identifier - can be a name (e.g., "hammer", "tokamak1", "level") or a full address
+- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
+- `isCallback` (optional): If true, indicates this is a callback execution
+
+**Client Request (Input)**:
+```json
+{
+  "layer2Identifier": "hammer",
+  "network": "mainnet"
+}
+```
+
+**Server Response (Output)**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"message\":\"Withdraw tokens successfully on mainnet (tx: 0x1234...)\"}"
+    }
+  ]
+}
+```
+
 ### 4. Agenda Tools
 
 #### `get-agenda`
@@ -453,105 +557,103 @@ The Tokamak Network Terminal is an MCP (Model Context Protocol) server that prov
 }
 ```
 
-### 5. Unstake Tools
-
-#### `unstake-tokens`
-**Title**: Unstake tokens from Layer2 operator
-**Description**: Unstake a specified amount of tokens from a Layer2 network operator. You can specify the operator by name (e.g., "hammer", "arbitrum") or by address
+#### `create-agenda`
+**Title**: Create a new agenda
+**Description**: Create a new agenda with specified actions. Use execute=true to submit transaction, execute=false for preview only. Requires TON tokens for fees. Supports both Version 1 and Version 2 committee systems.
 **Input Schema**:
-- `layer2Identifier`: The Layer2 operator identifier - can be a name (e.g., 'hammer', 'arbitrum') or a full address
-- `tokenAmount`: The amount of tokens to unstake
 - `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
-- `isCallback` (optional): If true, indicates this is a callback execution
+- `actions`: Array of actions to execute
+  - `target`: Target contract address
+  - `functionName`: Function signature (e.g., "transfer(address,uint256)")
+  - `args`: Function arguments array
+- `agendaUrl` (optional): URL for agenda notice and snapshot (Version 2 only, optional)
+- `execute` (optional, default: true): Set to true to execute the transaction, false for preview only
 
-**Client Request (Input)**:
+**Client Request (Input) - Preview Mode**:
 ```json
 {
-  "layer2Identifier": "hammer",
-  "tokenAmount": "5",
+  "actions": [
+    {
+      "target": "0x1234567890123456789012345678901234567890",
+      "functionName": "approve(address,uint256)",
+      "args": ["0xabcdefabcdefabcdefabcdefabcdefabcdefabcd", "500000000000000000"]
+    },
+    {
+      "target": "0x9876543210987654321098765432109876543210",
+      "functionName": "setValue(uint256,string)",
+      "args": ["42", "test value"]
+    }
+  ],
+  "agendaUrl": "https://forum.tokamak.network/agenda/123",
+        "execute": true,
   "network": "mainnet"
 }
 ```
 
-### 5. Withdraw Tools
-
-#### `get-current-block-number`
-**Title**: Get current block number
-**Description**: Get the current block number for the specified network. This is useful for calculating withdrawal availability. No wallet connection required.
-**Input Schema**:
-- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
-
-**Client Request (Input)**:
+**Client Request (Input) - Execute Mode**:
 ```json
 {
+  "actions": [
+    {
+      "target": "0x1234567890123456789012345678901234567890",
+      "functionName": "approve(address,uint256)",
+      "args": ["0xabcdefabcdefabcdefabcdefabcdefabcdefabcd", "500000000000000000"]
+    },
+    {
+      "target": "0x9876543210987654321098765432109876543210",
+      "functionName": "setValue(uint256,string)",
+      "args": ["42", "test value"]
+    }
+  ],
+  "agendaUrl": "https://forum.tokamak.network/agenda/123",
+  "execute": true,
   "network": "mainnet"
 }
 ```
 
-**Server Response (Output)**:
+**Server Response (Output) - Preview Mode**:
 ```json
 {
   "content": [
     {
       "type": "text",
-      "text": "{\"status\":\"success\",\"message\":\"Current block number on mainnet: 18456789\\nCurrent time (UTC): 2024-01-15T10:30:45.123Z\"}"
+      "text": "{\"status\":\"success\",\"message\":\"📝 **Create Agenda Preview on mainnet**\\n\\n**Committee Version:** 2.0.0\\n**Required TON Fees:** 1.000000 TON\\n**Notice Period:** 86400 seconds\\n**Voting Period:** 259200 seconds\\n**Actions:** 1 action(s)\\n\\n**Actions Details:**\\n1. 0x1234567890123456789012345678901234567890 -> transfer(address,uint256)(0xabcdefabcdefabcdefabcdefabcdefabcdefabcd, 1000000000000000000)\\n\\n**Transaction Details:**\\n- Contract: 0x2be5e8c109e2197D077D13A82dAead6a9b3433C5\\n- Function: approveAndCall\\n- Spender: 0xc4A11aaf6ea915Ed7Ac194161d2fC9384F15bff2\\n- Amount: 1.000000 TON\\n- Extra Data: 0x...\\n\\n⚠️ **Next Step:** Set execute=false for preview only.\"}"
     }
   ]
 }
 ```
 
-#### `pending-withdrawal-requests`
-**Title**: Get pending withdrawal requests
-**Description**: Get pending withdrawal requests from a Layer2 network operator for a specific wallet address. You can specify the operator by name (e.g., "hammer", "tokamak1", "level") or by address. No wallet connection required.
-**Input Schema**:
-- `layer2Identifier`: The Layer2 operator identifier - can be a name (e.g., "hammer", "tokamak1", "level") or a full address
-- `walletAddress`: The wallet address to check for withdrawal requests
-- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
-
-**Client Request (Input)**:
-```json
-{
-  "layer2Identifier": "hammer",
-  "walletAddress": "0x1234567890123456789012345678901234567890",
-  "network": "mainnet"
-}
-```
-
-**Server Response (Output)**:
+**Server Response (Output) - Execute Mode**:
 ```json
 {
   "content": [
     {
       "type": "text",
-      "text": "{\"status\":\"success\",\"message\":\"[{\\\"withdrawableBlockNumber\\\":\\\"12345678\\\",\\\"amount\\\":\\\"100.5\\\",\\\"processed\\\":false}]\"}"
+      "text": "{\"status\":\"success\",\"message\":\"✅ **Agenda Creation Executed on mainnet**\\n\\n**Wallet:** 0x1234567890123456789012345678901234567890\\n**TON Balance:** 10.500000 TON\\n**Required Fees:** 1.000000 TON\\n**Transaction Hash:** 0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890\\n\\n🎉 **Success:** Agenda creation transaction has been submitted to the network.\"}"
     }
   ]
 }
 ```
 
-#### `withdraw-tokens`
-**Title**: Withdraw tokens
-**Description**: Withdraw tokens from a Layer2 network operator
-**Input Schema**:
-- `layer2Identifier`: The Layer2 operator identifier - can be a name (e.g., "hammer", "tokamak1", "level") or a full address
-- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
-- `isCallback` (optional): If true, indicates this is a callback execution
-
-**Client Request (Input)**:
-```json
-{
-  "layer2Identifier": "hammer",
-  "network": "mainnet"
-}
-```
-
-**Server Response (Output)**:
+**Error Response - Insufficient Balance**:
 ```json
 {
   "content": [
     {
       "type": "text",
-      "text": "{\"status\":\"success\",\"message\":\"Withdraw tokens successfully on mainnet (tx: 0x1234...)\"}"
+      "text": "{\"status\":\"error\",\"message\":\"Insufficient TON balance for agenda creation.\\nRequired: 1.000000 TON\\nAvailable: 0.500000 TON\\nMissing: 0.500000 TON\"}"
+    }
+  ]
+}
+```
+
+**Error Response - Wallet Not Connected**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"error\",\"message\":\"🔗 **Wallet Connection Required**\\n\\nTo create an agenda, you need to connect your wallet first.\\n\\n**Next Steps:**\\n1. Call the `connect-wallet` tool to generate a QR code\\n2. Scan the QR code with your MetaMask mobile app\\n3. Once connected, call this tool again with the same parameters\\n\\n**Current Agenda Details:**\\n- Network: mainnet\\n- Actions: 1 action(s)\\n- Required Fees: 1.000000 TON\\n\\n💡 **Tip:** Use `execute=false` to preview agenda details without connecting wallet.\"}"
     }
   ]
 }
