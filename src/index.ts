@@ -9,6 +9,7 @@ import { registerTONCommands } from './tools/ton.js';
 import { registerUnstakeTools } from './tools/unstake.js';
 import { registerWalletTools } from './tools/wallet.js';
 import { registerWithdrawTools } from './tools/withdraw.js';
+import { registerDAOTools } from './tools/dao.js';
 
 const server = new McpServer({
   name: 'tokamak-network-mcp-server',
@@ -24,6 +25,7 @@ registerStakingInfoTools(server);
 registerUnstakeTools(server);
 registerWithdrawTools(server);
 registerTONCommands(server);
+registerDAOTools(server);
 
 const transport = new StdioServerTransport();
 server.connect(transport);

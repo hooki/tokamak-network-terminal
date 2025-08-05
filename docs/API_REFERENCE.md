@@ -429,6 +429,95 @@ server.registerTool(
 );
 ```
 
+## DAO Tools
+
+### Get DAO Member Count
+```typescript
+server.registerTool(
+  'get-dao-member-count',
+  {
+    title: 'Get DAO member count',
+    description: 'Get the total number of DAO members on the specified network.',
+    inputSchema: {
+      network: z.string().optional().default('mainnet').describe('The network to use (mainnet, sepolia, etc.)'),
+    },
+  },
+  async ({ network = 'mainnet' }) => {
+    // Implementation
+  }
+);
+```
+
+### Get DAO Member Candidate Info
+```typescript
+server.registerTool(
+  'get-dao-member-candidate-info',
+  {
+    title: 'Get DAO member candidate information',
+    description: 'Get detailed information about DAO member candidates including their contract addresses and staking details.',
+    inputSchema: {
+      network: z.string().optional().default('mainnet').describe('The network to use (mainnet, sepolia, etc.)'),
+    },
+  },
+  async ({ network = 'mainnet' }) => {
+    // Implementation
+  }
+);
+```
+
+### Get DAO Member Operator Manager Info
+```typescript
+server.registerTool(
+  'get-dao-member-operator-manager-info',
+  {
+    title: 'Get DAO member operator manager information',
+    description: 'Get detailed information about DAO members including their operator manager and manager addresses.',
+    inputSchema: {
+      network: z.string().optional().default('mainnet').describe('The network to use (mainnet, sepolia, etc.)'),
+    },
+  },
+  async ({ network = 'mainnet' }) => {
+    // Implementation
+  }
+);
+```
+
+### Check DAO Membership
+```typescript
+server.registerTool(
+  'check-dao-membership',
+  {
+    title: 'Check DAO membership',
+    description: 'Check if a specific address is a DAO member (either as candidate or manager).',
+    inputSchema: {
+      address: z.string().describe('The address to check for DAO membership'),
+      network: z.string().optional().default('mainnet').describe('The network to use (mainnet, sepolia, etc.)'),
+    },
+  },
+  async ({ address, network = 'mainnet' }) => {
+    // Implementation
+  }
+);
+```
+
+### Get DAO Members Staking Info
+```typescript
+server.registerTool(
+  'get-dao-members-staking-info',
+  {
+    title: 'Get DAO members staking information',
+    description: 'Get detailed staking information for all DAO members including total staked, memo, and claimable rewards.',
+    inputSchema: {
+      network: z.string().optional().default('mainnet').describe('The network to use (mainnet, sepolia, etc.)'),
+      includeOperatorManager: z.boolean().optional().default(false).describe('Whether to include operator manager information'),
+    },
+  },
+  async ({ network = 'mainnet', includeOperatorManager = false }) => {
+    // Implementation
+  }
+);
+```
+
 ## Dependencies
 
 - `@modelcontextprotocol/sdk`: MCP server implementation

@@ -53,6 +53,7 @@ src/tools/__tests__/          # Tool-related tests
 
 src/utils/__tests__/          # Utility-related tests
 ├── approve.test.ts           # Approval utility tests
+├── dao.test.ts               # DAO utility tests
 ├── descriptionBuilder.test.ts # Description builder tests
 ├── erc20.test.ts             # ERC20 token tests
 ├── layer2.test.ts            # Layer2-related tests
@@ -120,6 +121,22 @@ node tests/test-get-agendas.js
 5. **Get Agenda Count**: Retrieve total number of agendas for both networks
 6. **Create Agenda**: Preview and execute agenda creation with actions and fees
 
+### DAO Integration Tests
+```bash
+# Test DAO utilities
+node tests/test-dao-integration.js
+```
+
+**DAO Test Scenarios:**
+1. **Get DAO Member Count**: Retrieve total number of DAO members on both networks
+2. **Get DAO Member Info**: Retrieve detailed information about DAO member candidates
+3. **Get Operator Manager Info**: Retrieve DAO members with operator manager and manager addresses
+4. **Check DAO Membership**: Verify if a specific address is a DAO member
+5. **Get Staking Info**: Retrieve detailed staking information for all DAO members
+6. **Performance Testing**: Measure response times for blockchain queries
+7. **Error Handling**: Test with invalid addresses and network parameters
+8. **Cross-Network Testing**: Verify functionality on both mainnet and sepolia
+
 ### Test Results Example
 ```
 === Test 1: Get latest agendas ===
@@ -136,6 +153,30 @@ Total Found: 6
 
 === Test 4: Get agendas on sepolia network ===
 ✅ Response: 📋 **Agendas 131-180 on sepolia**
+
+### DAO Test Results Example
+```
+=== Test 1: Get DAO member count on mainnet ===
+✅ Response: {"status":"success","message":"DAO member count on mainnet: 3"}
+
+=== Test 2: Get DAO member candidate info on mainnet ===
+✅ Response: {"status":"success","message":"Found 3 DAO members on mainnet. Member count: 3"}
+
+=== Test 3: Get DAO member operator manager info on mainnet ===
+✅ Response: {"status":"success","message":"Found 3 DAO members with operator manager info on mainnet. Member count: 3"}
+
+=== Test 4: Get DAO members staking info on mainnet ===
+✅ Response: {"status":"success","message":"Found 3 DAO members with staking info on mainnet. Member count: 3"}
+
+=== Test 5: Check DAO membership for test address ===
+✅ Response: {"status":"success","message":"Address 0x1234567890123456789012345678901234567890 is not a DAO member on mainnet"}
+
+=== Test 6: Get DAO member count on sepolia ===
+✅ Response: {"status":"success","message":"DAO member count on sepolia: 3"}
+
+⏱️ Response time: 2002ms
+✅ All DAO integration tests completed
+```
 Committee Version: 2.0.0
 Total Found: 50
 
