@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerTokenTools } from '../token.js';
 
 // Mock MCP Server
@@ -59,7 +59,6 @@ vi.mock('../../utils/response.js', () => ({
   createMCPResponse: vi.fn((response) => JSON.stringify(response)),
 }));
 
-
 vi.mock('../../utils/wagmi-config.js', () => ({
   wagmiConfig: { id: 'wagmi-config' },
 }));
@@ -105,10 +104,10 @@ describe('token.ts', () => {
       );
     });
 
-    it('should register exactly 2 tools', () => {
+    it('should register exactly 3 tools', () => {
       registerTokenTools(mockServer as any);
 
-      expect(mockServer.registerTool).toHaveBeenCalledTimes(2);
+      expect(mockServer.registerTool).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -116,7 +115,9 @@ describe('token.ts', () => {
     it('should call getBalance with correct parameters for mainnet', async () => {
       const mockGetBalance = vi.mocked(await import('@wagmi/core')).getBalance;
       const mockFormatEther = vi.mocked(await import('viem')).formatEther;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
       mockGetBalance.mockResolvedValue({ value: 1000000000000000000n } as any);
       mockFormatEther.mockReturnValue('1.0');
@@ -174,19 +175,18 @@ describe('token.ts', () => {
         network: 'sepolia',
       });
 
-      expect(mockGetBalance).toHaveBeenCalledWith(
-        expect.any(Object),
-        {
-          address: '0x1234567890123456789012345678901234567890',
-          chainId: 11155111,
-        }
-      );
+      expect(mockGetBalance).toHaveBeenCalledWith(expect.any(Object), {
+        address: '0x1234567890123456789012345678901234567890',
+        chainId: 11155111,
+      });
     });
   });
 
   describe('get-token-balance tool', () => {
     it('should handle token address input', async () => {
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
       const mockFormatUnits = vi.mocked(await import('viem')).formatUnits;
       const mockParseAbi = vi.mocked(await import('viem')).parseAbi;
 
@@ -242,8 +242,12 @@ describe('token.ts', () => {
     });
 
     it('should handle token name input', async () => {
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
-      const mockGetNetworkTokens = vi.mocked(await import('../../constants.js')).getNetworkTokens;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
+      const mockGetNetworkTokens = vi.mocked(
+        await import('../../constants.js')
+      ).getNetworkTokens;
 
       mockReadContracts.mockResolvedValue([
         { result: 2000000000000000000n, status: 'success' },
@@ -278,8 +282,12 @@ describe('token.ts', () => {
     });
 
     it('should return error for invalid token name', async () => {
-      const mockGetNetworkTokens = vi.mocked(await import('../../constants.js')).getNetworkTokens;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockGetNetworkTokens = vi.mocked(
+        await import('../../constants.js')
+      ).getNetworkTokens;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
       (mockGetNetworkTokens as any).mockReturnValue({});
 
@@ -302,9 +310,7 @@ describe('token.ts', () => {
         message: 'Invalid token name on mainnet',
       });
       expect(result).toEqual({
-        content: [
-          { type: 'text', text: expect.any(String) },
-        ],
+        content: [{ type: 'text', text: expect.any(String) }],
       });
     });
   });
