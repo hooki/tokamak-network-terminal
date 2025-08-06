@@ -39,7 +39,9 @@ You can tune Gemini's system prompts to optimize performance and minimize token 
 Below are the results of processing the `connect-wallet` prompt.
 
 [ Gemini System Prompt ]
+
 ![Before](/img/before.png)
 
 [ Custom System Prompt ]
+
 ![Before](/img/after.png)
