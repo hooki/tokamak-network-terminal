@@ -321,8 +321,8 @@ export async function getDAOMembersStakingInfo(
       const [memoResult, totalStakedResult, claimableRewardResult, lastCommitBlockResult] = stakingResults.slice(resultIndex, resultIndex + 4);
 
       // lastCommitBlock의 타임스탬프 가져오기 (개별 처리)
-      let lastUpdateSeigniorageTime = 0n;
-      if (!lastCommitBlockResult.error && lastCommitBlockResult.result && (lastCommitBlockResult.result as bigint) > 0n) {
+      let lastUpdateSeigniorageTime = BigInt(0);
+      if (!lastCommitBlockResult.error && lastCommitBlockResult.result && (lastCommitBlockResult.result as bigint) > BigInt(0)) {
         try {
           const lastCommitBlock = lastCommitBlockResult.result as bigint;
           const block = await publicClient.getBlock({
@@ -338,15 +338,51 @@ export async function getDAOMembersStakingInfo(
         candidate: member.candidate,
         candidateInfo: member.candidateInfo as CandidateInfo,
         memo: memoResult.error ? '' : String(memoResult.result),
-        totalStaked: totalStakedResult.error ? 0n : (totalStakedResult.result as bigint),
-        lastCommitBlock: lastCommitBlockResult.error ? 0n : (lastCommitBlockResult.result as bigint),
+        totalStaked: totalStakedResult.error ? BigInt(0) : (totalStakedResult.result as bigint),
+        lastCommitBlock: lastCommitBlockResult.error ? BigInt(0) : (lastCommitBlockResult.result as bigint),
         lastUpdateSeigniorageTime: lastUpdateSeigniorageTime,
-        claimableActivityReward: claimableRewardResult.error ? 0n : (claimableRewardResult.result as bigint),
+        claimableActivityReward: claimableRewardResult.error ? BigInt(0) : (claimableRewardResult.result as bigint),
       });
     }
     return stakingInfo;
   } catch (error) {
     console.error(`Failed to get DAO members staking info on ${network}:`, error);
     return [];
+  }
+}
+
+/**
+ * 특정 candidateContract 의 활동비 정보를 조회하기
+*/
+export async function getDAOMembersActivityReward(
+  network: string = 'mainnet',
+  candidateContract: string,
+): Promise<{result: boolean, candidate: string, reward: bigint}> {
+  try {
+    const networkAddresses = getNetworkAddresses(network);
+    const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
+
+    // candidateContract 의 candidate 주소를 찾아서 활동비 정보를 조회
+    const candidate = await readContract(wagmiConfig, {
+      address: candidateContract as `0x${string}`,
+      abi: daoCandidateAbi,
+      functionName: 'candidate',
+      args: [],
+      chainId,
+    });
+
+    // candidate 주소를 찾아서 활동비 정보를 조회
+    const result = await readContract(wagmiConfig, {
+      address: networkAddresses.DAO_COMMITTEE,
+      abi: daoCommitteeAbi,
+      functionName: 'getClaimableActivityReward',
+      args: [candidate as `0x${string}`],
+      chainId,
+    });
+
+    return {result: true, candidate: candidate as `0x${string}`, reward: result as unknown as bigint};
+  } catch (error) {
+    console.error(`Failed to get DAO members activity reward on ${network}:`, error);
+    return {result: false, candidate: candidateContract, reward: BigInt(0)};
   }
 }

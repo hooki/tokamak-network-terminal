@@ -1,5 +1,12 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
+import { readContract, readContracts, writeContract } from '@wagmi/core';
+import { mainnet, sepolia } from '@wagmi/core/chains';
+import { wagmiConfig } from '../utils/wagmi-config.js';
+import { getNetworkAddresses } from '../constants.js';
+import { daoCommitteeAbi } from '../abis/daoCommittee.js';
+import { operatorManagerAbi } from '../abis/operatorManager.js';
+import { daoCandidateAbi } from '../abis/daoCandidate.js';
 import { createMCPResponse, createErrorResponse, createSuccessResponse } from '../utils/response.js';
 import {
   getDAOMemberCandidateInfo,
@@ -7,7 +14,9 @@ import {
   getDAOMemberCount,
   checkDAOMembership,
   getDAOMembersStakingInfo,
+  getDAOMembersActivityReward,
 } from '../utils/dao.js';
+import { formatTokenAmountWithUnitPrecise } from '../utils/format.js';
 
 export function registerDAOTools(server: McpServer) {
   // Get DAO member count
@@ -167,4 +176,171 @@ export function registerDAOTools(server: McpServer) {
       }
     }
   );
+
+  // Get DAO candidate activity reward
+  server.registerTool(
+    'dao-candidate-activity-reward',
+    {
+      title: 'Get DAO candidate\'s activity reward',
+      description: 'Get the activity reward for a specific DAO candidate. Set claim=true to also claim the reward.',
+      inputSchema: {
+        network: z
+          .string()
+          .optional()
+          .default('mainnet')
+          .describe('The network to use (mainnet, sepolia, etc.)'),
+        candidateContract: z
+          .string()
+          .describe('The candidate contract address to get activity reward'),
+        claim: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe('Whether to claim the reward (requires wallet connection)'),
+      },
+    },
+    async ({ network = 'mainnet', candidateContract, claim = false }) => {
+      console.log('Function called with:', { network, candidateContract, claim });
+      const networkAddresses = getNetworkAddresses(network);
+      const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
+
+      try {
+        console.log('Calling getDAOMembersActivityReward...');
+        const {result, candidate, reward} = await getDAOMembersActivityReward(network, candidateContract);
+        console.log('getDAOMembersActivityReward result:', { result, candidate, reward });
+
+        if (!result) {
+          console.log('Returning error response...');
+          return createErrorResponse({
+            status: 'error',
+            network: network,
+            candidateContract: candidateContract,
+            error: 'Failed to get activity reward data',
+            message: `Failed to get DAO candidate's activity reward on ${network}`
+          });
+        }
+
+        if (reward === BigInt(0)) {
+          console.log('Returning success response for zero reward...');
+          console.log('About to call createSuccessResponse with:', {
+            status: 'success',
+            network: network,
+            candidateContract: candidateContract,
+            candidate: candidate,
+            activityReward: '0',
+            formattedReward: '0 WTON',
+            message: `No claimable activity reward for ${candidateContract}. Nothing to claim.`
+          });
+          const response = createSuccessResponse({
+            status: 'success',
+            network: network,
+            candidateContract: candidateContract,
+            candidate: candidate,
+            activityReward: '0',
+            formattedReward: '0 WTON',
+            message: `No claimable activity reward for ${candidateContract}. Nothing to claim.`
+          });
+          console.log('Response:', response);
+          return response;
+        }
+
+        // 실제 청구를 위해 지갑연결을 해야 하는 주소는 candidate 일수도 있고,
+        // candidate가 operatorManager일 경우는 operatorManager.manager 주소를 사용해야 한다. 그래서 연결해야 하는 지갑 주소를 찾아보자.
+        let claimer = candidate;
+        try {
+          const manager = await readContract(wagmiConfig, {
+            address: candidate as `0x${string}`,
+            abi: operatorManagerAbi,
+            functionName: 'manager',
+            args: [],
+            chainId: network === 'sepolia' ? sepolia.id : mainnet.id,
+          });
+          claimer = manager as `0x${string}`;
+        } catch (error) {
+          // operatorManager 에 manager함수가 없는 경우. 그냥 candidate 주소를 사용한다.
+          claimer = candidate;
+        }
+
+        // If claim is requested, check wallet connection and claim
+        if (claim) {
+          const { getAccount } = await import('@wagmi/core');
+          const connectedAccount = getAccount(wagmiConfig);
+
+          if (!connectedAccount?.isConnected) {
+            return createErrorResponse({
+              status: 'error',
+              network: network,
+              candidateContract: candidateContract,
+              claimAccount: claimer,
+              activityReward: reward.toString(),
+              formattedReward: formatTokenAmountWithUnitPrecise(reward, "WTON", 18, 8),
+              error: 'Wallet connection required',
+              message: `🔗 **Wallet Connection Required**\n\nTo claim this reward, you need to connect your wallet first.\n\n**Next Steps:**\n1. Call the \`connect-wallet\` tool to generate a QR code\n2. Scan the QR code with your MetaMask mobile app\n3. Once connected, call this tool again with claim=true\n\n**Current Reward Details:**\n- Network: ${network}\n- Candidate Contract: ${candidateContract}\n- Claim Account: ${claimer}\n- Activity Reward: ${formatTokenAmountWithUnitPrecise(reward, "WTON", 18, 8)}`
+            });
+          }
+
+          try {
+            const tx = await writeContract(wagmiConfig, {
+              address: candidateContract as `0x${string}`,
+              abi: daoCandidateAbi,
+              functionName: 'claimActivityReward',
+              args: [],
+              chain: network === 'sepolia' ? sepolia : mainnet,
+              account: connectedAccount.address,
+            });
+
+            return createSuccessResponse({
+              status: 'success',
+              network: network,
+              candidateContract: candidateContract,
+              claimAccount: claimer,
+              activityReward: reward.toString(),
+              formattedReward: formatTokenAmountWithUnitPrecise(reward, "WTON", 18, 8),
+              transactionHash: tx,
+              claimed: true,
+              message: `Activity reward has been claimed successfully. Transaction hash: ${tx}`
+            });
+
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return createErrorResponse({
+              status: 'error',
+              network: network,
+              candidateContract: candidateContract,
+              claimAccount: claimer,
+              activityReward: reward.toString(),
+              formattedReward: formatTokenAmountWithUnitPrecise(reward, "WTON", 18, 8),
+              error: errorMessage,
+              message: `Failed to claim activity reward on ${network}: ${errorMessage}`
+            });
+          }
+        }
+
+        // Return reward info without claiming
+        return createSuccessResponse({
+          status: 'success',
+          network: network,
+          candidateContract: candidateContract,
+          candidate: candidate,
+          claimAccount: claimer,
+          activityReward: reward.toString(),
+          formattedReward: formatTokenAmountWithUnitPrecise(reward, "WTON", 18, 8),
+          claimed: false,
+          message: `DAO candidate's activity reward on ${network}: ${formatTokenAmountWithUnitPrecise(reward, "WTON", 18, 8)}`
+        });
+
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return createErrorResponse({
+          status: 'error',
+          network: network,
+          candidateContract: candidateContract,
+          error: errorMessage,
+          message: `Failed to get DAO candidate's activity reward on ${network}: ${errorMessage}`
+        });
+      }
+    }
+  );
+
+
 }
