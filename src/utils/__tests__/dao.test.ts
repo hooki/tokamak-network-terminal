@@ -7,6 +7,7 @@ import {
   getDAOMemberOperatorManagerInfo,
   getDAOMemberCount,
   getDAOMembersStakingInfo,
+  getDAOMembersActivityReward,
   type CandidateInfo,
   type DAOMemberCandidateInfo,
   type DAOMembersStakingInfo,
@@ -475,6 +476,138 @@ describe('DAO Utils', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].lastUpdateSeigniorageTime).toBe(0n);
+    });
+  });
+
+  describe('getDAOMembersActivityReward', () => {
+    it('should return activity reward for valid candidate contract', async () => {
+      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+
+      // Mock candidate address retrieval
+      mockReadContract
+        .mockResolvedValueOnce('0x1234567890123456789012345678901234567890') // candidate
+        .mockResolvedValueOnce(1000000000000000000n); // claimable activity reward
+
+      const result = await getDAOMembersActivityReward('mainnet', '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+
+      expect(mockReadContract).toHaveBeenCalledTimes(2);
+      expect(mockReadContract).toHaveBeenNthCalledWith(1, expect.any(Object), {
+        address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        abi: expect.any(Array),
+        functionName: 'candidate',
+        args: [],
+        chainId: 1,
+      });
+      expect(mockReadContract).toHaveBeenNthCalledWith(2, expect.any(Object), {
+        address: '0x1234567890123456789012345678901234567890', // DAO_COMMITTEE address
+        abi: expect.any(Array),
+        functionName: 'getClaimableActivityReward',
+        args: ['0x1234567890123456789012345678901234567890'],
+        chainId: 1,
+      });
+
+      expect(result).toEqual({
+        result: true,
+        candidate: '0x1234567890123456789012345678901234567890',
+        reward: 1000000000000000000n,
+      });
+    });
+
+    it('should return activity reward for sepolia network', async () => {
+      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+
+      mockReadContract
+        .mockResolvedValueOnce('0x1234567890123456789012345678901234567890') // candidate
+        .mockResolvedValueOnce(500000000000000000n); // claimable activity reward
+
+      const result = await getDAOMembersActivityReward('sepolia', '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+
+      expect(mockReadContract).toHaveBeenCalledTimes(2);
+      expect(mockReadContract).toHaveBeenNthCalledWith(2, expect.any(Object), {
+        address: '0x0987654321098765432109876543210987654321', // sepolia DAO_COMMITTEE address
+        abi: expect.any(Array),
+        functionName: 'getClaimableActivityReward',
+        args: ['0x1234567890123456789012345678901234567890'],
+        chainId: 11155111, // sepolia chainId
+      });
+
+      expect(result).toEqual({
+        result: true,
+        candidate: '0x1234567890123456789012345678901234567890',
+        reward: 500000000000000000n,
+      });
+    });
+
+    it('should return zero reward when no claimable activity reward', async () => {
+      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+
+      mockReadContract
+        .mockResolvedValueOnce('0x1234567890123456789012345678901234567890') // candidate
+        .mockResolvedValueOnce(0n); // no claimable activity reward
+
+      const result = await getDAOMembersActivityReward('mainnet', '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+
+      expect(result).toEqual({
+        result: true,
+        candidate: '0x1234567890123456789012345678901234567890',
+        reward: 0n,
+      });
+    });
+
+    it('should handle contract read error gracefully', async () => {
+      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+
+      mockReadContract.mockRejectedValueOnce(new Error('Contract read error'));
+
+      const result = await getDAOMembersActivityReward('mainnet', '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+
+      expect(result).toEqual({
+        result: false,
+        candidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        reward: 0n,
+      });
+    });
+
+    it('should handle candidate function error', async () => {
+      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+
+      // First call succeeds (candidate), second call fails (getClaimableActivityReward)
+      mockReadContract
+        .mockResolvedValueOnce('0x1234567890123456789012345678901234567890') // candidate
+        .mockRejectedValueOnce(new Error('getClaimableActivityReward error'));
+
+      const result = await getDAOMembersActivityReward('mainnet', '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+
+      expect(result).toEqual({
+        result: false,
+        candidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        reward: 0n,
+      });
+    });
+
+    it('should use default network when network parameter is not provided', async () => {
+      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+
+      mockReadContract
+        .mockResolvedValueOnce('0x1234567890123456789012345678901234567890') // candidate
+        .mockResolvedValueOnce(1000000000000000000n); // claimable activity reward
+
+      const result = await getDAOMembersActivityReward(undefined, '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+
+      expect(mockReadContract).toHaveBeenCalledTimes(2);
+      expect(mockReadContract).toHaveBeenNthCalledWith(2, expect.any(Object), {
+        address: '0x1234567890123456789012345678901234567890', // mainnet DAO_COMMITTEE address
+        abi: expect.any(Array),
+        functionName: 'getClaimableActivityReward',
+        args: ['0x1234567890123456789012345678901234567890'],
+        chainId: 1, // mainnet chainId
+      });
+
+      expect(result).toEqual({
+        result: true,
+        candidate: '0x1234567890123456789012345678901234567890',
+        reward: 1000000000000000000n,
+      });
     });
   });
 });

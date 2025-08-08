@@ -157,10 +157,45 @@ setTimeout(() => {
     });
   }, 18000);
 
+  // Test 11: Get DAO candidate activity reward on mainnet
+  setTimeout(() => {
+    console.log('\n=== Test 11: Get DAO candidate activity reward on mainnet ===');
+    sendRequest('tools/call', {
+      name: 'dao-candidate-activity-reward',
+      arguments: {
+        network: 'mainnet',
+        candidateContract: '0xf3B17FDB808c7d0Df9ACd24dA34700ce069007DF' // tokamak1
+      }
+    });
+  }, 20000);
+
+  // Test 12: Get DAO candidate activity reward on sepolia
+  setTimeout(() => {
+    console.log('\n=== Test 12: Get DAO candidate activity reward on sepolia ===');
+    sendRequest('tools/call', {
+      name: 'dao-candidate-activity-reward',
+      arguments: {
+        network: 'sepolia',
+        candidateContract: '0xF078AE62eA4740E19ddf6c0c5e17Ecdb820BbEe1' // Poseidon
+      }
+    });
+  }, 22000);
+
+  // Test 13: Get DAO candidate activity reward without network (should use default)
+  setTimeout(() => {
+    console.log('\n=== Test 13: Get DAO candidate activity reward without network ===');
+    sendRequest('tools/call', {
+      name: 'dao-candidate-activity-reward',
+      arguments: {
+        candidateContract: '0x44e3605d0ed58FD125E9C47D1bf25a4406c13b57' // DXM_Corp
+      }
+    });
+  }, 24000);
+
   // Complete tests
   setTimeout(() => {
     console.log('\n✅ All DAO integration tests completed');
     serverProcess.kill();
-  }, 20000);
+  }, 26000);
 
 }, 1000);
