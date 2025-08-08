@@ -1,7 +1,7 @@
 import { metaMask } from '@wagmi/connectors';
 import { connect, getAccount } from '@wagmi/core';
 import qrcode from 'qrcode-terminal';
-import { createMCPResponse } from './response.js';
+import { createMCPResponse, type MCPResponse } from './response.js';
 import { wagmiConfig } from './wagmi-config.js';
 
 export async function connectWallet(): Promise<string> {
