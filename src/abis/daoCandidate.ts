@@ -1,5 +1,18 @@
 export const daoCandidateAbi = [
     {
+      "inputs": [],
+      "name": "candidate",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
         "inputs": [],
         "name": "memo",
         "outputs": [
