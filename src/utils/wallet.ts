@@ -32,24 +32,52 @@ export async function checkWalletConnection(
   const account = getAccount(wagmiConfig);
 
   if (!account.isConnected) {
-    const response: MCPResponse = isCallback
-      ? {
+    if (isCallback === true) {
+      // 콜백인 경우 대기 상태 반환
+      const response: MCPResponse = {
+        status: 'continue',
+        message: 'waiting for wallet connection',
+        nextStep: callback,
+        executeNextStepAfter: '10s',
+      };
+
+      return {
+        isConnected: false,
+        content: [{ type: 'text' as const, text: createMCPResponse(response) }],
+      };
+    } else {
+      // 초기 호출인 경우 QR 코드 생성
+      try {
+        const uri = await connectWallet();
+        const qrCodeText = await generateQRCode(uri);
+
+        const response: MCPResponse = {
           status: 'continue',
-          message: 'waiting for wallet connection',
-          nextStep: callback,
-          executeNextStepAfter: '10s',
-        }
-      : {
-          status: 'continue',
-          message: 'please connect your wallet first',
-          nextStep: 'connect-wallet',
+          message: 'QR code generated successfully',
+          nextStep: 'wait-wallet-connect',
           callback: callback,
         };
 
-    return {
-      isConnected: false,
-      content: [{ type: 'text' as const, text: createMCPResponse(response) }],
-    };
+        return {
+          isConnected: false,
+          content: [
+            { type: 'text' as const, text: createMCPResponse(response) },
+            { type: 'text' as const, text: 'Please scan the QR code with your wallet to connect\n\n' + qrCodeText },
+          ],
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const response: MCPResponse = {
+          status: 'error',
+          message: `QR Code generation failed: ${errorMessage}`,
+        };
+
+        return {
+          isConnected: false,
+          content: [{ type: 'text' as const, text: createMCPResponse(response) }],
+        };
+      }
+    }
   }
 
   // 지갑이 연결되어 있으면 성공 상태 반환
