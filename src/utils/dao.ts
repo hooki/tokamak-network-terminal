@@ -174,7 +174,7 @@ export async function getDAOMemberOperatorManagerInfo(
       const memberInfo = {
         candidate: member.candidate,
         candidateInfo: member.candidateInfo as CandidateInfo,
-        operatorManager: null,
+        operatorManager: member.candidate,
         manager: null,
       };
       memberInfoList.push(memberInfo);

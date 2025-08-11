@@ -512,10 +512,6 @@ export function registerDAOTools(server: McpServer) {
           operator = null;
         }
 
-        console.log('operator', operator);
-        console.log('account.address', account.address);
-
-
         if (String(operator).toLowerCase() !== account.address?.toLowerCase()) {
           return createErrorResponse({
             status: 'error',
