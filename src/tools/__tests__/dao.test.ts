@@ -12,6 +12,7 @@ vi.mock('@wagmi/core', () => ({
   getAccount: vi.fn(),
   readContract: vi.fn(),
   readContracts: vi.fn(),
+  getPublicClient: vi.fn(),
   createStorage: vi.fn((config) => ({
     getItem: config.storage.getItem,
     setItem: config.storage.setItem,
@@ -47,6 +48,7 @@ vi.mock('../../utils/dao.js', () => ({
   getDAOMemberOperatorManagerInfo: vi.fn(),
   checkDAOMembership: vi.fn(),
   getDAOMembersStakingInfo: vi.fn(),
+  getChallengeInfo: vi.fn(),
 }));
 
 // Mock the response functions to return proper structure
@@ -95,6 +97,7 @@ vi.mock('../../utils/response.js', () => ({
   }),
 }));
 
+// Mock wallet.js
 vi.mock('../../utils/wallet.js', () => ({
   checkWalletConnection: vi.fn(),
 }));
@@ -217,6 +220,7 @@ describe('dao.ts', () => {
       const toolCall = mockServer.registerTool.mock.calls.find(
         (call: any) => call[0] === 'get-dao-member-candidate-info'
       );
+
       expect(toolCall).toBeDefined();
       expect(toolCall![1].title).toBe('Get DAO member candidate information');
     });
@@ -458,10 +462,10 @@ describe('dao.ts', () => {
             claimedTimestamp: BigInt(1234567890),
           },
           memo: 'Test memo',
-          totalStaked: BigInt(1000000000000000000),
+          totalStaked: '1000.00000000 WTON',
           lastCommitBlock: BigInt(12345678),
           lastUpdateSeigniorageTime: BigInt(1234567890),
-          claimableActivityReward: BigInt(500000000000000000),
+          claimableActivityReward: '500.00000000 WTON',
           operatorManager: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
           manager: '0x1234567890123456789012345678901234567890',
         },
@@ -564,7 +568,7 @@ describe('dao.ts', () => {
         claim: false,
       });
 
-      console.log('Result:', JSON.stringify(result, null, 2));
+      // console.log('Result:', JSON.stringify(result, null, 2));
 
       expect(mockGetDAOMembersActivityReward).toHaveBeenCalledWith('mainnet', '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
 
@@ -642,6 +646,7 @@ describe('dao.ts', () => {
       const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
       const mockFormatTokenAmountWithUnitPrecise = vi.mocked(await import('../../utils/format.js')).formatTokenAmountWithUnitPrecise;
+      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
 
       mockGetDAOMembersActivityReward.mockResolvedValue({
         result: true,
@@ -653,6 +658,10 @@ describe('dao.ts', () => {
         isConnected: false
       } as any);
       mockFormatTokenAmountWithUnitPrecise.mockReturnValue('1.0 WTON');
+      mockCheckWalletConnection.mockResolvedValue({
+        isConnected: false,
+        content: [{ type: 'text', text: JSON.stringify({ status: 'continue', message: 'waiting for wallet connection' }) }]
+      });
 
       registerDAOTools(mockServer as any);
 
@@ -669,10 +678,8 @@ describe('dao.ts', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.status).toBe('error');
-      expect(response.error).toBe('Wallet connection required');
-      expect(response.activityReward).toBe('1000000000000000000');
-      expect(response.formattedReward).toBe('1.0 WTON');
+      expect(response.status).toBe('continue');
+      expect(response.message).toBe('waiting for wallet connection');
     });
 
     it('should claim activity reward successfully when wallet is connected', async () => {
@@ -681,7 +688,7 @@ describe('dao.ts', () => {
       const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
       const mockFormatTokenAmountWithUnitPrecise = vi.mocked(await import('../../utils/format.js')).formatTokenAmountWithUnitPrecise;
-
+      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
       mockGetDAOMembersActivityReward.mockResolvedValue({
         result: true,
         candidate: '0x1234567890123456789012345678901234567890',
@@ -694,6 +701,7 @@ describe('dao.ts', () => {
         address: '0x1234567890123456789012345678901234567890'
       } as any);
       mockFormatTokenAmountWithUnitPrecise.mockReturnValue('1.0 WTON');
+      mockCheckWalletConnection.mockResolvedValue(undefined); // 지갑이 연결되어 있으면 undefined 반환
 
       registerDAOTools(mockServer as any);
 
@@ -735,7 +743,7 @@ describe('dao.ts', () => {
       const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
       const mockFormatTokenAmountWithUnitPrecise = vi.mocked(await import('../../utils/format.js')).formatTokenAmountWithUnitPrecise;
-
+      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
       mockGetDAOMembersActivityReward.mockResolvedValue({
         result: true,
         candidate: '0x1234567890123456789012345678901234567890',
@@ -840,6 +848,434 @@ describe('dao.ts', () => {
       });
 
       expect(mockGetDAOMembersActivityReward).toHaveBeenCalledWith('mainnet', '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+    });
+  });
+
+  describe('get-challenge-member-info tool', () => {
+    it('should register the tool correctly', () => {
+      registerDAOTools(mockServer as any);
+
+      const toolCall = mockServer.registerTool.mock.calls.find(
+        (call: any) => call[0] === 'get-challenge-member-info'
+      );
+      expect(toolCall).toBeDefined();
+      expect(toolCall![1].title).toBe('Get challenge member info');
+    });
+
+    it('should return error when challenge is not possible', async () => {
+      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+
+      mockGetChallengeInfo.mockResolvedValue({
+        memberCandidate: '0x1234567890123456789012345678901234567890',
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        requiredStake: BigInt(2000000000000000000),
+        currentStake: BigInt(1000000000000000000),
+        canChallenge: false,
+        challengeReason: 'Challenger stake (1000000000000000000) must be at least 2000000000000000000 TON',
+      });
+
+      registerDAOTools(mockServer as any);
+
+      const toolCall = mockServer.registerTool.mock.calls.find(
+        (call: any) => call[0] === 'get-challenge-member-info'
+      );
+      expect(toolCall).toBeDefined();
+      const toolFunction = toolCall![2];
+
+      const result = await toolFunction({
+        memberIndex: 0,
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        network: 'mainnet',
+      });
+
+      expect(mockGetChallengeInfo).toHaveBeenCalledWith(0, '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd', 'mainnet');
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.status).toBe('error');
+      expect(response.error).toBe('Challenger stake (1000000000000000000) must be at least 2000000000000000000 TON');
+      expect(response.memberIndex).toBe(0);
+      expect(response.challengerCandidate).toBe('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+    });
+
+    it('should return success when challenge is possible', async () => {
+      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+
+      mockGetChallengeInfo.mockResolvedValue({
+        memberCandidate: '0x1234567890123456789012345678901234567890',
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        requiredStake: BigInt(1000000000000000000),
+        currentStake: BigInt(3000000000000000000),
+        canChallenge: true,
+        challengeReason: undefined,
+      });
+
+      registerDAOTools(mockServer as any);
+
+      const toolCall = mockServer.registerTool.mock.calls.find(
+        (call: any) => call[0] === 'get-challenge-member-info'
+      );
+      expect(toolCall).toBeDefined();
+      const toolFunction = toolCall![2];
+
+      const result = await toolFunction({
+        memberIndex: 1,
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        network: 'mainnet',
+      });
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.status).toBe('success');
+      expect(response.canChallenge).toBe(true);
+      expect(response.memberIndex).toBe(1);
+      expect(response.challengerCandidate).toBe('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+      expect(response.requiredStake).toBe('1000000000000000000');
+      expect(response.challengerStake).toBe('3000000000000000000');
+    });
+
+  });
+
+  describe('execute-challenge-member tool', () => {
+    it('should register the tool correctly', () => {
+      registerDAOTools(mockServer as any);
+
+      const toolCall = mockServer.registerTool.mock.calls.find(
+        (call: any) => call[0] === 'execute-challenge-member'
+      );
+      expect(toolCall).toBeDefined();
+      expect(toolCall![1].title).toBe('Execute challenge member');
+    });
+
+    it('should return error when challenge is not possible', async () => {
+      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+
+      mockGetChallengeInfo.mockResolvedValue({
+        memberCandidate: '0x1234567890123456789012345678901234567890',
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        requiredStake: BigInt(2000000000000000000),
+        currentStake: BigInt(1000000000000000000),
+        canChallenge: false,
+        challengeReason: 'Challenger stake (1000000000000000000) must be at least 2000000000000000000 TON',
+      });
+
+      registerDAOTools(mockServer as any);
+
+      const toolCall = mockServer.registerTool.mock.calls.find(
+        (call: any) => call[0] === 'execute-challenge-member'
+      );
+      expect(toolCall).toBeDefined();
+      const toolFunction = toolCall![2];
+
+      const result = await toolFunction({
+        memberIndex: 0,
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        network: 'mainnet',
+      });
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.status).toBe('error');
+      expect(response.error).toBe('Challenger stake (1000000000000000000) must be at least 2000000000000000000 TON');
+      expect(response.memberIndex).toBe(0);
+      expect(response.challengerCandidate).toBe('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+    });
+
+    it('should return error when wallet is not connected', async () => {
+      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+      const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
+
+      mockGetChallengeInfo.mockResolvedValue({
+        memberCandidate: '0x1234567890123456789012345678901234567890',
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        requiredStake: BigInt(1000000000000000000),
+        currentStake: BigInt(3000000000000000000),
+        canChallenge: true,
+        challengeReason: undefined,
+      });
+      mockGetAccount.mockReturnValue({
+        isConnected: false,
+      } as any);
+
+      registerDAOTools(mockServer as any);
+
+      const toolCall = mockServer.registerTool.mock.calls.find(
+        (call: any) => call[0] === 'execute-challenge-member'
+      );
+      expect(toolCall).toBeDefined();
+      const toolFunction = toolCall![2];
+
+      const result = await toolFunction({
+        memberIndex: 2,
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        network: 'mainnet',
+      });
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.status).toBe('error');
+      expect(response.error).toBe('UNAUTHORIZED_OPERATOR');
+      expect(response.message).toContain('Connected wallet is not the authorized operator for this challenger candidate.');
+    });
+
+    it('should return error when wallet is not the operator of challenger candidate', async () => {
+      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+      const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
+      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+
+      mockGetChallengeInfo.mockResolvedValue({
+        memberCandidate: '0x1234567890123456789012345678901234567890',
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        requiredStake: BigInt(1000000000000000000),
+        currentStake: BigInt(3000000000000000000),
+        canChallenge: true,
+        challengeReason: undefined,
+      });
+      mockGetAccount.mockReturnValue({
+        isConnected: true,
+        address: '0x1111111111111111111111111111111111111111',
+      } as any);
+      mockReadContract.mockResolvedValue('0x2222222222222222222222222222222222222222'); // Different operator
+
+      registerDAOTools(mockServer as any);
+
+      const toolCall = mockServer.registerTool.mock.calls.find(
+        (call: any) => call[0] === 'execute-challenge-member'
+      );
+      expect(toolCall).toBeDefined();
+      const toolFunction = toolCall![2];
+
+      const result = await toolFunction({
+        memberIndex: 3,
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        network: 'mainnet',
+      });
+
+      expect(mockReadContract).toHaveBeenCalledWith(
+        expect.any(Object),
+        {
+          address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+          abi: expect.any(Array),
+          functionName: 'operator',
+          args: [],
+          chainId: expect.any(Number),
+        }
+      );
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.status).toBe('error');
+      expect(response.error).toBe('UNAUTHORIZED_OPERATOR');
+      expect(response.message).toBe('Connected wallet is not the authorized operator for this challenger candidate.');
+    });
+
+    it('should execute challenge successfully when all conditions are met', async () => {
+      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+      const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
+      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
+      const mockGetPublicClient = vi.mocked(await import('@wagmi/core')).getPublicClient;
+
+      mockGetChallengeInfo.mockResolvedValue({
+        memberCandidate: '0x1234567890123456789012345678901234567890',
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        requiredStake: BigInt(1000000000000000000),
+        currentStake: BigInt(3000000000000000000),
+        canChallenge: true,
+        challengeReason: undefined,
+      });
+      mockGetAccount.mockReturnValue({
+        isConnected: true,
+        address: '0x1111111111111111111111111111111111111111',
+      } as any);
+      mockReadContract.mockResolvedValue('0x1111111111111111111111111111111111111111'); // Same as wallet address
+      mockWriteContract.mockResolvedValue('0xtxhash' as any);
+      mockGetPublicClient.mockReturnValue({
+        waitForTransactionReceipt: vi.fn().mockResolvedValue({
+          status: 'success',
+        }),
+      } as any);
+
+      registerDAOTools(mockServer as any);
+
+      const toolCall = mockServer.registerTool.mock.calls.find(
+        (call: any) => call[0] === 'execute-challenge-member'
+      );
+      expect(toolCall).toBeDefined();
+      const toolFunction = toolCall![2];
+
+      const result = await toolFunction({
+        memberIndex: 4,
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        network: 'mainnet',
+      });
+
+      expect(mockWriteContract).toHaveBeenCalledWith(
+        expect.any(Object),
+        {
+          address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+          abi: expect.any(Array),
+          functionName: 'changeMember',
+          args: [BigInt(4)],
+          chainId: expect.any(Number),
+        }
+      );
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.status).toBe('success');
+      expect(response.transactionHash).toBe('0xtxhash');
+      expect(response.memberIndex).toBe(4);
+      expect(response.challengerCandidate).toBe('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+      expect(response.message).toContain('Successfully challenged member at index 4');
+    });
+
+    it('should handle transaction failure', async () => {
+      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+      const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
+      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
+      const mockGetPublicClient = vi.mocked(await import('@wagmi/core')).getPublicClient;
+
+      mockGetChallengeInfo.mockResolvedValue({
+        memberCandidate: '0x1234567890123456789012345678901234567890',
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        requiredStake: BigInt(1000000000000000000),
+        currentStake: BigInt(3000000000000000000),
+        canChallenge: true,
+        challengeReason: undefined,
+      });
+      mockGetAccount.mockReturnValue({
+        isConnected: true,
+        address: '0x1111111111111111111111111111111111111111',
+      } as any);
+      mockReadContract.mockResolvedValue('0x1111111111111111111111111111111111111111');
+      mockWriteContract.mockResolvedValue('0xtxhash' as any);
+      mockGetPublicClient.mockReturnValue({
+        waitForTransactionReceipt: vi.fn().mockResolvedValue({
+          status: 'reverted',
+        }),
+      } as any);
+
+      registerDAOTools(mockServer as any);
+
+      const toolCall = mockServer.registerTool.mock.calls.find(
+        (call: any) => call[0] === 'execute-challenge-member'
+      );
+      expect(toolCall).toBeDefined();
+      const toolFunction = toolCall![2];
+
+      const result = await toolFunction({
+        memberIndex: 5,
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        network: 'mainnet',
+      });
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.status).toBe('error');
+      expect(response.error).toBe('Transaction reverted or failed');
+      expect(response.transactionHash).toBe('0xtxhash');
+      expect(response.message).toContain('Transaction failed for challenge at index 5');
+    });
+
+    it('should handle writeContract error', async () => {
+      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+      const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
+      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
+
+      mockGetChallengeInfo.mockResolvedValue({
+        memberCandidate: '0x1234567890123456789012345678901234567890',
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        requiredStake: BigInt(1000000000000000000),
+        currentStake: BigInt(3000000000000000000),
+        canChallenge: true,
+        challengeReason: undefined,
+      });
+      mockGetAccount.mockReturnValue({
+        isConnected: true,
+        address: '0x1111111111111111111111111111111111111111',
+      } as any);
+      mockReadContract.mockResolvedValue('0x1111111111111111111111111111111111111111');
+      mockWriteContract.mockRejectedValue(new Error('Transaction failed'));
+
+      registerDAOTools(mockServer as any);
+
+      const toolCall = mockServer.registerTool.mock.calls.find(
+        (call: any) => call[0] === 'execute-challenge-member'
+      );
+      expect(toolCall).toBeDefined();
+      const toolFunction = toolCall![2];
+
+      const result = await toolFunction({
+        memberIndex: 6,
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        network: 'mainnet',
+      });
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.status).toBe('error');
+      expect(response.error).toBe('Transaction failed');
+      expect(response.message).toContain('Failed to execute challenge on mainnet: Transaction failed');
+    });
+
+    it('should use default values when optional parameters are not provided', async () => {
+      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+
+      mockGetChallengeInfo.mockResolvedValue({
+        memberCandidate: '0x1234567890123456789012345678901234567890',
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        requiredStake: BigInt(1000000000000000000),
+        currentStake: BigInt(3000000000000000000),
+        canChallenge: true,
+        challengeReason: undefined,
+      });
+
+      registerDAOTools(mockServer as any);
+
+      const toolCall = mockServer.registerTool.mock.calls.find(
+        (call: any) => call[0] === 'get-challenge-member-info'
+      );
+      expect(toolCall).toBeDefined();
+      const toolFunction = toolCall![2];
+
+      const result = await toolFunction({
+        memberIndex: 7,
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+      });
+
+      expect(mockGetChallengeInfo).toHaveBeenCalledWith(7, '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd', 'mainnet');
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.status).toBe('success');
+      expect(response.network).toBe('mainnet');
+    });
+
+    it('should work with sepolia network', async () => {
+      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+
+      mockGetChallengeInfo.mockResolvedValue({
+        memberCandidate: '0x1234567890123456789012345678901234567890',
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        requiredStake: BigInt(1000000000000000000),
+        currentStake: BigInt(3000000000000000000),
+        canChallenge: true,
+        challengeReason: undefined,
+      });
+
+      registerDAOTools(mockServer as any);
+
+      const toolCall = mockServer.registerTool.mock.calls.find(
+        (call: any) => call[0] === 'get-challenge-member-info'
+      );
+      expect(toolCall).toBeDefined();
+      const toolFunction = toolCall![2];
+
+      const result = await toolFunction({
+        memberIndex: 8,
+        challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        network: 'sepolia',
+      });
+
+      expect(mockGetChallengeInfo).toHaveBeenCalledWith(8, '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd', 'sepolia');
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.status).toBe('success');
+      expect(response.network).toBe('sepolia');
     });
   });
 });
