@@ -628,17 +628,50 @@ The Tokamak Network Terminal is an MCP (Model Context Protocol) server that prov
 **Title**: Get challenge member information
 **Description**: Get information about challenging a DAO committee member including required stake and eligibility. No wallet connection required.
 **Input Schema**:
-- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
 - `memberIndex`: The index of the current DAO member slot to challenge
 - `challengerCandidate`: The address of the challenger candidate contract
+- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
+
+**Client Request (Input)**:
+```json
+{
+  "memberIndex": 0,
+  "challengerCandidate": "0x0F42D1C40b95DF7A1478639918fc358B4aF5298D",
+  "network": "mainnet"
+}
+```
+
+**Server Response (Output) - Challenge Possible**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"network\":\"mainnet\",\"memberIndex\":0,\"memberCandidate\":\"0xf3B17FDB808c7d0Df9ACd24dA34700ce069007DF\",\"challengerCandidate\":\"0x0F42D1C40b95DF7A1478639918fc358B4aF5298D\",\"requiredStake\":\"1000\",\"challengerStake\":\"1200\",\"canChallenge\":true,\"message\":\"Challenge is possible. Challenger stake (1200) is greater than member stake (1000)\"}"
+    }
+  ]
+}
+```
+
+**Server Response (Output) - Challenge Not Possible**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"error\",\"network\":\"mainnet\",\"memberIndex\":0,\"memberCandidate\":\"0xf3B17FDB808c7d0Df9ACd24dA34700ce069007DF\",\"challengerCandidate\":\"0x0F42D1C40b95DF7A1478639918fc358B4aF5298D\",\"requiredStake\":\"1000\",\"challengerStake\":\"800\",\"error\":\"Challenger stake (800) must be at least 1000 TON\",\"message\":\"Cannot challenge member: Challenger stake (800) must be at least 1000 TON\"}"
+    }
+  ]
+}
+```
 
 #### `execute-challenge-member`
 **Title**: Execute challenge member
-**Description**: Execute a challenge against a DAO committee member by staking the required amount of tokens. The challenger must have more stake than the current member. Requires wallet connection.
+**Description**: Execute a challenge against a DAO committee member by staking the required amount of tokens. The challenger must have more stake than the current member. Requires wallet connection and proper authorization (connected wallet must be the operator of the challenger candidate).
 **Input Schema**:
-- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
 - `memberIndex`: The index of the current DAO member slot to challenge
 - `challengerCandidate`: The address of the challenger candidate contract
+- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
 
 **Client Request (Input) - Get Challenge Info**:
 ```json
