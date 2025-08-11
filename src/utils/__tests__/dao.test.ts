@@ -8,6 +8,7 @@ import {
   getDAOMemberCount,
   getDAOMembersStakingInfo,
   getDAOMembersActivityReward,
+  getChallengeInfo,
   type CandidateInfo,
   type DAOMemberCandidateInfo,
   type DAOMembersStakingInfo,
@@ -87,12 +88,21 @@ vi.mock('../../abis/operatorManager.js', () => ({
 
 describe('DAO Utils', () => {
   const mockCandidateInfo: CandidateInfo = {
-    candidateContract: '0x4567890123456789012345678901234567890123',
-    indexMembers: 1n,
+    candidateContract: '0x1234567890123456789012345678901234567890',
+    indexMembers: 0n,
     memberJoinedTime: 1640995200n,
     rewardPeriod: 86400n,
     claimedTimestamp: 1640995200n,
   };
+
+  // candidateInfo 객체를 배열로 변환하는 헬퍼 함수
+  const mockCandidateInfoArray = [
+    mockCandidateInfo.candidateContract,
+    mockCandidateInfo.indexMembers,
+    mockCandidateInfo.memberJoinedTime,
+    mockCandidateInfo.rewardPeriod,
+    mockCandidateInfo.claimedTimestamp,
+  ];
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -216,13 +226,13 @@ describe('DAO Utils', () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
         candidate: '0x1234567890123456789012345678901234567890',
-        candidateInfo: [
-          '0x1234567890123456789012345678901234567890',
-          0n,
-          1234567890n,
-          86400n,
-          0n,
-        ],
+        candidateInfo: {
+          candidateContract: '0x1234567890123456789012345678901234567890',
+          indexMembers: 0n,
+          memberJoinedTime: 1234567890n,
+          rewardPeriod: 86400n,
+          claimedTimestamp: 0n,
+        },
       });
     });
 
@@ -233,8 +243,8 @@ describe('DAO Utils', () => {
           { result: '0x1234567890123456789012345678901234567890', error: null },
           { result: '0x0000000000000000000000000000000000000000', error: null },
         ]) // members
-        .mockResolvedValueOnce([
-          { result: mockCandidateInfo, error: null },
+                .mockResolvedValueOnce([
+          { result: mockCandidateInfoArray, error: null },
         ]); // candidateInfos
 
       const result = await getDAOMemberCandidateInfo('mainnet');
@@ -288,7 +298,7 @@ describe('DAO Utils', () => {
           { result: '0x1111111111111111111111111111111111111111', error: null },
         ]) // members
         .mockResolvedValueOnce([
-          { result: mockCandidateInfo, error: null },
+          { result: mockCandidateInfoArray, error: null },
         ]) // candidateInfos
         .mockResolvedValueOnce([
           { result: '0x5555555555555555555555555555555555555555', error: null },
@@ -318,7 +328,7 @@ describe('DAO Utils', () => {
           { result: '0x1111111111111111111111111111111111111111', error: null },
         ]) // members
         .mockResolvedValueOnce([
-          { result: mockCandidateInfo, error: null },
+          { result: mockCandidateInfoArray, error: null },
         ]) // candidateInfos
         .mockResolvedValueOnce([
           { result: '0x0000000000000000000000000000000000000000', error: null },
@@ -348,7 +358,7 @@ describe('DAO Utils', () => {
           { result: '0x1111111111111111111111111111111111111111', error: null },
         ]) // members
         .mockResolvedValueOnce([
-          { result: mockCandidateInfo, error: null },
+          { result: mockCandidateInfoArray, error: null },
         ]) // candidateInfos
         .mockResolvedValueOnce([
           { result: 'Test memo', error: null },
@@ -370,10 +380,12 @@ describe('DAO Utils', () => {
         candidate: '0x1111111111111111111111111111111111111111',
         candidateInfo: mockCandidateInfo,
         memo: 'Test memo',
-        totalStaked: 1000n,
+        totalStaked: '0 WTON',
         lastCommitBlock: 12345n,
         lastUpdateSeigniorageTime: 1640995200n,
-        claimableActivityReward: 100n,
+        claimableActivityReward: '0 WTON',
+        operatorManager: undefined,
+        manager: undefined,
       });
     });
 
@@ -425,7 +437,7 @@ describe('DAO Utils', () => {
           { result: '0x1111111111111111111111111111111111111111', error: null },
         ]) // members
         .mockResolvedValueOnce([
-          { result: mockCandidateInfo, error: null },
+          { result: mockCandidateInfoArray, error: null },
         ]) // candidateInfos
         .mockResolvedValueOnce([
           { error: new Error('Contract error') },
@@ -441,10 +453,12 @@ describe('DAO Utils', () => {
         candidate: '0x1111111111111111111111111111111111111111',
         candidateInfo: mockCandidateInfo,
         memo: '',
-        totalStaked: 0n,
+        totalStaked: '0 WTON',
         lastCommitBlock: 0n,
         lastUpdateSeigniorageTime: 0n,
-        claimableActivityReward: 0n,
+        claimableActivityReward: '0 WTON',
+        operatorManager: undefined,
+        manager: undefined,
       });
     });
 
@@ -459,7 +473,7 @@ describe('DAO Utils', () => {
           { result: '0x1111111111111111111111111111111111111111', error: null },
         ]) // members
         .mockResolvedValueOnce([
-          { result: mockCandidateInfo, error: null },
+          { result: mockCandidateInfoArray, error: null },
         ]) // candidateInfos
         .mockResolvedValueOnce([
           { result: 'Test memo', error: null },
@@ -609,5 +623,128 @@ describe('DAO Utils', () => {
         reward: 1000000000000000000n,
       });
     });
+  });
+
+  describe('Challenge Functions', () => {
+    describe('getChallengeInfo', () => {
+      it('should return challenge info when challenger has more stake', async () => {
+        const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+        const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+
+        // getDAOMemberCandidateInfo를 위한 mock
+        mockReadContract
+          .mockResolvedValueOnce(3n); // maxMember
+
+        // getDAOMemberCandidateInfo의 members 호출을 위한 mock
+        mockReadContracts
+          .mockResolvedValueOnce([
+            { result: '0x1234567890123456789012345678901234567890', status: 'success' }, // member address
+            { result: '0x0000000000000000000000000000000000000000', status: 'success' }, // empty member
+            { result: '0x0000000000000000000000000000000000000000', status: 'success' }, // empty member
+          ] as any)
+          // getDAOMemberCandidateInfo의 candidateInfos 호출을 위한 mock
+          .mockResolvedValueOnce([
+            { result: mockCandidateInfoArray, status: 'success' }, // candidateInfo for member
+          ] as any)
+          // getChallengeInfo의 stake 조회를 위한 mock
+          .mockResolvedValueOnce([
+            { result: 1000000000000000000n, status: 'success' }, // member stake
+            { result: 3000000000000000000n, status: 'success' }, // challenger stake
+            { result: 2000000000000000000n, status: 'success' }, // minimumAmount
+          ] as any);
+
+        const result = await getChallengeInfo(
+          0, // memberIndex
+          '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+          'mainnet'
+        );
+
+        expect(mockReadContract).toHaveBeenCalledTimes(1); // maxMember
+        expect(mockReadContracts).toHaveBeenCalledTimes(3); // members + candidateInfos + stake info
+        expect(result).toEqual({
+          memberCandidate: '0x1234567890123456789012345678901234567890',
+          challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+          requiredStake: 1000000000000000000n,
+          currentStake: 3000000000000000000n,
+          canChallenge: true,
+          challengeReason: undefined,
+        });
+      });
+
+      it('should return challenge info when challenger has less stake', async () => {
+        const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+        const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+
+        // getDAOMemberCandidateInfo를 위한 mock
+        mockReadContract
+          .mockResolvedValueOnce(3n); // maxMember
+
+        // getDAOMemberCandidateInfo의 members 호출을 위한 mock
+        mockReadContracts
+          .mockResolvedValueOnce([
+            { result: '0x0000000000000000000000000000000000000000', status: 'success' }, // empty member
+            { result: '0x1234567890123456789012345678901234567890', status: 'success' }, // member address
+            { result: '0x0000000000000000000000000000000000000000', status: 'success' }, // empty member
+          ] as any)
+          // getDAOMemberCandidateInfo의 candidateInfos 호출을 위한 mock
+          .mockResolvedValueOnce([
+            { result: [
+              mockCandidateInfo.candidateContract,
+              1n, // indexMembers를 1로 변경
+              mockCandidateInfo.memberJoinedTime,
+              mockCandidateInfo.rewardPeriod,
+              mockCandidateInfo.claimedTimestamp,
+            ], status: 'success' }, // candidateInfo for member
+          ] as any)
+          // getChallengeInfo의 stake 조회를 위한 mock
+          .mockResolvedValueOnce([
+            { result: 2000000000000000000n, status: 'success' }, // member stake
+            { result: 1500000000000000000n, status: 'success' }, // challenger stake (minStake보다 작지만 member보다 작음)
+            { result: 2000000000000000000n, status: 'success' }, // minimumAmount
+          ] as any);
+
+        const result = await getChallengeInfo(
+          1, // memberIndex
+          '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+          'mainnet'
+        );
+
+        expect(result).toEqual({
+          memberCandidate: '0x1234567890123456789012345678901234567890',
+          challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+          requiredStake: 2000000000000000000n,
+          currentStake: 1500000000000000000n,
+          canChallenge: false,
+          challengeReason: 'Challenger stake (1500000000000000000) must be at least 2000000000000000000 TON',
+        });
+      });
+
+      it('should handle contract read error', async () => {
+        const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+        const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+
+        // getDAOMemberCandidateInfo에서 에러 발생
+        mockReadContract.mockRejectedValueOnce(new Error('Contract read error'));
+
+        // getChallengeInfo의 readContracts에서 에러 발생
+        mockReadContracts.mockRejectedValueOnce(new Error('Contract read error'));
+
+        const result = await getChallengeInfo(
+          2, // memberIndex
+          '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+          'mainnet'
+        );
+
+        expect(result).toEqual({
+          memberCandidate: '',
+          challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+          requiredStake: BigInt(0),
+          currentStake: BigInt(0),
+          canChallenge: false,
+          challengeReason: 'Failed to get challenge info: Contract read error',
+        });
+      });
+    });
+
   });
 });
