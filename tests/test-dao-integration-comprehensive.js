@@ -31,18 +31,31 @@ function sendRequest(method, params = {}) {
     params
   };
 
-  console.log(`📤 Sending: ${method}`);
+  const toolName = params.name || 'unknown';
+  console.log(`📤 Sending: ${method} (tool: ${toolName})`);
   serverProcess.stdin.write(JSON.stringify(request) + '\n');
 }
 
 function parseResponse(data) {
-  try {
-    const response = JSON.parse(data.toString());
-    return response;
-  } catch (error) {
-    console.log('Raw response:', data.toString());
-    return null;
+  const dataStr = data.toString();
+
+  // 여러 줄로 나뉜 데이터를 처리
+  const lines = dataStr.split('\n').filter(line => line.trim());
+
+  for (const line of lines) {
+    try {
+      const response = JSON.parse(line.trim());
+      // JSON-RPC 응답인지 확인
+      if (response.jsonrpc === '2.0' && (response.result || response.error)) {
+        return response;
+      }
+    } catch (error) {
+      // 이 줄은 JSON이 아님, 다음 줄 시도
+      continue;
+    }
   }
+
+  return null;
 }
 
 function logTestResult(testName, success, message = '') {
@@ -58,6 +71,15 @@ function logTestResult(testName, success, message = '') {
 }
 
 serverProcess.stdout.on('data', (data) => {
+  const dataStr = data.toString();
+
+  // 디버그 정보 필터링 (필요시 주석 해제)
+  /*
+  if (dataStr.includes('** network') || dataStr.includes('** members') || dataStr.includes('** stakingInfo') || dataStr.includes('** memberInfo') || dataStr.includes('** operatorManagerResults') || dataStr.includes('** managerResults') || dataStr.includes('** validOperatorManagerResults') || dataStr.includes('** memberInfoList') || dataStr.includes('createSuccessResponse') || dataStr.includes('createErrorResponse')) {
+    console.log('📥 Server debug output:', dataStr.trim());
+  }
+  */
+
   const response = parseResponse(data);
   if (response) {
     if (response.result) {
@@ -180,7 +202,8 @@ async function runDAOTestSuite() {
     mainnet: {
       tokamak1: '0xf3B17FDB808c7d0Df9ACd24dA34700ce069007DF',
       DXM_Corp: '0x44e3605d0ed58FD125E9C47D1bf25a4406c13b57',
-      Hammer: '0x06D34f65869Ec94B3BA8c0E08BCEb532f65005E2'
+      Hammer: '0x06D34f65869Ec94B3BA8c0E08BCEb532f65005E2',
+      level: '0x0F42D1C40b95DF7A1478639918fc358B4aF5298D'
     },
     sepolia: {
       Poseidon: '0xF078AE62eA4740E19ddf6c0c5e17Ecdb820BbEe1'
@@ -205,7 +228,54 @@ async function runDAOTestSuite() {
     }
   }
 
-  // Category 5: Error Handling Tests
+  // Category 5: Challenge Member Tests
+  console.log(`\n📋 Challenge Member Tests\n`);
+
+  // Test with non-DAO member challenger candidates (실제 존재하는 주소들)
+  const testChallengerCandidates = {
+    mainnet: [
+      '0x2b67d8d4e61b68744885e243efaf988f1fc66e2d', // DSRV
+      '0x44e3605d0ed58fd125e9c47d1bf25a4406c13b57', // DXM Corp
+      '0xbc602c1d9f3ae99db4e9fd3662ce3d02e593ec5d'  // decipher
+    ],
+    sepolia: [
+      '0xAbD15C021942Ca54aBd944C91705Fe70FEA13f0d', // member_DAO
+      '0xCBeF7Cc221c04AD2E68e623613cc5d33b0fE1599', // TokamakOperator_v2
+      '0xeA2c15fdf4cE802Ba188e7D4460D979E9df5fD51'  // Titan_Test1
+    ]
+  };
+
+  for (const network of TEST_CONFIG.networks) {
+    const candidates = testChallengerCandidates[network];
+    if (candidates) {
+      for (let i = 0; i < candidates.length; i++) {
+        currentTest = `Get challenge member info for test challenger ${i + 1} on ${network}`;
+        sendRequest('tools/call', {
+          name: 'get-challenge-member-info',
+          arguments: {
+            memberIndex: 0,
+            challengerCandidate: candidates[i],
+            network
+          }
+        });
+        await setTimeout(TEST_CONFIG.delay);
+      }
+    }
+  }
+
+  // Test with invalid challenger candidate (실제 존재하는 주소 사용)
+  currentTest = 'Get challenge member info with invalid challenger';
+  sendRequest('tools/call', {
+    name: 'get-challenge-member-info',
+    arguments: {
+      memberIndex: 0,
+      challengerCandidate: '0xeA2c15fdf4cE802Ba188e7D4460D979E9df5fD51', // TON 토큰 주소 (DAO 멤버가 아님)
+      network: 'sepolia'
+    }
+  });
+  await setTimeout(TEST_CONFIG.delay);
+
+  // Category 6: Error Handling Tests
   console.log(`\n📋 ${TEST_CATEGORIES.ERROR_HANDLING}\n`);
 
   currentTest = 'Test invalid address format';
@@ -213,7 +283,7 @@ async function runDAOTestSuite() {
     name: 'check-dao-membership',
     arguments: {
       address: 'invalid-address-format',
-      network: 'mainnet'
+      network: 'sepolia'
     }
   });
   await setTimeout(TEST_CONFIG.delay);
@@ -222,14 +292,14 @@ async function runDAOTestSuite() {
   sendRequest('tools/call', {
     name: 'dao-candidate-activity-reward',
     arguments: {
-      network: 'mainnet',
-      candidateContract: '0x0000000000000000000000000000000000000000',
+      network: 'sepolia',
+      candidateContract: '0x1234567890123456789012345678901234567890', // 존재하지 않는 컨트랙트 주소
       claim: false
     }
   });
   await setTimeout(TEST_CONFIG.delay);
 
-  // Category 6: Performance Tests
+  // Category 7: Performance Tests
   console.log(`\n📋 ${TEST_CATEGORIES.PERFORMANCE}\n`);
 
   for (let i = 0; i < 3; i++) {

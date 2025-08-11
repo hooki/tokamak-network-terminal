@@ -5,7 +5,7 @@ export const operatorManagerAbi = [
     {
       "inputs": [],
       "name": "manager",
-      "outputs": [{"internalType": "string","name": "","type": "string"}],
+      "outputs": [{"internalType": "address","name": "","type": "address"}],
       "stateMutability": "view",
       "type": "function"
     }

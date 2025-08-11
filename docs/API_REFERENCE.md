@@ -518,6 +518,71 @@ server.registerTool(
 );
 ```
 
+### Get DAO Candidate Activity Reward
+```typescript
+server.registerTool(
+  'dao-candidate-activity-reward',
+  {
+    title: 'Get DAO candidate\'s activity reward',
+    description: new DescriptionBuilder(
+      'Get the claimable activity reward for a specific DAO candidate contract. Use claim=true to claim the reward (requires wallet connection), claim=false to only check the reward amount.'
+    )
+      .withWalletConnect()
+      .toString(),
+    inputSchema: {
+      network: z.string().optional().default('mainnet').describe('The network to use (mainnet, sepolia, etc.)'),
+      candidateContract: z.string().describe('The candidate contract address to check for activity rewards'),
+      claim: z.boolean().optional().default(false).describe('Whether to claim the reward (requires wallet connection if true)'),
+    },
+  },
+  async ({ network = 'mainnet', candidateContract, claim = false }) => {
+    // Implementation
+  }
+);
+```
+
+### Get Challenge Member Info
+```typescript
+server.registerTool(
+  'get-challenge-member-info',
+  {
+    title: 'Get challenge member information',
+    description: 'Get information about challenging a DAO committee member including required stake and eligibility. No wallet connection required.',
+    inputSchema: {
+      network: z.string().optional().default('mainnet').describe('The network to use (mainnet, sepolia, etc.)'),
+      memberIndex: z.number().describe('The index of the current DAO member slot to challenge'),
+      challengerCandidate: z.string().describe('The address of the challenger candidate contract'),
+    },
+  },
+  async ({ network = 'mainnet', memberIndex, challengerCandidate }) => {
+    // Implementation
+  }
+);
+```
+
+### Execute Challenge Member
+```typescript
+server.registerTool(
+  'execute-challenge-member',
+  {
+    title: 'Execute challenge member',
+    description: new DescriptionBuilder(
+      'Execute a challenge against a DAO committee member by staking the required amount of tokens. The challenger must have more stake than the current member.'
+    )
+      .withWalletConnect()
+      .toString(),
+    inputSchema: {
+      network: z.string().optional().default('mainnet').describe('The network to use (mainnet, sepolia, etc.)'),
+      memberIndex: z.number().describe('The index of the current DAO member slot to challenge'),
+      challengerCandidate: z.string().describe('The address of the challenger candidate contract'),
+    },
+  },
+  async ({ network = 'mainnet', memberIndex, challengerCandidate }) => {
+    // Implementation
+  }
+);
+```
+
 ## Dependencies
 
 - `@modelcontextprotocol/sdk`: MCP server implementation

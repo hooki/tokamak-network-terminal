@@ -46,5 +46,18 @@ export const daoCommitteeAbi = [
     "outputs": [{"internalType": "uint256","name": "","type": "uint256"}],
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "address","name": "_candidate","type": "address"}],
+    "name": "candidateInfos",
+    "outputs": [
+      {"internalType": "address","name": "candidateContract","type": "address"},
+      {"internalType": "uint256","name": "indexMembers","type": "uint256"},
+      {"internalType": "uint256","name": "memberJoinedTime","type": "uint256"},
+      {"internalType": "uint256","name": "rewardPeriod","type": "uint256"},
+      {"internalType": "uint256","name": "claimedTimestamp","type": "uint256"}
+    ],
+    "stateMutability": "view",
+    "type": "function"
   }
 ] as const;

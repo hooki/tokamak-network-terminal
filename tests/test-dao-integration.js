@@ -17,39 +17,72 @@ function sendRequest(method, params = {}) {
     params
   };
 
-  console.log(`Sending: ${method}`);
+  const toolName = params.name || 'unknown';
+  console.log(`Sending: ${method} (tool: ${toolName})`);
   serverProcess.stdin.write(JSON.stringify(request) + '\n');
 }
 
 function parseResponse(data) {
-  try {
-    const response = JSON.parse(data.toString());
-    return response;
-  } catch (error) {
-    console.log('Raw response:', data.toString());
-    return null;
+  const dataStr = data.toString();
+
+  // 여러 줄로 나뉜 데이터를 처리
+  const lines = dataStr.split('\n').filter(line => line.trim());
+
+  for (const line of lines) {
+    try {
+      const response = JSON.parse(line.trim());
+      // JSON-RPC 응답인지 확인
+      if (response.jsonrpc === '2.0' && (response.result || response.error)) {
+        return response;
+      }
+    } catch (error) {
+      // 이 줄은 JSON이 아님, 다음 줄 시도
+      continue;
+    }
   }
+
+  // // JSON-RPC 응답을 찾지 못한 경우
+  // console.log('Raw response (no valid JSON-RPC found):', dataStr);
+  return null;
 }
 
 serverProcess.stdout.on('data', (data) => {
+  const dataStr = data.toString();
+
+  // // 디버그 정보 출력
+  // if (dataStr.includes('** network') || dataStr.includes('** members') || dataStr.includes('** stakingInfo') || dataStr.includes('** memberInfo') || dataStr.includes('** operatorManagerResults') || dataStr.includes('** managerResults') || dataStr.includes('** validOperatorManagerResults') || dataStr.includes('** memberInfoList') || dataStr.includes('createSuccessResponse') || dataStr.includes('createErrorResponse')) {
+  //   console.log('📥 Server debug output:', dataStr.trim());
+  // }
+
   const response = parseResponse(data);
   if (response) {
-    console.log(`✅ Response for ID ${response.id}:`);
+    // console.log(`✅ JSON-RPC Response for ID ${response.id}:`);
+
     if (response.result) {
+      console.log('🎯 Result found:');
+      // console.log('** response.result', response.result);
       if (response.result.content && response.result.content[0]) {
-        console.log(response.result.content[0].text.substring(0, 300) + '...');
+        const contentText = response.result.content[0].text;
+
+        // Try to parse the content text as JSON
+        try {
+          const parsedContent = JSON.parse(contentText);
+          console.log('📄 Parsed content:', JSON.stringify(parsedContent, null, 2));
+        } catch (parseError) {
+          console.log('📄 Content text:', contentText);
+        }
       } else {
-        console.log('Result:', JSON.stringify(response.result, null, 2));
+        // console.log('📊 Direct result:', JSON.stringify(response.result, null, 2));
       }
     } else if (response.error) {
-      console.log('❌ Error:', response.error);
+      console.log('❌ Error response:', JSON.stringify(response.error, null, 2));
     }
-    console.log('');
+    // console.log('─'.repeat(80));
   }
 });
 
 serverProcess.stderr.on('data', (data) => {
-  console.log('Server error:', data.toString());
+  console.log('🚨 Server stderr:', data.toString());
 });
 
 // Wait for server to start
@@ -77,7 +110,7 @@ setTimeout(() => {
     console.log('\n=== Test 3: Get DAO member operator manager info on mainnet ===');
     sendRequest('tools/call', {
       name: 'get-dao-member-operator-manager-info',
-      arguments: { network: 'mainnet' }
+      arguments: { network: 'sepolia' }
     });
   }, 4000);
 
@@ -86,7 +119,7 @@ setTimeout(() => {
     console.log('\n=== Test 4: Get DAO members staking info on mainnet ===');
     sendRequest('tools/call', {
       name: 'get-dao-members-staking-info',
-      arguments: { network: 'mainnet', includeOperatorManager: false }
+      arguments: { network: 'sepolia', includeOperatorManager: false }
     });
   }, 6000);
 
@@ -96,8 +129,8 @@ setTimeout(() => {
     sendRequest('tools/call', {
       name: 'check-dao-membership',
       arguments: {
-        address: '0x1234567890123456789012345678901234567890',
-        network: 'mainnet'
+        address: '0xc1eba383D94c6021160042491A5dfaF1d82694E6',
+        network: 'sepolia'
       }
     });
   }, 8000);
@@ -192,10 +225,49 @@ setTimeout(() => {
     });
   }, 24000);
 
+  // Test 14: Get challenge member info on mainnet
+  setTimeout(() => {
+    console.log('\n=== Test 14: Get challenge member info on mainnet ===');
+    sendRequest('tools/call', {
+      name: 'get-challenge-member-info',
+      arguments: {
+        memberIndex: 0,
+        challengerCandidate: '0x1234567890123456789012345678901234567890', // Test challenger
+        network: 'mainnet'
+      }
+    });
+  }, 26000);
+
+  // Test 15: Get challenge member info on sepolia
+  setTimeout(() => {
+    console.log('\n=== Test 15: Get challenge member info on sepolia ===');
+    sendRequest('tools/call', {
+      name: 'get-challenge-member-info',
+      arguments: {
+        memberIndex: 0,
+        challengerCandidate: '0x2345678901234567890123456789012345678901', // Test challenger
+        network: 'sepolia'
+      }
+    });
+  }, 28000);
+
+  // Test 16: Get challenge member info with different member index
+  setTimeout(() => {
+    console.log('\n=== Test 16: Get challenge member info with different member index ===');
+    sendRequest('tools/call', {
+      name: 'get-challenge-member-info',
+      arguments: {
+        memberIndex: 1,
+        challengerCandidate: '0x3456789012345678901234567890123456789012', // Test challenger
+        network: 'mainnet'
+      }
+    });
+  }, 30000);
+
   // Complete tests
   setTimeout(() => {
     console.log('\n✅ All DAO integration tests completed');
     serverProcess.kill();
-  }, 26000);
+  }, 32000);
 
 }, 1000);
