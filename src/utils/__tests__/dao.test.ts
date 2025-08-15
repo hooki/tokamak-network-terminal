@@ -1,17 +1,15 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { readContract, readContracts, getPublicClient } from '@wagmi/core';
-import { mainnet, sepolia } from '@wagmi/core/chains';
+import { getPublicClient, readContract, readContracts } from '@wagmi/core';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  checkDAOMembership,
-  getDAOMemberCandidateInfo,
-  getDAOMemberOperatorManagerInfo,
-  getDAOMemberCount,
-  getDAOMembersStakingInfo,
-  getDAOMembersActivityReward,
-  getChallengeInfo,
   type CandidateInfo,
+  checkDAOMembership,
   type DAOMemberCandidateInfo,
-  type DAOMembersStakingInfo,
+  getChallengeInfo,
+  getDAOMemberCandidateInfo,
+  getDAOMemberCount,
+  getDAOMemberOperatorManagerInfo,
+  getDAOMembersActivityReward,
+  getDAOMembersStakingInfo,
 } from '../dao.js';
 
 // Mock wagmi functions
@@ -341,18 +339,20 @@ describe('DAO Utils', () => {
       mockReadContracts
         .mockResolvedValueOnce([
           { result: '0x1111111111111111111111111111111111111111', error: null },
-        ]) // members
+        ]) // candidate and operatorManager
         .mockResolvedValueOnce([
           { result: mockCandidateInfoArray, error: null },
         ]) // candidateInfos
         .mockResolvedValueOnce([
           { result: '0x0000000000000000000000000000000000000000', error: null },
-        ]); // operatorManager (null)
+        ]); // operatorOfLayer
 
       const result = await getDAOMemberOperatorManagerInfo('mainnet');
 
       expect(result).toHaveLength(1);
-      expect(result[0].operatorManager).toBeNull();
+      expect(result[0].operatorManager).toBe(
+        '0x1111111111111111111111111111111111111111'
+      );
       expect(result[0].manager).toBeNull();
     });
   });
