@@ -14,21 +14,34 @@ describe('descriptionBuilder.ts', () => {
 
       expect(result).toBe(builder); // Should return the same instance
       expect(builder.toString()).toContain('Test description');
-      expect(builder.toString()).toContain('If a tool response includes { status: "continue" }');
+      expect(builder.toString()).toContain(
+        'If a tool response includes { status: "continue" }'
+      );
       expect(builder.toString()).toContain('always invoke the "nextStep" tool');
-      expect(builder.toString()).toContain('If the response includes { executeNextStepAfter: <seconds> }');
-      expect(builder.toString()).toContain('wait that time before invoking "nextStep"');
-      expect(builder.toString()).toContain('If the response includes { callback }');
-      expect(builder.toString()).toContain('pass it as a parameter when invoking "nextStep"');
+      expect(builder.toString()).toContain(
+        'If the response includes { executeNextStepAfter: <seconds> }'
+      );
+      expect(builder.toString()).toContain(
+        'wait that time before invoking "nextStep"'
+      );
+      expect(builder.toString()).toContain(
+        'If the response includes { callback }'
+      );
+      expect(builder.toString()).toContain(
+        'pass it as a parameter when invoking "nextStep"'
+      );
     });
 
-        it('should chain withWalletConnect multiple times', () => {
+    it('should chain withWalletConnect multiple times', () => {
       const builder = new DescriptionBuilder('Initial');
       builder.withWalletConnect().withWalletConnect();
 
       const result = builder.toString();
       // Should contain the wallet connect instructions only once
-      const walletConnectCount = (result.match(/If a tool response includes \{ status: "continue" \}/g) || []).length;
+      const walletConnectCount = (
+        result.match(/If a tool response includes \{ status: "continue" \}/g) ||
+        []
+      ).length;
       expect(walletConnectCount).toBe(2); // Multiple calls should add the instructions multiple times
     });
 
@@ -36,12 +49,15 @@ describe('descriptionBuilder.ts', () => {
       const builder = new DescriptionBuilder('');
       builder.withWalletConnect();
 
-      expect(builder.toString()).toContain('If a tool response includes { status: "continue" }');
+      expect(builder.toString()).toContain(
+        'If a tool response includes { status: "continue" }'
+      );
       expect(builder.toString()).toContain('always invoke the "nextStep" tool');
     });
 
     it('should preserve original string when chaining', () => {
-      const originalString = 'Original description with special chars: !@#$%^&*()';
+      const originalString =
+        'Original description with special chars: !@#$%^&*()';
       const builder = new DescriptionBuilder(originalString);
       builder.withWalletConnect();
 

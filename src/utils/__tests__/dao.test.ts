@@ -14,7 +14,6 @@ import {
   type DAOMembersStakingInfo,
 } from '../dao.js';
 
-
 // Mock wagmi functions
 vi.mock('@wagmi/core', () => ({
   readContract: vi.fn(),
@@ -29,13 +28,13 @@ vi.mock('@wagmi/core', () => ({
   http: vi.fn(() => ({})),
 }));
 
-
 // Mock constants
 vi.mock('../../constants.js', () => ({
   getNetworkAddresses: vi.fn((network: string) => ({
-    DAO_COMMITTEE: network === 'mainnet'
-      ? '0x1234567890123456789012345678901234567890'
-      : '0x0987654321098765432109876543210987654321',
+    DAO_COMMITTEE:
+      network === 'mainnet'
+        ? '0x1234567890123456789012345678901234567890'
+        : '0x0987654321098765432109876543210987654321',
     LAYER2_MANAGER: '0x2345678901234567890123456789012345678901',
     SEIG_MANAGER: '0x3456789012345678901234567890123456789012',
   })),
@@ -114,25 +113,28 @@ describe('DAO Utils', () => {
 
   describe('checkDAOMembership', () => {
     it('should return true when address is a DAO member (candidate)', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
 
       mockReadContract.mockResolvedValueOnce(1n); // maxMember
       mockReadContracts
         .mockResolvedValueOnce([
           { result: '0x1234567890123456789012345678901234567890', error: null },
         ]) // members
-        .mockResolvedValueOnce([
-          { result: null, error: null },
-        ]) // candidateInfos
+        .mockResolvedValueOnce([{ result: null, error: null }]) // candidateInfos
         .mockResolvedValueOnce([
           { result: '0x0000000000000000000000000000000000000000', error: null },
         ]) // operatorManager
-        .mockResolvedValueOnce([
-          { result: null, error: null },
-        ]); // manager
+        .mockResolvedValueOnce([{ result: null, error: null }]); // manager
 
-      const result = await checkDAOMembership('0x1234567890123456789012345678901234567890', 'mainnet');
+      const result = await checkDAOMembership(
+        '0x1234567890123456789012345678901234567890',
+        'mainnet'
+      );
       expect(result).toBe(true);
     });
 
@@ -143,9 +145,7 @@ describe('DAO Utils', () => {
         .mockResolvedValueOnce([
           { result: '0x1234567890123456789012345678901234567890', error: null },
         ]) // members
-        .mockResolvedValueOnce([
-          { result: null, error: null },
-        ]) // candidateInfos
+        .mockResolvedValueOnce([{ result: null, error: null }]) // candidateInfos
         .mockResolvedValueOnce([
           { result: '0x0987654321098765432109876543210987654321', error: null },
         ]) // operatorManager
@@ -153,7 +153,10 @@ describe('DAO Utils', () => {
           { result: '0x0987654321098765432109876543210987654321', error: null },
         ]); // manager
 
-      const result = await checkDAOMembership('0x0987654321098765432109876543210987654321', 'mainnet');
+      const result = await checkDAOMembership(
+        '0x0987654321098765432109876543210987654321',
+        'mainnet'
+      );
       expect(result).toBe(true);
     });
 
@@ -164,17 +167,16 @@ describe('DAO Utils', () => {
         .mockResolvedValueOnce([
           { result: '0x1234567890123456789012345678901234567890', error: null },
         ]) // members
-        .mockResolvedValueOnce([
-          { result: null, error: null },
-        ]) // candidateInfos
+        .mockResolvedValueOnce([{ result: null, error: null }]) // candidateInfos
         .mockResolvedValueOnce([
           { result: '0x0000000000000000000000000000000000000000', error: null },
         ]) // operatorManager
-        .mockResolvedValueOnce([
-          { result: null, error: null },
-        ]); // manager
+        .mockResolvedValueOnce([{ result: null, error: null }]); // manager
 
-      const result = await checkDAOMembership('0x9999999999999999999999999999999999999999', 'mainnet');
+      const result = await checkDAOMembership(
+        '0x9999999999999999999999999999999999999999',
+        'mainnet'
+      );
       expect(result).toBe(false);
     });
 
@@ -185,14 +187,15 @@ describe('DAO Utils', () => {
           { result: '0x1234567890123456789012345678901234567890', error: null },
           { result: '0x0000000000000000000000000000000000000000', error: null },
         ]) // members
-        .mockResolvedValueOnce([
-          { result: null, error: null },
-        ]) // candidateInfos
+        .mockResolvedValueOnce([{ result: null, error: null }]) // candidateInfos
         .mockResolvedValueOnce([
           { result: null, error: { message: 'execution reverted' } },
         ]); // manager
 
-      const result = await checkDAOMembership('0x1234567890123456789012345678901234567890', 'mainnet');
+      const result = await checkDAOMembership(
+        '0x1234567890123456789012345678901234567890',
+        'mainnet'
+      );
       expect(result).toBe(true);
     });
   });
@@ -214,7 +217,7 @@ describe('DAO Utils', () => {
               86400n, // rewardPeriod
               0n, // claimedTimestamp
             ],
-            error: null
+            error: null,
           },
         ]) // candidateInfos
         .mockResolvedValueOnce([
@@ -243,7 +246,7 @@ describe('DAO Utils', () => {
           { result: '0x1234567890123456789012345678901234567890', error: null },
           { result: '0x0000000000000000000000000000000000000000', error: null },
         ]) // members
-                .mockResolvedValueOnce([
+        .mockResolvedValueOnce([
           { result: mockCandidateInfoArray, error: null },
         ]); // candidateInfos
 
@@ -257,7 +260,9 @@ describe('DAO Utils', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      vi.mocked(readContract).mockRejectedValueOnce(new Error('Contract error'));
+      vi.mocked(readContract).mockRejectedValueOnce(
+        new Error('Contract error')
+      );
 
       const result = await getDAOMemberCandidateInfo('mainnet');
       expect(result).toEqual([]);
@@ -273,7 +278,9 @@ describe('DAO Utils', () => {
     });
 
     it('should return 0 on error', async () => {
-      vi.mocked(readContract).mockRejectedValueOnce(new Error('Contract error'));
+      vi.mocked(readContract).mockRejectedValueOnce(
+        new Error('Contract error')
+      );
 
       const result = await getDAOMemberCount('mainnet');
       expect(result).toBe(0);
@@ -289,8 +296,12 @@ describe('DAO Utils', () => {
 
   describe('getDAOMemberOperatorManagerInfo', () => {
     it('should return members with operator manager info', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
 
       mockReadContract.mockResolvedValueOnce(1n); // maxMember
       mockReadContracts
@@ -319,8 +330,12 @@ describe('DAO Utils', () => {
     });
 
     it('should handle null operator manager', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
 
       mockReadContract.mockResolvedValueOnce(1n); // maxMember
       mockReadContracts
@@ -390,18 +405,22 @@ describe('DAO Utils', () => {
     });
 
     it('should return staking info with operator manager', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
-      const mockGetPublicClient = vi.mocked(await import('@wagmi/core')).getPublicClient;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
+      const mockGetPublicClient = vi.mocked(
+        await import('@wagmi/core')
+      ).getPublicClient;
 
       mockReadContract.mockResolvedValueOnce(1n); // maxMember
       mockReadContracts
         .mockResolvedValueOnce([
           { result: '0x1111111111111111111111111111111111111111', error: null },
         ]) // members
-        .mockResolvedValueOnce([
-          { result: mockCandidateInfo, error: null },
-        ]) // candidateInfos
+        .mockResolvedValueOnce([{ result: mockCandidateInfo, error: null }]) // candidateInfos
         .mockResolvedValueOnce([
           { result: '0x2222222222222222222222222222222222222222', error: null },
         ]) // operatorManager
@@ -424,12 +443,18 @@ describe('DAO Utils', () => {
       const result = await getDAOMembersStakingInfo('mainnet', true);
 
       expect(result).toHaveLength(1);
-      expect(result[0].candidate).toBe('0x1111111111111111111111111111111111111111');
+      expect(result[0].candidate).toBe(
+        '0x1111111111111111111111111111111111111111'
+      );
     });
 
     it('should handle errors in staking info retrieval', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
 
       mockReadContract.mockResolvedValueOnce(1n); // maxMember
       mockReadContracts
@@ -463,9 +488,15 @@ describe('DAO Utils', () => {
     });
 
     it('should handle block timestamp retrieval error', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
-      const mockGetPublicClient = vi.mocked(await import('@wagmi/core')).getPublicClient;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
+      const mockGetPublicClient = vi.mocked(
+        await import('@wagmi/core')
+      ).getPublicClient;
 
       mockReadContract.mockResolvedValueOnce(1n); // maxMember
       mockReadContracts
@@ -495,14 +526,19 @@ describe('DAO Utils', () => {
 
   describe('getDAOMembersActivityReward', () => {
     it('should return activity reward for valid candidate contract', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
 
       // Mock candidate address retrieval
       mockReadContract
         .mockResolvedValueOnce('0x1234567890123456789012345678901234567890') // candidate
         .mockResolvedValueOnce(1000000000000000000n); // claimable activity reward
 
-      const result = await getDAOMembersActivityReward('mainnet', '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+      const result = await getDAOMembersActivityReward(
+        'mainnet',
+        '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      );
 
       expect(mockReadContract).toHaveBeenCalledTimes(2);
       expect(mockReadContract).toHaveBeenNthCalledWith(1, expect.any(Object), {
@@ -528,13 +564,18 @@ describe('DAO Utils', () => {
     });
 
     it('should return activity reward for sepolia network', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
 
       mockReadContract
         .mockResolvedValueOnce('0x1234567890123456789012345678901234567890') // candidate
         .mockResolvedValueOnce(500000000000000000n); // claimable activity reward
 
-      const result = await getDAOMembersActivityReward('sepolia', '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+      const result = await getDAOMembersActivityReward(
+        'sepolia',
+        '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      );
 
       expect(mockReadContract).toHaveBeenCalledTimes(2);
       expect(mockReadContract).toHaveBeenNthCalledWith(2, expect.any(Object), {
@@ -553,13 +594,18 @@ describe('DAO Utils', () => {
     });
 
     it('should return zero reward when no claimable activity reward', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
 
       mockReadContract
         .mockResolvedValueOnce('0x1234567890123456789012345678901234567890') // candidate
         .mockResolvedValueOnce(0n); // no claimable activity reward
 
-      const result = await getDAOMembersActivityReward('mainnet', '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+      const result = await getDAOMembersActivityReward(
+        'mainnet',
+        '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      );
 
       expect(result).toEqual({
         result: true,
@@ -569,11 +615,16 @@ describe('DAO Utils', () => {
     });
 
     it('should handle contract read error gracefully', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
 
       mockReadContract.mockRejectedValueOnce(new Error('Contract read error'));
 
-      const result = await getDAOMembersActivityReward('mainnet', '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+      const result = await getDAOMembersActivityReward(
+        'mainnet',
+        '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      );
 
       expect(result).toEqual({
         result: false,
@@ -583,14 +634,19 @@ describe('DAO Utils', () => {
     });
 
     it('should handle candidate function error', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
 
       // First call succeeds (candidate), second call fails (getClaimableActivityReward)
       mockReadContract
         .mockResolvedValueOnce('0x1234567890123456789012345678901234567890') // candidate
         .mockRejectedValueOnce(new Error('getClaimableActivityReward error'));
 
-      const result = await getDAOMembersActivityReward('mainnet', '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+      const result = await getDAOMembersActivityReward(
+        'mainnet',
+        '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      );
 
       expect(result).toEqual({
         result: false,
@@ -600,13 +656,18 @@ describe('DAO Utils', () => {
     });
 
     it('should use default network when network parameter is not provided', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
 
       mockReadContract
         .mockResolvedValueOnce('0x1234567890123456789012345678901234567890') // candidate
         .mockResolvedValueOnce(1000000000000000000n); // claimable activity reward
 
-      const result = await getDAOMembersActivityReward(undefined, '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+      const result = await getDAOMembersActivityReward(
+        undefined,
+        '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      );
 
       expect(mockReadContract).toHaveBeenCalledTimes(2);
       expect(mockReadContract).toHaveBeenNthCalledWith(2, expect.any(Object), {
@@ -628,19 +689,31 @@ describe('DAO Utils', () => {
   describe('Challenge Functions', () => {
     describe('getChallengeInfo', () => {
       it('should return challenge info when challenger has more stake', async () => {
-        const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
-        const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+        const mockReadContract = vi.mocked(
+          await import('@wagmi/core')
+        ).readContract;
+        const mockReadContracts = vi.mocked(
+          await import('@wagmi/core')
+        ).readContracts;
 
         // getDAOMemberCandidateInfo를 위한 mock
-        mockReadContract
-          .mockResolvedValueOnce(3n); // maxMember
+        mockReadContract.mockResolvedValueOnce(3n); // maxMember
 
         // getDAOMemberCandidateInfo의 members 호출을 위한 mock
         mockReadContracts
           .mockResolvedValueOnce([
-            { result: '0x1234567890123456789012345678901234567890', status: 'success' }, // member address
-            { result: '0x0000000000000000000000000000000000000000', status: 'success' }, // empty member
-            { result: '0x0000000000000000000000000000000000000000', status: 'success' }, // empty member
+            {
+              result: '0x1234567890123456789012345678901234567890',
+              status: 'success',
+            }, // member address
+            {
+              result: '0x0000000000000000000000000000000000000000',
+              status: 'success',
+            }, // empty member
+            {
+              result: '0x0000000000000000000000000000000000000000',
+              status: 'success',
+            }, // empty member
           ] as any)
           // getDAOMemberCandidateInfo의 candidateInfos 호출을 위한 mock
           .mockResolvedValueOnce([
@@ -672,29 +745,44 @@ describe('DAO Utils', () => {
       });
 
       it('should return challenge info when challenger has less stake', async () => {
-        const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
-        const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+        const mockReadContract = vi.mocked(
+          await import('@wagmi/core')
+        ).readContract;
+        const mockReadContracts = vi.mocked(
+          await import('@wagmi/core')
+        ).readContracts;
 
         // getDAOMemberCandidateInfo를 위한 mock
-        mockReadContract
-          .mockResolvedValueOnce(3n); // maxMember
+        mockReadContract.mockResolvedValueOnce(3n); // maxMember
 
         // getDAOMemberCandidateInfo의 members 호출을 위한 mock
         mockReadContracts
           .mockResolvedValueOnce([
-            { result: '0x0000000000000000000000000000000000000000', status: 'success' }, // empty member
-            { result: '0x1234567890123456789012345678901234567890', status: 'success' }, // member address
-            { result: '0x0000000000000000000000000000000000000000', status: 'success' }, // empty member
+            {
+              result: '0x0000000000000000000000000000000000000000',
+              status: 'success',
+            }, // empty member
+            {
+              result: '0x1234567890123456789012345678901234567890',
+              status: 'success',
+            }, // member address
+            {
+              result: '0x0000000000000000000000000000000000000000',
+              status: 'success',
+            }, // empty member
           ] as any)
           // getDAOMemberCandidateInfo의 candidateInfos 호출을 위한 mock
           .mockResolvedValueOnce([
-            { result: [
-              mockCandidateInfo.candidateContract,
-              1n, // indexMembers를 1로 변경
-              mockCandidateInfo.memberJoinedTime,
-              mockCandidateInfo.rewardPeriod,
-              mockCandidateInfo.claimedTimestamp,
-            ], status: 'success' }, // candidateInfo for member
+            {
+              result: [
+                mockCandidateInfo.candidateContract,
+                1n, // indexMembers를 1로 변경
+                mockCandidateInfo.memberJoinedTime,
+                mockCandidateInfo.rewardPeriod,
+                mockCandidateInfo.claimedTimestamp,
+              ],
+              status: 'success',
+            }, // candidateInfo for member
           ] as any)
           // getChallengeInfo의 stake 조회를 위한 mock
           .mockResolvedValueOnce([
@@ -715,19 +803,28 @@ describe('DAO Utils', () => {
           requiredStake: 2000000000000000000n,
           currentStake: 1500000000000000000n,
           canChallenge: false,
-          challengeReason: 'Challenger stake (1500000000000000000) must be at least 2000000000000000000 TON',
+          challengeReason:
+            'Challenger stake (1500000000000000000) must be at least 2000000000000000000 TON',
         });
       });
 
       it('should handle contract read error', async () => {
-        const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
-        const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+        const mockReadContract = vi.mocked(
+          await import('@wagmi/core')
+        ).readContract;
+        const mockReadContracts = vi.mocked(
+          await import('@wagmi/core')
+        ).readContracts;
 
         // getDAOMemberCandidateInfo에서 에러 발생
-        mockReadContract.mockRejectedValueOnce(new Error('Contract read error'));
+        mockReadContract.mockRejectedValueOnce(
+          new Error('Contract read error')
+        );
 
         // getChallengeInfo의 readContracts에서 에러 발생
-        mockReadContracts.mockRejectedValueOnce(new Error('Contract read error'));
+        mockReadContracts.mockRejectedValueOnce(
+          new Error('Contract read error')
+        );
 
         const result = await getChallengeInfo(
           2, // memberIndex
@@ -745,6 +842,5 @@ describe('DAO Utils', () => {
         });
       });
     });
-
   });
 });

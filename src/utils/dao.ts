@@ -1,4 +1,10 @@
-import { readContract, readContracts, getPublicClient, http, writeContract } from '@wagmi/core';
+import {
+  readContract,
+  readContracts,
+  getPublicClient,
+  http,
+  writeContract,
+} from '@wagmi/core';
 import { mainnet, sepolia } from '@wagmi/core/chains';
 import { wagmiConfig } from './wagmi-config.js';
 import { getNetworkAddresses } from '../constants.js';
@@ -22,7 +28,7 @@ export interface CandidateInfo {
 }
 
 export interface DAOMemberCandidateInfo {
-  candidate: string;  // 멤버주소 (EOA or OperatorManager)
+  candidate: string; // 멤버주소 (EOA or OperatorManager)
   candidateInfo?: CandidateInfo | null;
   operatorManager?: string | null;
   manager?: string | null;
@@ -37,7 +43,7 @@ export interface DAOMembersStakingInfo {
   totalStaked?: string; // WTON 단위 문자열 (예: "1000 WTON")
   lastCommitBlock?: bigint;
   lastUpdateSeigniorageTime?: bigint;
-  claimableActivityReward?: string;  // WTON 단위 문자열 (예: "1000 WTON")
+  claimableActivityReward?: string; // WTON 단위 문자열 (예: "1000 WTON")
 }
 
 /**
@@ -82,7 +88,7 @@ export async function getDAOMemberCandidateInfo(
       chainId,
     });
     const maxMembers = Number(maxMemberResult);
-    const activeMemberData: { address: string, slotIndex: number }[] = [];
+    const activeMemberData: { address: string; slotIndex: number }[] = [];
 
     // 멀티콜로 모든 멤버 주소들을 한 번에 조회
     const contracts = Array.from({ length: maxMembers }, (_, i) => ({
@@ -98,7 +104,11 @@ export async function getDAOMemberCandidateInfo(
     // 결과에서 유효한 멤버 주소만 추출
     for (let i = 0; i < results.length; i++) {
       const result = results[i];
-      if (!result.error && result.result && result.result !== '0x0000000000000000000000000000000000000000') {
+      if (
+        !result.error &&
+        result.result &&
+        result.result !== '0x0000000000000000000000000000000000000000'
+      ) {
         activeMemberData.push({
           address: result.result as string,
           slotIndex: i,
@@ -107,8 +117,7 @@ export async function getDAOMemberCandidateInfo(
     }
     // 2단계: 모든 활성 멤버의 candidateInfo를 한 번에 가져오기
     // daoCommittee 컨트랙트에서 candidateInfos 함수를 호출하여 각 멤버의 candidateContract 정보를 가져옴
-    const candidateInfoContracts = activeMemberData.map(member => (
-      {
+    const candidateInfoContracts = activeMemberData.map((member) => ({
       address: networkAddresses.DAO_COMMITTEE,
       abi: daoCommitteeAbi,
       functionName: 'candidateInfos',
@@ -116,13 +125,13 @@ export async function getDAOMemberCandidateInfo(
       chainId,
     }));
 
-    const candidateInfoResults = await readContracts(wagmiConfig, { contracts: candidateInfoContracts });
-
+    const candidateInfoResults = await readContracts(wagmiConfig, {
+      contracts: candidateInfoContracts,
+    });
 
     // activeMemberData와 candidateInfoResults를 매핑해서 원하는 형태로 변환
     const memberInfoList = activeMemberData.map((member, index) => {
       const candidateInfoResult = candidateInfoResults[index];
-
 
       if (candidateInfoResult.error || !candidateInfoResult.result) {
         console.log(`Error for member ${index}:`, candidateInfoResult.error);
@@ -182,27 +191,32 @@ export async function getDAOMemberOperatorManagerInfo(
     }
 
     // 3단계: 유효한 멤버의 operatorManager를 한 번에 가져오기
-    const operatorManagerContracts = validMembers.map(member => ({
+    const operatorManagerContracts = validMembers.map((member) => ({
       address: networkAddresses.LAYER2_MANAGER as `0x${string}`,
       abi: layer2ManagerAbi as any,
       functionName: 'operatorOfLayer',
       args: [member.candidateInfo?.candidateContract as `0x${string}`],
       chainId,
     }));
-    const operatorManagerResults = await readContracts(wagmiConfig, { contracts: operatorManagerContracts });
+    const operatorManagerResults = await readContracts(wagmiConfig, {
+      contracts: operatorManagerContracts,
+    });
 
     // 4단계: 모든 활성 멤버의 manager를 한 번에 가져오기
     // operatorManagerResults를 확인해서, 가져오면 manager에 넣고 아니면 manager는 null이다.
     const validOperatorManagerResults = operatorManagerResults
       .map((result, index) => ({
         result: result.result as string,
-        originalIndex: index
+        originalIndex: index,
       }))
-      .filter(item => !operatorManagerResults[item.originalIndex].error &&
-                      item.result &&
-                      item.result !== '0x0000000000000000000000000000000000000000');
+      .filter(
+        (item) =>
+          !operatorManagerResults[item.originalIndex].error &&
+          item.result &&
+          item.result !== '0x0000000000000000000000000000000000000000'
+      );
 
-    const managerContracts = validOperatorManagerResults.map(item => ({
+    const managerContracts = validOperatorManagerResults.map((item) => ({
       address: item.result as `0x${string}`,
       abi: operatorManagerAbi as any,
       functionName: 'manager',
@@ -210,20 +224,28 @@ export async function getDAOMemberOperatorManagerInfo(
       chainId,
     }));
 
-    const managerResults = await readContracts(wagmiConfig, { contracts: managerContracts });
+    const managerResults = await readContracts(wagmiConfig, {
+      contracts: managerContracts,
+    });
 
     // 결과를 정확히 매칭
     for (let i = 0; i < memberInfoList.length; i++) {
       const member = memberInfoList[i];
       const operatorManagerResult = operatorManagerResults[i];
 
-      if (!operatorManagerResult.error && operatorManagerResult.result &&
-          operatorManagerResult.result !== '0x0000000000000000000000000000000000000000') {
+      if (
+        !operatorManagerResult.error &&
+        operatorManagerResult.result &&
+        operatorManagerResult.result !==
+          '0x0000000000000000000000000000000000000000'
+      ) {
         const operatorManager = String(operatorManagerResult.result);
         member.operatorManager = operatorManager;
 
         // validOperatorManagerResults에서 해당 operatorManager 찾기
-        const validIndex = validOperatorManagerResults.findIndex(item => item.result === operatorManager);
+        const validIndex = validOperatorManagerResults.findIndex(
+          (item) => item.result === operatorManager
+        );
         if (validIndex !== -1 && validIndex < managerResults.length) {
           const managerResult = managerResults[validIndex];
           if (!managerResult.error && managerResult.result) {
@@ -234,9 +256,11 @@ export async function getDAOMemberOperatorManagerInfo(
     }
 
     return memberInfoList;
-
   } catch (error) {
-    console.error(`Failed to get DAO member operator manager info on ${network}:`, error);
+    console.error(
+      `Failed to get DAO member operator manager info on ${network}:`,
+      error
+    );
     return [];
   }
 }
@@ -244,7 +268,9 @@ export async function getDAOMemberOperatorManagerInfo(
 /**
  * DAO 멤버 수를 조회
  */
-export async function getDAOMemberCount(network: string = 'mainnet'): Promise<number> {
+export async function getDAOMemberCount(
+  network: string = 'mainnet'
+): Promise<number> {
   try {
     const networkAddresses = getNetworkAddresses(network);
     const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
@@ -264,7 +290,6 @@ export async function getDAOMemberCount(network: string = 'mainnet'): Promise<nu
   }
 }
 
-
 /**
  * 특정 주소가 DAO 멤버인지 확인
  */
@@ -276,9 +301,10 @@ export async function checkDAOMembership(
     // getDAOMembers 함수를 호출해서, 멤버 리스트의 candidate나 manager 중에 있는지 확인
     const members = await getDAOMemberOperatorManagerInfo(network);
     const normalizedAddress = address.toLowerCase();
-    const member = members.find(member =>
-      member.candidate.toLowerCase() === normalizedAddress ||
-      (member.manager && member.manager.toLowerCase() === normalizedAddress)
+    const member = members.find(
+      (member) =>
+        member.candidate.toLowerCase() === normalizedAddress ||
+        (member.manager && member.manager.toLowerCase() === normalizedAddress)
     );
     if (member) {
       return true;
@@ -286,15 +312,17 @@ export async function checkDAOMembership(
       return false;
     }
   } catch (error) {
-    console.error(`Failed to check DAO membership for ${address} on ${network}:`, error);
+    console.error(
+      `Failed to check DAO membership for ${address} on ${network}:`,
+      error
+    );
     return false;
   }
 }
 
-
 /**
-   * 모든 커미티 멤버의 스테이킹 정보와 최근 시뇨리지 업데이트 시간 조회 , 오퍼레이터 주소를 가져올것인지는 옵션
-   */
+ * 모든 커미티 멤버의 스테이킹 정보와 최근 시뇨리지 업데이트 시간 조회 , 오퍼레이터 주소를 가져올것인지는 옵션
+ */
 export async function getDAOMembersStakingInfo(
   network: string = 'mainnet',
   includeOperatorManager: boolean = false
@@ -303,8 +331,8 @@ export async function getDAOMembersStakingInfo(
     const networkAddresses = getNetworkAddresses(network);
 
     const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
-    let members ;
-    if(includeOperatorManager){
+    let members;
+    if (includeOperatorManager) {
       members = await getDAOMemberOperatorManagerInfo(network);
     } else {
       members = await getDAOMemberCandidateInfo(network);
@@ -313,55 +341,68 @@ export async function getDAOMembersStakingInfo(
     const stakingInfo: DAOMembersStakingInfo[] = [];
 
     // 멀티콜로 스테이킹 정보 조회
-    const stakingContracts = members.map(member => {
-      const candidateContract = member.candidateInfo?.candidateContract;
-      return [
-        {
-          address: candidateContract as `0x${string}`,
-          abi: daoCandidateAbi as any,
-          functionName: 'memo',
-          args: [],
-          chainId,
-        },
-        {
-          address: candidateContract as `0x${string}`,
-          abi: daoCandidateAbi as any,
-          functionName: 'totalStaked',
-          args: [],
-          chainId,
-        },
-        {
-          address: networkAddresses.DAO_COMMITTEE,
-          abi: daoCommitteeAbi as any,
-          functionName: 'getClaimableActivityReward',
-          args: [member.candidate as `0x${string}`],
-          chainId,
-        },
-        {
-          address: networkAddresses.SEIG_MANAGER,
-          abi: seigManagerAbi as any,
-          functionName: 'lastCommitBlock',
-          args: [candidateContract as `0x${string}`],
-          chainId,
-        }
-      ];
-    }).flat();
+    const stakingContracts = members
+      .map((member) => {
+        const candidateContract = member.candidateInfo?.candidateContract;
+        return [
+          {
+            address: candidateContract as `0x${string}`,
+            abi: daoCandidateAbi as any,
+            functionName: 'memo',
+            args: [],
+            chainId,
+          },
+          {
+            address: candidateContract as `0x${string}`,
+            abi: daoCandidateAbi as any,
+            functionName: 'totalStaked',
+            args: [],
+            chainId,
+          },
+          {
+            address: networkAddresses.DAO_COMMITTEE,
+            abi: daoCommitteeAbi as any,
+            functionName: 'getClaimableActivityReward',
+            args: [member.candidate as `0x${string}`],
+            chainId,
+          },
+          {
+            address: networkAddresses.SEIG_MANAGER,
+            abi: seigManagerAbi as any,
+            functionName: 'lastCommitBlock',
+            args: [candidateContract as `0x${string}`],
+            chainId,
+          },
+        ];
+      })
+      .flat();
 
-    const stakingResults = await readContracts(wagmiConfig, { contracts: stakingContracts });
+    const stakingResults = await readContracts(wagmiConfig, {
+      contracts: stakingContracts,
+    });
     const publicClient = getPublicClient(wagmiConfig, { chainId });
     // 결과를 4개씩 그룹화하여 처리
     for (let i = 0; i < members.length; i++) {
       const member = members[i];
       const resultIndex = i * 4;
-      const [memoResult, totalStakedResult, claimableRewardResult, lastCommitBlockResult] = stakingResults.slice(resultIndex, resultIndex + 4);
+      const [
+        memoResult,
+        totalStakedResult,
+        claimableRewardResult,
+        lastCommitBlockResult,
+      ] = stakingResults.slice(resultIndex, resultIndex + 4);
 
       // lastCommitBlock의 타임스탬프 가져오기 (개별 처리)
       let lastUpdateSeigniorageTime = BigInt(0);
-      if (!lastCommitBlockResult.error && lastCommitBlockResult.result && (lastCommitBlockResult.result as bigint) > BigInt(0)) {
+      if (
+        !lastCommitBlockResult.error &&
+        lastCommitBlockResult.result &&
+        (lastCommitBlockResult.result as bigint) > BigInt(0)
+      ) {
         try {
           const lastCommitBlock = lastCommitBlockResult.result as bigint;
           const block = await publicClient.getBlock({
-            blockNumber: lastCommitBlock
+            blockNumber: lastCommitBlock,
           });
           lastUpdateSeigniorageTime = BigInt(block.timestamp);
         } catch (error) {
@@ -373,32 +414,54 @@ export async function getDAOMembersStakingInfo(
         candidate: member.candidate,
         candidateInfo: member.candidateInfo as CandidateInfo,
         memo: memoResult.error ? '' : String(memoResult.result),
-        totalStaked: totalStakedResult.error ? '0 WTON' : formatTokenAmountWithUnitPrecise(totalStakedResult.result as bigint, 'WTON', 27, 8), // WTON 단위로 변환하여 표기
-        lastCommitBlock: lastCommitBlockResult.error ? BigInt(0) : (lastCommitBlockResult.result as bigint),
+        totalStaked: totalStakedResult.error
+          ? '0 WTON'
+          : formatTokenAmountWithUnitPrecise(
+              totalStakedResult.result as bigint,
+              'WTON',
+              27,
+              8
+            ), // WTON 단위로 변환하여 표기
+        lastCommitBlock: lastCommitBlockResult.error
+          ? BigInt(0)
+          : (lastCommitBlockResult.result as bigint),
         lastUpdateSeigniorageTime: lastUpdateSeigniorageTime,
-        claimableActivityReward: claimableRewardResult.error ? '0 WTON' : formatTokenAmountWithUnitPrecise(claimableRewardResult.result as bigint, 'WTON', 18, 8),
+        claimableActivityReward: claimableRewardResult.error
+          ? '0 WTON'
+          : formatTokenAmountWithUnitPrecise(
+              claimableRewardResult.result as bigint,
+              'WTON',
+              18,
+              8
+            ),
         operatorManager: member.operatorManager || undefined,
         manager: member.manager || undefined,
       });
     }
     return stakingInfo;
   } catch (error) {
-    console.error(`Failed to get DAO members staking info on ${network}:`, error);
+    console.error(
+      `Failed to get DAO members staking info on ${network}:`,
+      error
+    );
     return [];
   }
 }
 
 /**
  * 특정 candidateContract 의 활동비 정보를 조회하기
-*/
+ */
 export async function getDAOMembersActivityReward(
   network: string = 'mainnet',
-  candidateContract: string,
-): Promise<{result: boolean, candidate: string, reward: bigint}> {
+  candidateContract: string
+): Promise<{ result: boolean; candidate: string; reward: bigint }> {
   try {
     // 입력 검증
-    if (!candidateContract || candidateContract === '0x0000000000000000000000000000000000000000') {
-      return {result: false, candidate: candidateContract, reward: BigInt(0)};
+    if (
+      !candidateContract ||
+      candidateContract === '0x0000000000000000000000000000000000000000'
+    ) {
+      return { result: false, candidate: candidateContract, reward: BigInt(0) };
     }
 
     const networkAddresses = getNetworkAddresses(network);
@@ -416,8 +479,11 @@ export async function getDAOMembersActivityReward(
       });
     } catch (error) {
       // 컨트랙트가 존재하지 않거나 candidate 함수가 없는 경우
-      console.warn(`Contract ${candidateContract} does not exist or has no candidate function:`, error);
-      return {result: false, candidate: candidateContract, reward: BigInt(0)};
+      console.warn(
+        `Contract ${candidateContract} does not exist or has no candidate function:`,
+        error
+      );
+      return { result: false, candidate: candidateContract, reward: BigInt(0) };
     }
 
     // candidate 주소를 찾아서 활동비 정보를 조회
@@ -429,10 +495,17 @@ export async function getDAOMembersActivityReward(
       chainId,
     });
 
-    return {result: true, candidate: candidate as `0x${string}`, reward: result as unknown as bigint};
+    return {
+      result: true,
+      candidate: candidate as `0x${string}`,
+      reward: result as unknown as bigint,
+    };
   } catch (error) {
-    console.error(`Failed to get DAO members activity reward on ${network}:`, error);
-    return {result: false, candidate: candidateContract, reward: BigInt(0)};
+    console.error(
+      `Failed to get DAO members activity reward on ${network}:`,
+      error
+    );
+    return { result: false, candidate: candidateContract, reward: BigInt(0) };
   }
 }
 
@@ -451,9 +524,12 @@ export async function getChallengeInfo(
 
     const members = await getDAOMemberCandidateInfo(network);
     // challengerCandidate 가 멤버리스트에 있으면 챌린지 불가.
-    for(let i = 0; i < members.length; i++){
+    for (let i = 0; i < members.length; i++) {
       const member = members[i];
-      if(member.candidateInfo?.candidateContract.toLowerCase() === challengerCandidateContract.toLowerCase()){
+      if (
+        member.candidateInfo?.candidateContract.toLowerCase() ===
+        challengerCandidateContract.toLowerCase()
+      ) {
         return {
           memberCandidate: '',
           challengerCandidate: challengerCandidateContract,
@@ -464,19 +540,20 @@ export async function getChallengeInfo(
         };
       }
 
-      if(member.candidateInfo?.indexMembers == BigInt(memberIndex) ) memberCandidateInfo = member.candidateInfo as CandidateInfo;
+      if (member.candidateInfo?.indexMembers == BigInt(memberIndex))
+        memberCandidateInfo = member.candidateInfo as CandidateInfo;
     }
 
     let memberStakeResult = 0n;
     let challengerStakeResult = 0n;
     let minStake = 1000000000000000000000n;
     // memberCandidateInf가 널이면, 해당 슬롯이 비었있다는 것이기 때문에, 챌린지 가능하다. 그것이 진짜 위원회 컨트랙이 맞다면,
-    if(memberCandidateInfo != null){
+    if (memberCandidateInfo != null) {
       // 멀티콜로 멤버와 챌린저의 스테이킹 정보를 한 번에 조회
       const stakeResults = await readContracts(wagmiConfig, {
         contracts: [
           {
-            address: memberCandidateInfo.candidateContract  as `0x${string}`,
+            address: memberCandidateInfo.candidateContract as `0x${string}`,
             abi: daoCandidateAbi as any,
             functionName: 'totalStaked',
             args: [],
@@ -495,7 +572,7 @@ export async function getChallengeInfo(
             functionName: 'minimumAmount',
             args: [],
             chainId,
-          }
+          },
         ],
       });
 
@@ -519,7 +596,7 @@ export async function getChallengeInfo(
             functionName: 'minimumAmount',
             args: [],
             chainId,
-          }
+          },
         ],
       });
       memberStakeResult = 0n;
@@ -528,7 +605,9 @@ export async function getChallengeInfo(
     }
 
     // 챌린지 조건 확인: 챌린저의 스테이킹이 멤버의 스테이킹보다 많아야 함, challengerStake 는 minStake 톤보다 많아야함
-    const canChallenge = challengerStakeResult > memberStakeResult && challengerStakeResult >= minStake;
+    const canChallenge =
+      challengerStakeResult > memberStakeResult &&
+      challengerStakeResult >= minStake;
 
     // 더 상세한 챌린지 조건 검증
     let challengeReason = undefined;
@@ -539,7 +618,10 @@ export async function getChallengeInfo(
       challengeReason = `Challenger stake (${challengerStakeResult}) must be greater than member stake (${memberStakeResult})`;
     } else if (memberCandidateInfo == null) {
       challengeReason = 'Member slot is empty or invalid';
-    } else if (challengerCandidateContract.toLowerCase() === memberCandidateInfo.candidateContract.toLowerCase()) {
+    } else if (
+      challengerCandidateContract.toLowerCase() ===
+      memberCandidateInfo.candidateContract.toLowerCase()
+    ) {
       challengeReason = 'Challenger and member are the same contract';
     }
 

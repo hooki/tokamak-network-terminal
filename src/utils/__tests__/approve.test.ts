@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { checkApproval } from '../approve.js';
 
-
 // Mock wagmi functions
 vi.mock('@wagmi/core', () => ({
   readContract: vi.fn(),
@@ -33,7 +32,9 @@ describe('approve.ts', () => {
 
   describe('checkApproval', () => {
     it('should return undefined when allowance is sufficient', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
       mockReadContract.mockResolvedValue(1000000000000000000n); // 1 ETH allowance
 
       const result = await checkApproval(
@@ -54,7 +55,7 @@ describe('approve.ts', () => {
           functionName: 'allowance',
           args: [
             '0x1234567890123456789012345678901234567890',
-            '0x9876543210987654321098765432109876543210'
+            '0x9876543210987654321098765432109876543210',
           ],
           chainId: 1,
         }
@@ -63,7 +64,9 @@ describe('approve.ts', () => {
     });
 
     it('should return approval request when allowance is insufficient', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
       mockReadContract.mockResolvedValue(100000000000000000n); // 0.1 ETH allowance
 
       const result = await checkApproval(
@@ -82,7 +85,9 @@ describe('approve.ts', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
       mockReadContract.mockRejectedValue(new Error('Contract error'));
 
       const result = await checkApproval(
@@ -101,7 +106,9 @@ describe('approve.ts', () => {
     });
 
     it('should use sepolia chainId when network is sepolia', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
       mockReadContract.mockResolvedValue(1000000000000000000n);
 
       await checkApproval(

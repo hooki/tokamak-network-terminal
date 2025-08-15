@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { connectWallet, generateQRCode, checkWalletConnection } from '../wallet.js';
+import {
+  connectWallet,
+  generateQRCode,
+  checkWalletConnection,
+} from '../wallet.js';
 
 // Mock wagmi functions
 vi.mock('@wagmi/core', () => ({
@@ -57,8 +61,11 @@ describe('wallet.ts', () => {
   describe('connectWallet', () => {
     it('should resolve with URI when display_uri event is emitted', async () => {
       const mockConnect = vi.mocked(await import('@wagmi/core')).connect;
-      const mockMetaMask = vi.mocked(await import('@wagmi/connectors')).metaMask;
-      const mockSetup = vi.mocked(await import('../wagmi-config.js')).wagmiConfig._internal.connectors.setup;
+      const mockMetaMask = vi.mocked(
+        await import('@wagmi/connectors')
+      ).metaMask;
+      const mockSetup = vi.mocked(await import('../wagmi-config.js'))
+        .wagmiConfig._internal.connectors.setup;
 
       // Mock the connector setup
       const mockConnector = {
@@ -94,9 +101,11 @@ describe('wallet.ts', () => {
   describe('generateQRCode', () => {
     it('should generate QR code and resolve', async () => {
       const mockQrcode = vi.mocked(await import('qrcode-terminal')).default;
-      (mockQrcode.generate as any).mockImplementation((uri: string, options: any, callback: () => void) => {
-        callback();
-      });
+      (mockQrcode.generate as any).mockImplementation(
+        (uri: string, options: any, callback: () => void) => {
+          callback();
+        }
+      );
 
       await generateQRCode('test-uri');
 
@@ -128,7 +137,10 @@ describe('wallet.ts', () => {
 
     it('should return success response when wallet is connected', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      mockGetAccount.mockReturnValue({ isConnected: true, address: '0x1234567890123456789012345678901234567890' } as any);
+      mockGetAccount.mockReturnValue({
+        isConnected: true,
+        address: '0x1234567890123456789012345678901234567890',
+      } as any);
 
       const result = await checkWalletConnection(false, 'test-callback');
 

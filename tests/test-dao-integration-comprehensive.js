@@ -10,13 +10,13 @@ const TEST_CONFIG = {
   networks: ['mainnet', 'sepolia'],
   testAddresses: {
     mainnet: '0x1234567890123456789012345678901234567890',
-    sepolia: '0x0987654321098765432109876543210987654321'
-  }
+    sepolia: '0x0987654321098765432109876543210987654321',
+  },
 };
 
 // Start the MCP server
 const serverProcess = spawn('node', ['dist/src/index.js'], {
-  stdio: ['pipe', 'pipe', 'pipe']
+  stdio: ['pipe', 'pipe', 'pipe'],
 });
 
 let requestId = 1;
@@ -28,7 +28,7 @@ function sendRequest(method, params = {}) {
     jsonrpc: '2.0',
     id: requestId++,
     method,
-    params
+    params,
   };
 
   const toolName = params.name || 'unknown';
@@ -40,7 +40,7 @@ function parseResponse(data) {
   const dataStr = data.toString();
 
   // 여러 줄로 나뉜 데이터를 처리
-  const lines = dataStr.split('\n').filter(line => line.trim());
+  const lines = dataStr.split('\n').filter((line) => line.trim());
 
   for (const line of lines) {
     try {
@@ -64,7 +64,7 @@ function logTestResult(testName, success, message = '') {
     test: testName,
     status: success ? 'PASS' : 'FAIL',
     message: message,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
   testResults.push(result);
   console.log(`${status} ${testName}${message ? ': ' + message : ''}`);
@@ -90,7 +90,11 @@ serverProcess.stdout.on('data', (data) => {
           if (parsed.status === 'success') {
             logTestResult(currentTest, true, parsed.message?.substring(0, 100));
           } else if (parsed.status === 'error') {
-            logTestResult(currentTest, false, parsed.message?.substring(0, 100));
+            logTestResult(
+              currentTest,
+              false,
+              parsed.message?.substring(0, 100)
+            );
           }
         } catch (e) {
           logTestResult(currentTest, true, content.substring(0, 100));
@@ -116,7 +120,7 @@ const TEST_CATEGORIES = {
   STAKING_INFO: 'DAO Staking Information',
   ACTIVITY_REWARDS: 'DAO Activity Rewards',
   ERROR_HANDLING: 'Error Handling',
-  PERFORMANCE: 'Performance Testing'
+  PERFORMANCE: 'Performance Testing',
 };
 
 // Test suite
@@ -133,21 +137,21 @@ async function runDAOTestSuite() {
     currentTest = `Get DAO member count on ${network}`;
     sendRequest('tools/call', {
       name: 'get-dao-member-count',
-      arguments: { network }
+      arguments: { network },
     });
     await setTimeout(TEST_CONFIG.delay);
 
     currentTest = `Get DAO member candidate info on ${network}`;
     sendRequest('tools/call', {
       name: 'get-dao-member-candidate-info',
-      arguments: { network }
+      arguments: { network },
     });
     await setTimeout(TEST_CONFIG.delay);
 
     currentTest = `Get DAO member operator manager info on ${network}`;
     sendRequest('tools/call', {
       name: 'get-dao-member-operator-manager-info',
-      arguments: { network }
+      arguments: { network },
     });
     await setTimeout(TEST_CONFIG.delay);
   }
@@ -163,8 +167,8 @@ async function runDAOTestSuite() {
       name: 'check-dao-membership',
       arguments: {
         address: testAddress,
-        network
-      }
+        network,
+      },
     });
     await setTimeout(TEST_CONFIG.delay);
   }
@@ -178,8 +182,8 @@ async function runDAOTestSuite() {
       name: 'get-dao-members-staking-info',
       arguments: {
         network,
-        includeOperatorManager: false
-      }
+        includeOperatorManager: false,
+      },
     });
     await setTimeout(TEST_CONFIG.delay);
 
@@ -188,8 +192,8 @@ async function runDAOTestSuite() {
       name: 'get-dao-members-staking-info',
       arguments: {
         network,
-        includeOperatorManager: true
-      }
+        includeOperatorManager: true,
+      },
     });
     await setTimeout(TEST_CONFIG.delay);
   }
@@ -203,11 +207,11 @@ async function runDAOTestSuite() {
       tokamak1: '0xf3B17FDB808c7d0Df9ACd24dA34700ce069007DF',
       DXM_Corp: '0x44e3605d0ed58FD125E9C47D1bf25a4406c13b57',
       Hammer: '0x06D34f65869Ec94B3BA8c0E08BCEb532f65005E2',
-      level: '0x0F42D1C40b95DF7A1478639918fc358B4aF5298D'
+      level: '0x0F42D1C40b95DF7A1478639918fc358B4aF5298D',
     },
     sepolia: {
-      Poseidon: '0xF078AE62eA4740E19ddf6c0c5e17Ecdb820BbEe1'
-    }
+      Poseidon: '0xF078AE62eA4740E19ddf6c0c5e17Ecdb820BbEe1',
+    },
   };
 
   for (const network of TEST_CONFIG.networks) {
@@ -220,8 +224,8 @@ async function runDAOTestSuite() {
           arguments: {
             network,
             candidateContract: contract,
-            claim: false
-          }
+            claim: false,
+          },
         });
         await setTimeout(TEST_CONFIG.delay);
       }
@@ -236,13 +240,13 @@ async function runDAOTestSuite() {
     mainnet: [
       '0x2b67d8d4e61b68744885e243efaf988f1fc66e2d', // DSRV
       '0x44e3605d0ed58fd125e9c47d1bf25a4406c13b57', // DXM Corp
-      '0xbc602c1d9f3ae99db4e9fd3662ce3d02e593ec5d'  // decipher
+      '0xbc602c1d9f3ae99db4e9fd3662ce3d02e593ec5d', // decipher
     ],
     sepolia: [
       '0xAbD15C021942Ca54aBd944C91705Fe70FEA13f0d', // member_DAO
       '0xCBeF7Cc221c04AD2E68e623613cc5d33b0fE1599', // TokamakOperator_v2
-      '0xeA2c15fdf4cE802Ba188e7D4460D979E9df5fD51'  // Titan_Test1
-    ]
+      '0xeA2c15fdf4cE802Ba188e7D4460D979E9df5fD51', // Titan_Test1
+    ],
   };
 
   for (const network of TEST_CONFIG.networks) {
@@ -255,8 +259,8 @@ async function runDAOTestSuite() {
           arguments: {
             memberIndex: 0,
             challengerCandidate: candidates[i],
-            network
-          }
+            network,
+          },
         });
         await setTimeout(TEST_CONFIG.delay);
       }
@@ -270,8 +274,8 @@ async function runDAOTestSuite() {
     arguments: {
       memberIndex: 0,
       challengerCandidate: '0xeA2c15fdf4cE802Ba188e7D4460D979E9df5fD51', // TON 토큰 주소 (DAO 멤버가 아님)
-      network: 'sepolia'
-    }
+      network: 'sepolia',
+    },
   });
   await setTimeout(TEST_CONFIG.delay);
 
@@ -283,8 +287,8 @@ async function runDAOTestSuite() {
     name: 'check-dao-membership',
     arguments: {
       address: 'invalid-address-format',
-      network: 'sepolia'
-    }
+      network: 'sepolia',
+    },
   });
   await setTimeout(TEST_CONFIG.delay);
 
@@ -294,8 +298,8 @@ async function runDAOTestSuite() {
     arguments: {
       network: 'sepolia',
       candidateContract: '0x1234567890123456789012345678901234567890', // 존재하지 않는 컨트랙트 주소
-      claim: false
-    }
+      claim: false,
+    },
   });
   await setTimeout(TEST_CONFIG.delay);
 
@@ -307,7 +311,7 @@ async function runDAOTestSuite() {
     const startTime = Date.now();
     sendRequest('tools/call', {
       name: 'get-dao-member-count',
-      arguments: { network: 'mainnet' }
+      arguments: { network: 'mainnet' },
     });
     await setTimeout(TEST_CONFIG.delay);
     const endTime = Date.now();
@@ -319,20 +323,24 @@ async function runDAOTestSuite() {
   console.log('\n📊 Test Results Summary:');
   console.log('========================');
 
-  const passedTests = testResults.filter(r => r.status === 'PASS').length;
-  const failedTests = testResults.filter(r => r.status === 'FAIL').length;
+  const passedTests = testResults.filter((r) => r.status === 'PASS').length;
+  const failedTests = testResults.filter((r) => r.status === 'FAIL').length;
   const totalTests = testResults.length;
 
   console.log(`Total Tests: ${totalTests}`);
   console.log(`Passed: ${passedTests}`);
   console.log(`Failed: ${failedTests}`);
-  console.log(`Success Rate: ${((passedTests / totalTests) * 100).toFixed(2)}%`);
+  console.log(
+    `Success Rate: ${((passedTests / totalTests) * 100).toFixed(2)}%`
+  );
 
   if (failedTests > 0) {
     console.log('\n❌ Failed Tests:');
-    testResults.filter(r => r.status === 'FAIL').forEach(result => {
-      console.log(`  - ${result.test}: ${result.message}`);
-    });
+    testResults
+      .filter((r) => r.status === 'FAIL')
+      .forEach((result) => {
+        console.log(`  - ${result.test}: ${result.message}`);
+      });
   }
 
   console.log('\n✅ Comprehensive DAO integration tests completed');

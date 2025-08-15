@@ -3,99 +3,99 @@
  */
 export const voteAgendaAbi = [
   {
-    "inputs": [
+    inputs: [
       {
-        "internalType": "uint256",
-        "name": "_agendaID",
-        "type": "uint256"
+        internalType: 'uint256',
+        name: '_agendaID',
+        type: 'uint256',
       },
       {
-        "internalType": "address",
-        "name": "_voter",
-        "type": "address"
+        internalType: 'address',
+        name: '_voter',
+        type: 'address',
       },
       {
-        "internalType": "uint256",
-        "name": "_vote",
-        "type": "uint256"
-      }
+        internalType: 'uint256',
+        name: '_vote',
+        type: 'uint256',
+      },
     ],
-    "name": "castVote",
-    "outputs": [
+    name: 'castVote',
+    outputs: [
       {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
+        internalType: 'bool',
+        name: '',
+        type: 'bool',
+      },
     ],
-    "stateMutability": "nonpayable",
-    "type": "function"
+    stateMutability: 'nonpayable',
+    type: 'function',
   },
   {
-    "inputs": [
+    inputs: [
       {
-        "internalType": "uint256",
-        "name": "_agendaID",
-        "type": "uint256"
+        internalType: 'uint256',
+        name: '_agendaID',
+        type: 'uint256',
       },
       {
-        "internalType": "address",
-        "name": "_user",
-        "type": "address"
-      }
+        internalType: 'address',
+        name: '_user',
+        type: 'address',
+      },
     ],
-    "name": "hasVoted",
-    "outputs": [
+    name: 'hasVoted',
+    outputs: [
       {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
+        internalType: 'bool',
+        name: '',
+        type: 'bool',
+      },
     ],
-    "stateMutability": "view",
-    "type": "function"
+    stateMutability: 'view',
+    type: 'function',
   },
   {
-    "inputs": [
+    inputs: [
       {
-        "internalType": "uint256",
-        "name": "_agendaID",
-        "type": "uint256"
+        internalType: 'uint256',
+        name: '_agendaID',
+        type: 'uint256',
       },
       {
-        "internalType": "address",
-        "name": "_candidate",
-        "type": "address"
-      }
+        internalType: 'address',
+        name: '_candidate',
+        type: 'address',
+      },
     ],
-    "name": "isVoter",
-    "outputs": [
+    name: 'isVoter',
+    outputs: [
       {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
+        internalType: 'bool',
+        name: '',
+        type: 'bool',
+      },
     ],
-    "stateMutability": "view",
-    "type": "function"
+    stateMutability: 'view',
+    type: 'function',
   },
   {
-    "inputs": [
+    inputs: [
       {
-        "internalType": "uint256",
-        "name": "_agendaID",
-        "type": "uint256"
-      }
+        internalType: 'uint256',
+        name: '_agendaID',
+        type: 'uint256',
+      },
     ],
-    "name": "isVotableStatus",
-    "outputs": [
+    name: 'isVotableStatus',
+    outputs: [
       {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
+        internalType: 'bool',
+        name: '',
+        type: 'bool',
+      },
     ],
-    "stateMutability": "view",
-    "type": "function"
-  }
+    stateMutability: 'view',
+    type: 'function',
+  },
 ] as const;

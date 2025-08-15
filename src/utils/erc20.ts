@@ -31,7 +31,10 @@ export async function getTokenAllowance(
   });
 }
 
-export async function getTokenDecimals(erc20Address: Address, chainId?: 1 | 11155111) {
+export async function getTokenDecimals(
+  erc20Address: Address,
+  chainId?: 1 | 11155111
+) {
   return readContract(wagmiConfig, {
     address: erc20Address,
     abi: erc20Abi,
@@ -40,7 +43,10 @@ export async function getTokenDecimals(erc20Address: Address, chainId?: 1 | 1115
   });
 }
 
-export async function getTokenName(erc20Address: Address, chainId?: 1 | 11155111) {
+export async function getTokenName(
+  erc20Address: Address,
+  chainId?: 1 | 11155111
+) {
   return readContract(wagmiConfig, {
     address: erc20Address,
     abi: erc20Abi,
@@ -49,7 +55,10 @@ export async function getTokenName(erc20Address: Address, chainId?: 1 | 11155111
   });
 }
 
-export async function getTokenSymbol(erc20Address: Address, chainId?: 1 | 11155111) {
+export async function getTokenSymbol(
+  erc20Address: Address,
+  chainId?: 1 | 11155111
+) {
   return readContract(wagmiConfig, {
     address: erc20Address,
     abi: erc20Abi,
@@ -58,7 +67,10 @@ export async function getTokenSymbol(erc20Address: Address, chainId?: 1 | 111551
   });
 }
 
-export async function getTokenInfo(erc20Address: Address, chainId?: 1 | 11155111) {
+export async function getTokenInfo(
+  erc20Address: Address,
+  chainId?: 1 | 11155111
+) {
   const result = await readContracts(wagmiConfig, {
     contracts: [
       {

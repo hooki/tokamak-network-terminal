@@ -23,8 +23,7 @@ export function registerWithdrawTools(server: McpServer) {
       title: 'Get current block number',
       description: new DescriptionBuilder(
         'Get the current block number for the specified network. This is useful for calculating withdrawal availability.'
-      )
-        .toString(),
+      ).toString(),
       inputSchema: {
         network: z
           .string()
@@ -73,8 +72,7 @@ export function registerWithdrawTools(server: McpServer) {
       title: 'Get pending withdrawal requests',
       description: new DescriptionBuilder(
         'Get pending withdrawal requests from a Layer2 network operator for a specific wallet address. You can specify the operator by name (e.g., "hammer", "arbitrum") or by address.'
-      )
-        .toString(),
+      ).toString(),
       inputSchema: {
         network: z
           .string()
@@ -117,23 +115,23 @@ export function registerWithdrawTools(server: McpServer) {
       ]);
 
       const [...contractResults] = await readContracts(wagmiConfig, {
-          contracts: [
-            {
-              abi,
-              address: networkAddresses.DEPOSIT_MANAGER,
-              functionName: 'withdrawalRequestIndex',
-              args: [targetAddress, walletAddress as `0x${string}`],
-              chainId,
-            },
-            {
-              abi,
-              address: networkAddresses.DEPOSIT_MANAGER,
-              functionName: 'numRequests',
-              args: [targetAddress, walletAddress as `0x${string}`],
-              chainId,
-            },
-          ],
-        })
+        contracts: [
+          {
+            abi,
+            address: networkAddresses.DEPOSIT_MANAGER,
+            functionName: 'withdrawalRequestIndex',
+            args: [targetAddress, walletAddress as `0x${string}`],
+            chainId,
+          },
+          {
+            abi,
+            address: networkAddresses.DEPOSIT_MANAGER,
+            functionName: 'numRequests',
+            args: [targetAddress, walletAddress as `0x${string}`],
+            chainId,
+          },
+        ],
+      });
 
       const withdrawalRequestIndex = contractResults[0].result as bigint;
       const numRequests = contractResults[1].result as bigint;
@@ -274,7 +272,6 @@ export function registerWithdrawTools(server: McpServer) {
           },
         ],
       });
-
 
       const withdrawalRequestIndex = results[0].result as bigint;
       const numRequests = results[1].result as bigint;

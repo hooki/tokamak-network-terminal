@@ -27,7 +27,7 @@ const NETWORK_ADDRESSES = {
     L1BRIDGE_REGISTRY: '0x39d43281A4A5e922AB0DCf89825D73273D8C5BA4' as Address,
     LAYER2_MANAGER: '0xD6Bf6B2b7553c8064Ba763AD6989829060FdFC1D' as Address,
     DAO_COMMITTEE: '0xDD9f0cCc044B0781289Ee318e5971b0139602C26' as Address,
-    AGENDA_MANAGER: '0xcD4421d082752f363E1687544a09d5112cD4f484' as Address
+    AGENDA_MANAGER: '0xcD4421d082752f363E1687544a09d5112cD4f484' as Address,
   },
   sepolia: {
     TON_ADDRESS: '0xa30fe40285b8f5c0457dbc3b7c8a280373c40044' as Address,
@@ -39,7 +39,7 @@ const NETWORK_ADDRESSES = {
     L1BRIDGE_REGISTRY: '0x2D47fa57101203855b336e9E61BC9da0A6dd0Dbc' as Address,
     LAYER2_MANAGER: '0x58B4C2FEf19f5CDdd944AadD8DC99cCC71bfeFDc' as Address,
     DAO_COMMITTEE: '0xA2101482b28E3D99ff6ced517bA41EFf4971a386' as Address,
-    AGENDA_MANAGER: '0x1444f7a8bC26a3c9001a13271D56d6fF36B44f08' as Address
+    AGENDA_MANAGER: '0x1444f7a8bC26a3c9001a13271D56d6fF36B44f08' as Address,
   },
 };
 
@@ -50,18 +50,20 @@ const DEPOSIT_MANAGER: Address = NETWORK_ADDRESSES.mainnet.DEPOSIT_MANAGER;
 
 // 네트워크별 주소를 가져오는 헬퍼 함수
 export function getNetworkAddresses(network: string) {
-  return NETWORK_ADDRESSES[network as keyof typeof NETWORK_ADDRESSES] || NETWORK_ADDRESSES.mainnet;
+  return (
+    NETWORK_ADDRESSES[network as keyof typeof NETWORK_ADDRESSES] ||
+    NETWORK_ADDRESSES.mainnet
+  );
 }
 
 export function getNetworkTokens(network: string) {
   return TOKENS[network as keyof typeof TOKENS] || TOKENS.mainnet;
 }
 
-
 export {
   TON_ADDRESS,
   WTON_ADDRESS,
   DEPOSIT_MANAGER,
   TOKENS,
-  NETWORK_ADDRESSES
+  NETWORK_ADDRESSES,
 };

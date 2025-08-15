@@ -75,7 +75,10 @@ export function getNetworkLayer2Operators(network: string): Layer2Operators {
 }
 
 // 특정 네트워크의 Layer2 주소를 해석하는 함수
-export function resolveLayer2Address(identifier: string, network: string = 'mainnet'): Address {
+export function resolveLayer2Address(
+  identifier: string,
+  network: string = 'mainnet'
+): Address {
   const operators = getNetworkLayer2Operators(network);
 
   return identifier.startsWith('0x')

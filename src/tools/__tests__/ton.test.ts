@@ -39,9 +39,16 @@ vi.mock('@wagmi/core/chains', () => ({
 vi.mock('viem', () => ({
   parseAbi: vi.fn((abi) => abi),
   parseEther: vi.fn((value) => BigInt(value) * BigInt(10 ** 18)),
-  parseUnits: vi.fn((value, decimals) => BigInt(value) * BigInt(10 ** decimals)),
-  encodeAbiParameters: vi.fn((types, values) => `0x${values.map((v: any) => v.slice(2)).join('')}` as `0x${string}`),
-  isAddress: vi.fn((address) => address.startsWith('0x') && address.length === 42),
+  parseUnits: vi.fn(
+    (value, decimals) => BigInt(value) * BigInt(10 ** decimals)
+  ),
+  encodeAbiParameters: vi.fn(
+    (types, values) =>
+      `0x${values.map((v: any) => v.slice(2)).join('')}` as `0x${string}`
+  ),
+  isAddress: vi.fn(
+    (address) => address.startsWith('0x') && address.length === 42
+  ),
   isAddressEqual: vi.fn((a, b) => a.toLowerCase() === b.toLowerCase()),
 }));
 
@@ -138,7 +145,9 @@ describe('ton.ts', () => {
   describe('wrap-ton tool', () => {
     it('should handle wallet not connected', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
 
       mockGetAccount.mockReturnValue({ address: undefined } as any);
       mockCheckWalletConnection.mockResolvedValue({
@@ -171,11 +180,17 @@ describe('ton.ts', () => {
 
     it('should return error for insufficient balance', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
       const mockParseUnits = vi.mocked(await import('viem')).parseUnits;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
-      mockGetAccount.mockReturnValue({ address: '0x1234567890123456789012345678901234567890' } as any);
+      mockGetAccount.mockReturnValue({
+        address: '0x1234567890123456789012345678901234567890',
+      } as any);
       mockReadContracts.mockResolvedValue([
         { result: BigInt('50000000000000000000'), status: 'success' }, // 50 tokens
         { result: 18, status: 'success' }, // 18 decimals
@@ -212,14 +227,26 @@ describe('ton.ts', () => {
 
     it('should wrap TON to WTON successfully', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
-      const mockWaitForTransactionReceipt = vi.mocked(await import('@wagmi/core')).waitForTransactionReceipt;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
+      const mockWaitForTransactionReceipt = vi.mocked(
+        await import('@wagmi/core')
+      ).waitForTransactionReceipt;
       const mockParseEther = vi.mocked(await import('viem')).parseEther;
-      const mockEncodeAbiParameters = vi.mocked(await import('viem')).encodeAbiParameters;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockEncodeAbiParameters = vi.mocked(
+        await import('viem')
+      ).encodeAbiParameters;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
-      mockGetAccount.mockReturnValue({ address: '0x1234567890123456789012345678901234567890' } as any);
+      mockGetAccount.mockReturnValue({
+        address: '0x1234567890123456789012345678901234567890',
+      } as any);
       mockReadContracts.mockResolvedValue([
         { result: BigInt('1000000000000000000000'), status: 'success' }, // 1000 tokens
         { result: 18, status: 'success' }, // 18 decimals
@@ -227,7 +254,9 @@ describe('ton.ts', () => {
       mockWriteContract.mockResolvedValue('0xtxhash' as any);
       mockWaitForTransactionReceipt.mockResolvedValue({} as any);
       mockParseEther.mockReturnValue(BigInt('100000000000000000000')); // 100 tokens
-      mockEncodeAbiParameters.mockReturnValue('0xencoded_params' as `0x${string}`);
+      mockEncodeAbiParameters.mockReturnValue(
+        '0xencoded_params' as `0x${string}`
+      );
       mockCreateMCPResponse.mockReturnValue('success response');
 
       registerTONCommands(mockServer as any);
@@ -280,11 +309,19 @@ describe('ton.ts', () => {
 
     it('should handle sepolia network', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
-      const mockWaitForTransactionReceipt = vi.mocked(await import('@wagmi/core')).waitForTransactionReceipt;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
+      const mockWaitForTransactionReceipt = vi.mocked(
+        await import('@wagmi/core')
+      ).waitForTransactionReceipt;
 
-      mockGetAccount.mockReturnValue({ address: '0x1234567890123456789012345678901234567890' } as any);
+      mockGetAccount.mockReturnValue({
+        address: '0x1234567890123456789012345678901234567890',
+      } as any);
       mockReadContracts.mockResolvedValue([
         { result: BigInt('1000000000000000000000'), status: 'success' },
         { result: 18, status: 'success' },
@@ -317,7 +354,9 @@ describe('ton.ts', () => {
   describe('unwrap-wton tool', () => {
     it('should handle wallet not connected', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
 
       mockGetAccount.mockReturnValue({ address: undefined } as any);
       mockCheckWalletConnection.mockResolvedValue({
@@ -350,13 +389,23 @@ describe('ton.ts', () => {
 
     it('should unwrap WTON to TON successfully', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
-      const mockWaitForTransactionReceipt = vi.mocked(await import('@wagmi/core')).waitForTransactionReceipt;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
+      const mockWaitForTransactionReceipt = vi.mocked(
+        await import('@wagmi/core')
+      ).waitForTransactionReceipt;
       const mockParseUnits = vi.mocked(await import('viem')).parseUnits;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
-      mockGetAccount.mockReturnValue({ address: '0x1234567890123456789012345678901234567890' } as any);
+      mockGetAccount.mockReturnValue({
+        address: '0x1234567890123456789012345678901234567890',
+      } as any);
       mockReadContracts.mockResolvedValue([
         { result: BigInt('1000000000000000000000000000'), status: 'success' }, // 10000 tokens (27 decimals)
         { result: 27, status: 'success' }, // 27 decimals

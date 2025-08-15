@@ -12,7 +12,10 @@ export function createMCPResponse(response: MCPResponse): string {
 /**
  * Create response content with status and message
  */
-export function createResponse(status: 'success' | 'error' | 'continue', message: string) {
+export function createResponse(
+  status: 'success' | 'error' | 'continue',
+  message: string
+) {
   return {
     content: [
       {

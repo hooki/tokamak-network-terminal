@@ -16,7 +16,7 @@ export function getAgendaResultText(result: number): string {
     2: 'REJECT',
     3: 'DISMISS',
     4: 'NO CONSENSUS',
-    5: 'NO AGENDA'
+    5: 'NO AGENDA',
   };
   return resultTextMap[result] || 'Unknown';
 }
@@ -34,7 +34,7 @@ export function getAgendaStatusText(status: number): string {
     3: 'WAITING_EXEC',
     4: 'EXECUTED',
     5: 'ENDED',
-    6: 'NO AGENDA'
+    6: 'NO AGENDA',
   };
   return statusTextMap[status] || 'Unknown';
 }
@@ -49,7 +49,7 @@ export function getAgendaStatusTextV1(status: number): string {
     0: 'Pending',
     1: 'Active',
     2: 'Ended',
-    3: 'Executed'
+    3: 'Executed',
   };
   return statusTextMap[status] || 'Unknown';
 }
@@ -98,10 +98,14 @@ export function createAgendaMessage(
     executed,
   } = agendaData;
 
-  const totalVotes = Number(countingYes) + Number(countingNo) + Number(countingAbstain);
-  const votersList = voters.length > 0
-    ? voters.map((voter: string, index: number) => `${index + 1}. ${voter}`).join('\n    ')
-    : 'No voters';
+  const totalVotes =
+    Number(countingYes) + Number(countingNo) + Number(countingAbstain);
+  const votersList =
+    voters.length > 0
+      ? voters
+          .map((voter: string, index: number) => `${index + 1}. ${voter}`)
+          .join('\n    ')
+      : 'No voters';
 
   const versionSuffix = version ? ` (${version})` : '';
   const resultLine = resultText ? `• Result: ${resultText}\n` : '';

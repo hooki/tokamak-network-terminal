@@ -17,8 +17,7 @@ export function registerStakingInfoTools(server: McpServer) {
       title: 'Get staked balance for Layer2 operator(s)',
       description: new DescriptionBuilder(
         "Get the amount of staked WTON to one or multiple Layer2 operators. You can specify operators by name (e.g., 'hammer', 'tokamak1', 'level') or by address."
-      )
-        .toString(),
+      ).toString(),
       inputSchema: {
         network: z
           .string()
@@ -27,15 +26,15 @@ export function registerStakingInfoTools(server: McpServer) {
           .describe('The network to use (mainnet, sepolia, etc.)'),
         layer2Identifiers: z
           .union([
-            z.string().describe("Single Layer2 operator identifier"),
-            z.array(z.string()).describe("Multiple Layer2 operator identifiers")
+            z.string().describe('Single Layer2 operator identifier'),
+            z
+              .array(z.string())
+              .describe('Multiple Layer2 operator identifiers'),
           ])
           .describe(
             "The Layer2 operator identifier(s) - can be a single name/address or array of names/addresses (e.g., 'hammer', ['hammer', 'level', 'tokamak1'])"
           ),
-        walletAddress: z
-          .string()
-          .describe('The wallet address to check'),
+        walletAddress: z.string().describe('The wallet address to check'),
       },
     },
     async ({ layer2Identifiers, walletAddress, network = 'mainnet' }) => {
@@ -57,7 +56,9 @@ export function registerStakingInfoTools(server: McpServer) {
       }
 
       // Convert single identifier to array for consistent processing
-      const identifiers = Array.isArray(layer2Identifiers) ? layer2Identifiers : [layer2Identifiers];
+      const identifiers = Array.isArray(layer2Identifiers)
+        ? layer2Identifiers
+        : [layer2Identifiers];
 
       try {
         // Prepare contracts for all identifiers
@@ -66,7 +67,9 @@ export function registerStakingInfoTools(server: McpServer) {
           const targetAddress = resolveLayer2Address(identifier, network);
           contracts.push({
             address: networkAddresses.SEIG_MANAGER,
-            abi: parseAbi(['function stakeOf(address,address) view returns (uint256)']),
+            abi: parseAbi([
+              'function stakeOf(address,address) view returns (uint256)',
+            ]),
             functionName: 'stakeOf',
             args: [targetAddress, walletAddress as `0x${string}`],
             chainId,
@@ -81,7 +84,9 @@ export function registerStakingInfoTools(server: McpServer) {
           const stakedAmount = results[i].result as bigint;
 
           if (stakedAmount === undefined) {
-            throw new Error(`Failed to read contract data for ${identifiers[i]}`);
+            throw new Error(
+              `Failed to read contract data for ${identifiers[i]}`
+            );
           }
 
           const formattedAmount = formatUnits(stakedAmount, 27);
@@ -97,7 +102,7 @@ export function registerStakingInfoTools(server: McpServer) {
           message = `${stakingResults[0].amount} staked WTON to ${identifiers[0]} on ${network} (address: ${walletAddress})`;
         } else {
           message = `Staked amounts for ${walletAddress} on ${network}:\n`;
-          stakingResults.forEach(result => {
+          stakingResults.forEach((result) => {
             message += `• ${result.identifier}: ${result.amount} WTON\n`;
           });
         }
@@ -134,18 +139,15 @@ export function registerStakingInfoTools(server: McpServer) {
     {
       title: 'Get total staked amount for user across all Layer2 operators',
       description: new DescriptionBuilder(
-        "Get the total amount of tokens staked by a specific user across all Layer2 operators."
-      )
-        .toString(),
+        'Get the total amount of tokens staked by a specific user across all Layer2 operators.'
+      ).toString(),
       inputSchema: {
         network: z
           .string()
           .optional()
           .default('mainnet')
           .describe('The network to use (mainnet, sepolia, etc.)'),
-        walletAddress: z
-          .string()
-          .describe('The wallet address to check'),
+        walletAddress: z.string().describe('The wallet address to check'),
       },
     },
     async ({ walletAddress, network = 'mainnet' }) => {
@@ -171,7 +173,9 @@ export function registerStakingInfoTools(server: McpServer) {
           contracts: [
             {
               address: networkAddresses.SEIG_MANAGER,
-              abi: parseAbi(['function stakeOf(address) view returns (uint256)']),
+              abi: parseAbi([
+                'function stakeOf(address) view returns (uint256)',
+              ]),
               functionName: 'stakeOf',
               args: [walletAddress as `0x${string}`],
               chainId,
@@ -220,9 +224,8 @@ export function registerStakingInfoTools(server: McpServer) {
     {
       title: 'Get total staked amount for Layer2 operator',
       description: new DescriptionBuilder(
-        "Get the total amount of staked WTON to a specific Layer2 operator across all users."
-      )
-        .toString(),
+        'Get the total amount of staked WTON to a specific Layer2 operator across all users.'
+      ).toString(),
       inputSchema: {
         network: z
           .string()

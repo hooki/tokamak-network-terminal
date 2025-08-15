@@ -4,7 +4,7 @@ console.log('Testing DAO utilities with actual blockchain calls...\n');
 
 // Start the MCP server
 const serverProcess = spawn('node', ['dist/src/index.js'], {
-  stdio: ['pipe', 'pipe', 'pipe']
+  stdio: ['pipe', 'pipe', 'pipe'],
 });
 
 let requestId = 1;
@@ -14,7 +14,7 @@ function sendRequest(method, params = {}) {
     jsonrpc: '2.0',
     id: requestId++,
     method,
-    params
+    params,
   };
 
   const toolName = params.name || 'unknown';
@@ -26,7 +26,7 @@ function parseResponse(data) {
   const dataStr = data.toString();
 
   // 여러 줄로 나뉜 데이터를 처리
-  const lines = dataStr.split('\n').filter(line => line.trim());
+  const lines = dataStr.split('\n').filter((line) => line.trim());
 
   for (const line of lines) {
     try {
@@ -67,7 +67,10 @@ serverProcess.stdout.on('data', (data) => {
         // Try to parse the content text as JSON
         try {
           const parsedContent = JSON.parse(contentText);
-          console.log('📄 Parsed content:', JSON.stringify(parsedContent, null, 2));
+          console.log(
+            '📄 Parsed content:',
+            JSON.stringify(parsedContent, null, 2)
+          );
         } catch (parseError) {
           console.log('📄 Content text:', contentText);
         }
@@ -75,7 +78,10 @@ serverProcess.stdout.on('data', (data) => {
         // console.log('📊 Direct result:', JSON.stringify(response.result, null, 2));
       }
     } else if (response.error) {
-      console.log('❌ Error response:', JSON.stringify(response.error, null, 2));
+      console.log(
+        '❌ Error response:',
+        JSON.stringify(response.error, null, 2)
+      );
     }
     // console.log('─'.repeat(80));
   }
@@ -93,7 +99,7 @@ setTimeout(() => {
   console.log('=== Test 1: Get DAO member count on mainnet ===');
   sendRequest('tools/call', {
     name: 'get-dao-member-count',
-    arguments: { network: 'mainnet' }
+    arguments: { network: 'mainnet' },
   });
 
   // Test 2: Get DAO member candidate info on mainnet
@@ -101,16 +107,18 @@ setTimeout(() => {
     console.log('\n=== Test 2: Get DAO member candidate info on mainnet ===');
     sendRequest('tools/call', {
       name: 'get-dao-member-candidate-info',
-      arguments: { network: 'mainnet' }
+      arguments: { network: 'mainnet' },
     });
   }, 2000);
 
   // Test 3: Get DAO member operator manager info on mainnet
   setTimeout(() => {
-    console.log('\n=== Test 3: Get DAO member operator manager info on mainnet ===');
+    console.log(
+      '\n=== Test 3: Get DAO member operator manager info on mainnet ==='
+    );
     sendRequest('tools/call', {
       name: 'get-dao-member-operator-manager-info',
-      arguments: { network: 'sepolia' }
+      arguments: { network: 'sepolia' },
     });
   }, 4000);
 
@@ -119,7 +127,7 @@ setTimeout(() => {
     console.log('\n=== Test 4: Get DAO members staking info on mainnet ===');
     sendRequest('tools/call', {
       name: 'get-dao-members-staking-info',
-      arguments: { network: 'sepolia', includeOperatorManager: false }
+      arguments: { network: 'sepolia', includeOperatorManager: false },
     });
   }, 6000);
 
@@ -130,8 +138,8 @@ setTimeout(() => {
       name: 'check-dao-membership',
       arguments: {
         address: '0xc1eba383D94c6021160042491A5dfaF1d82694E6',
-        network: 'sepolia'
-      }
+        network: 'sepolia',
+      },
     });
   }, 8000);
 
@@ -140,7 +148,7 @@ setTimeout(() => {
     console.log('\n=== Test 6: Get DAO member count on sepolia ===');
     sendRequest('tools/call', {
       name: 'get-dao-member-count',
-      arguments: { network: 'sepolia' }
+      arguments: { network: 'sepolia' },
     });
   }, 10000);
 
@@ -149,16 +157,18 @@ setTimeout(() => {
     console.log('\n=== Test 7: Get DAO member candidate info on sepolia ===');
     sendRequest('tools/call', {
       name: 'get-dao-member-candidate-info',
-      arguments: { network: 'sepolia' }
+      arguments: { network: 'sepolia' },
     });
   }, 12000);
 
   // Test 8: Get DAO members staking info with operator manager on mainnet
   setTimeout(() => {
-    console.log('\n=== Test 8: Get DAO members staking info with operator manager on mainnet ===');
+    console.log(
+      '\n=== Test 8: Get DAO members staking info with operator manager on mainnet ==='
+    );
     sendRequest('tools/call', {
       name: 'get-dao-members-staking-info',
-      arguments: { network: 'mainnet', includeOperatorManager: true }
+      arguments: { network: 'mainnet', includeOperatorManager: true },
     });
   }, 14000);
 
@@ -168,7 +178,7 @@ setTimeout(() => {
     const startTime = Date.now();
     sendRequest('tools/call', {
       name: 'get-dao-member-count',
-      arguments: { network: 'mainnet' }
+      arguments: { network: 'mainnet' },
     });
 
     // Response time will be logged in the response handler
@@ -185,43 +195,49 @@ setTimeout(() => {
       name: 'check-dao-membership',
       arguments: {
         address: 'invalid-address',
-        network: 'mainnet'
-      }
+        network: 'mainnet',
+      },
     });
   }, 18000);
 
   // Test 11: Get DAO candidate activity reward on mainnet
   setTimeout(() => {
-    console.log('\n=== Test 11: Get DAO candidate activity reward on mainnet ===');
+    console.log(
+      '\n=== Test 11: Get DAO candidate activity reward on mainnet ==='
+    );
     sendRequest('tools/call', {
       name: 'dao-candidate-activity-reward',
       arguments: {
         network: 'mainnet',
-        candidateContract: '0xf3B17FDB808c7d0Df9ACd24dA34700ce069007DF' // tokamak1
-      }
+        candidateContract: '0xf3B17FDB808c7d0Df9ACd24dA34700ce069007DF', // tokamak1
+      },
     });
   }, 20000);
 
   // Test 12: Get DAO candidate activity reward on sepolia
   setTimeout(() => {
-    console.log('\n=== Test 12: Get DAO candidate activity reward on sepolia ===');
+    console.log(
+      '\n=== Test 12: Get DAO candidate activity reward on sepolia ==='
+    );
     sendRequest('tools/call', {
       name: 'dao-candidate-activity-reward',
       arguments: {
         network: 'sepolia',
-        candidateContract: '0xF078AE62eA4740E19ddf6c0c5e17Ecdb820BbEe1' // Poseidon
-      }
+        candidateContract: '0xF078AE62eA4740E19ddf6c0c5e17Ecdb820BbEe1', // Poseidon
+      },
     });
   }, 22000);
 
   // Test 13: Get DAO candidate activity reward without network (should use default)
   setTimeout(() => {
-    console.log('\n=== Test 13: Get DAO candidate activity reward without network ===');
+    console.log(
+      '\n=== Test 13: Get DAO candidate activity reward without network ==='
+    );
     sendRequest('tools/call', {
       name: 'dao-candidate-activity-reward',
       arguments: {
-        candidateContract: '0x44e3605d0ed58FD125E9C47D1bf25a4406c13b57' // DXM_Corp
-      }
+        candidateContract: '0x44e3605d0ed58FD125E9C47D1bf25a4406c13b57', // DXM_Corp
+      },
     });
   }, 24000);
 
@@ -233,8 +249,8 @@ setTimeout(() => {
       arguments: {
         memberIndex: 0,
         challengerCandidate: '0x1234567890123456789012345678901234567890', // Test challenger
-        network: 'mainnet'
-      }
+        network: 'mainnet',
+      },
     });
   }, 26000);
 
@@ -246,21 +262,23 @@ setTimeout(() => {
       arguments: {
         memberIndex: 0,
         challengerCandidate: '0x2345678901234567890123456789012345678901', // Test challenger
-        network: 'sepolia'
-      }
+        network: 'sepolia',
+      },
     });
   }, 28000);
 
   // Test 16: Get challenge member info with different member index
   setTimeout(() => {
-    console.log('\n=== Test 16: Get challenge member info with different member index ===');
+    console.log(
+      '\n=== Test 16: Get challenge member info with different member index ==='
+    );
     sendRequest('tools/call', {
       name: 'get-challenge-member-info',
       arguments: {
         memberIndex: 1,
         challengerCandidate: '0x3456789012345678901234567890123456789012', // Test challenger
-        network: 'mainnet'
-      }
+        network: 'mainnet',
+      },
     });
   }, 30000);
 
@@ -269,5 +287,4 @@ setTimeout(() => {
     console.log('\n✅ All DAO integration tests completed');
     serverProcess.kill();
   }, 32000);
-
 }, 1000);

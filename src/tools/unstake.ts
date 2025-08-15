@@ -38,7 +38,12 @@ export function registerUnstakeTools(server: McpServer) {
           .describe('If true, indicates this is a callback execution'),
       },
     },
-    async ({ layer2Identifier, tokenAmount, network = 'mainnet', isCallback }) => {
+    async ({
+      layer2Identifier,
+      tokenAmount,
+      network = 'mainnet',
+      isCallback,
+    }) => {
       const targetAddress = resolveLayer2Address(layer2Identifier, network);
       const networkAddresses = getNetworkAddresses(network);
       const callbackCommand = `unstake-tokens ${targetAddress} ${tokenAmount} --network ${network}`;
@@ -56,7 +61,9 @@ export function registerUnstakeTools(server: McpServer) {
         contracts: [
           {
             address: networkAddresses.SEIG_MANAGER,
-            abi: parseAbi(['function stakeOf(address,address) view returns (uint256)']),
+            abi: parseAbi([
+              'function stakeOf(address,address) view returns (uint256)',
+            ]),
             functionName: 'stakeOf',
             args: [targetAddress, account as `0x${string}`],
             chainId,

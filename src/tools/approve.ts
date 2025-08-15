@@ -57,7 +57,15 @@ export function registerApproveTools(server: McpServer) {
           .describe('If true, indicates this is a callback execution'),
       },
     },
-    async ({ token, spender, amount, network = 'mainnet', decimals, callback, isCallback }) => {
+    async ({
+      token,
+      spender,
+      amount,
+      network = 'mainnet',
+      decimals,
+      callback,
+      isCallback,
+    }) => {
       const resolvedToken = resolveTokenAddress(token, network);
       const resolvedSpender = resolveAddress(spender, network);
       const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;

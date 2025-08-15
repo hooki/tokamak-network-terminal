@@ -5,20 +5,20 @@ const { spawn } = require('child_process');
 const testCases = [
   {
     name: 'Get latest agendas (no parameters)',
-    params: {}
+    params: {},
   },
   {
     name: 'Get agendas from start',
-    params: { start: '0' }
+    params: { start: '0' },
   },
   {
     name: 'Get agendas with range',
-    params: { start: '0', end: '10' }
+    params: { start: '0', end: '10' },
   },
   {
     name: 'Get agendas on sepolia',
-    params: { network: 'sepolia' }
-  }
+    params: { network: 'sepolia' },
+  },
 ];
 
 console.log('Testing get-agendas tool...\n');

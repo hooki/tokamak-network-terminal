@@ -4,7 +4,7 @@ console.log('Testing get-agendas tool with actual calls...\n');
 
 // Start the MCP server
 const serverProcess = spawn('node', ['dist/src/index.js'], {
-  stdio: ['pipe', 'pipe', 'pipe']
+  stdio: ['pipe', 'pipe', 'pipe'],
 });
 
 let requestId = 1;
@@ -14,7 +14,7 @@ function sendRequest(method, params = {}) {
     jsonrpc: '2.0',
     id: requestId++,
     method,
-    params
+    params,
   };
 
   console.log(`Sending: ${method}`);
@@ -60,7 +60,7 @@ setTimeout(() => {
   console.log('=== Test 1: Get latest agendas ===');
   sendRequest('tools/call', {
     name: 'get-agendas',
-    arguments: {}
+    arguments: {},
   });
 
   // Test 2: Get agendas with start parameter
@@ -68,7 +68,7 @@ setTimeout(() => {
     console.log('\n=== Test 2: Get agendas from start=0 ===');
     sendRequest('tools/call', {
       name: 'get-agendas',
-      arguments: { start: '0' }
+      arguments: { start: '0' },
     });
   }, 2000);
 
@@ -77,42 +77,41 @@ setTimeout(() => {
     console.log('\n=== Test 3: Get agendas with range start=0, end=5 ===');
     sendRequest('tools/call', {
       name: 'get-agendas',
-      arguments: { start: '0', end: '5' }
+      arguments: { start: '0', end: '5' },
     });
   }, 4000);
 
-      // Test 4: Get agendas on sepolia
-    setTimeout(() => {
-      console.log('\n=== Test 4: Get agendas on sepolia network ===');
-      sendRequest('tools/call', {
-        name: 'get-agendas',
-        arguments: { network: 'sepolia' }
-      });
-    }, 6000);
+  // Test 4: Get agendas on sepolia
+  setTimeout(() => {
+    console.log('\n=== Test 4: Get agendas on sepolia network ===');
+    sendRequest('tools/call', {
+      name: 'get-agendas',
+      arguments: { network: 'sepolia' },
+    });
+  }, 6000);
 
-    // Test 5: Get agenda count from mainnet
-    setTimeout(() => {
-      console.log('\n=== Test 5: Get agenda count from mainnet ===');
-      sendRequest('tools/call', {
-        name: 'get-agenda-count',
-        arguments: { network: 'mainnet' }
-      });
-    }, 8000);
+  // Test 5: Get agenda count from mainnet
+  setTimeout(() => {
+    console.log('\n=== Test 5: Get agenda count from mainnet ===');
+    sendRequest('tools/call', {
+      name: 'get-agenda-count',
+      arguments: { network: 'mainnet' },
+    });
+  }, 8000);
 
-    // Test 6: Get agenda count from sepolia
-    setTimeout(() => {
-      console.log('\n=== Test 6: Get agenda count from sepolia ===');
-      sendRequest('tools/call', {
-        name: 'get-agenda-count',
-        arguments: { network: 'sepolia' }
-      });
-    }, 10000);
+  // Test 6: Get agenda count from sepolia
+  setTimeout(() => {
+    console.log('\n=== Test 6: Get agenda count from sepolia ===');
+    sendRequest('tools/call', {
+      name: 'get-agenda-count',
+      arguments: { network: 'sepolia' },
+    });
+  }, 10000);
 
-    // Clean up after all tests
-    setTimeout(() => {
-      console.log('\n✅ All tests completed');
-      serverProcess.kill();
-      process.exit(0);
-    }, 12000);
-
+  // Clean up after all tests
+  setTimeout(() => {
+    console.log('\n✅ All tests completed');
+    serverProcess.kill();
+    process.exit(0);
+  }, 12000);
 }, 1000);

@@ -21,7 +21,10 @@ describe('resolve.ts', () => {
     });
 
     it('should return address directly for valid address format', () => {
-      const result = resolveTokenAddress('0x1234567890123456789012345678901234567890', 'mainnet');
+      const result = resolveTokenAddress(
+        '0x1234567890123456789012345678901234567890',
+        'mainnet'
+      );
       expect(result).toBe('0x1234567890123456789012345678901234567890');
     });
 
@@ -49,7 +52,10 @@ describe('resolve.ts', () => {
     });
 
     it('should return address directly for valid address format', () => {
-      const result = resolveAddress('0x1234567890123456789012345678901234567890', 'mainnet');
+      const result = resolveAddress(
+        '0x1234567890123456789012345678901234567890',
+        'mainnet'
+      );
       expect(result).toBe('0x1234567890123456789012345678901234567890');
     });
 
@@ -58,5 +64,4 @@ describe('resolve.ts', () => {
       expect(result).toBeUndefined();
     });
   });
-
 });

@@ -103,11 +103,13 @@ describe('wallet.ts', () => {
   describe('wait-wallet-connect tool', () => {
     it('should return success when wallet is connected', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
       mockGetAccount.mockReturnValue({
         isConnected: true,
-        address: '0x1234567890123456789012345678901234567890'
+        address: '0x1234567890123456789012345678901234567890',
       } as any);
       mockCreateMCPResponse.mockReturnValue('success response');
 
@@ -142,7 +144,9 @@ describe('wallet.ts', () => {
 
     it('should return error when wallet connection times out', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
       mockGetAccount.mockReturnValue({ isConnected: false } as any);
       mockCreateMCPResponse.mockReturnValue('error response');
@@ -177,7 +181,10 @@ describe('wallet.ts', () => {
     it('should use default timeout when not provided', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
 
-      mockGetAccount.mockReturnValue({ isConnected: true, address: '0x123' } as any);
+      mockGetAccount.mockReturnValue({
+        isConnected: true,
+        address: '0x123',
+      } as any);
 
       registerWalletTools(mockServer as any);
 
@@ -198,9 +205,15 @@ describe('wallet.ts', () => {
 
   describe('connect-wallet tool', () => {
     it('should return QR code when connection is successful', async () => {
-      const mockConnectWallet = vi.mocked(await import('../../utils/wallet.js')).connectWallet;
-      const mockGenerateQRCode = vi.mocked(await import('../../utils/wallet.js')).generateQRCode;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockConnectWallet = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).connectWallet;
+      const mockGenerateQRCode = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).generateQRCode;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
       mockConnectWallet.mockResolvedValue('test-uri');
       mockGenerateQRCode.mockResolvedValue('qr-code-text');
@@ -249,9 +262,15 @@ describe('wallet.ts', () => {
     });
 
     it('should return error when QR code generation fails', async () => {
-      const mockConnectWallet = vi.mocked(await import('../../utils/wallet.js')).connectWallet;
-      const mockGenerateQRCode = vi.mocked(await import('../../utils/wallet.js')).generateQRCode;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockConnectWallet = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).connectWallet;
+      const mockGenerateQRCode = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).generateQRCode;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
       mockConnectWallet.mockResolvedValue('test-uri');
       mockGenerateQRCode.mockRejectedValue(new Error('QR generation failed'));
@@ -284,7 +303,9 @@ describe('wallet.ts', () => {
     });
 
     it('should handle connection failure', async () => {
-      const mockConnectWallet = vi.mocked(await import('../../utils/wallet.js')).connectWallet;
+      const mockConnectWallet = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).connectWallet;
 
       mockConnectWallet.mockRejectedValue(new Error('Connection failed'));
 
@@ -296,9 +317,11 @@ describe('wallet.ts', () => {
       expect(toolCall).toBeDefined();
       const toolFunction = toolCall![2];
 
-      await expect(toolFunction({
-        callback: 'test-callback',
-      })).rejects.toThrow('Connection failed');
+      await expect(
+        toolFunction({
+          callback: 'test-callback',
+        })
+      ).rejects.toThrow('Connection failed');
     });
   });
 });

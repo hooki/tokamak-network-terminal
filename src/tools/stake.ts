@@ -3,7 +3,12 @@ import { writeContract } from '@wagmi/core';
 import { mainnet, sepolia } from '@wagmi/core/chains';
 import { encodeAbiParameters, parseAbi, parseEther } from 'viem';
 import { z } from 'zod';
-import { DEPOSIT_MANAGER, TON_ADDRESS, WTON_ADDRESS, getNetworkAddresses } from '../constants.js';
+import {
+  DEPOSIT_MANAGER,
+  TON_ADDRESS,
+  WTON_ADDRESS,
+  getNetworkAddresses,
+} from '../constants.js';
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import { resolveLayer2Address } from '../utils/layer2.js';
 import { createMCPResponse } from '../utils/response.js';
@@ -38,7 +43,12 @@ export function registerStakeTools(server: McpServer) {
           .describe('If true, indicates this is a callback execution'),
       },
     },
-    async ({ layer2Identifier, tokenAmount, network = 'mainnet', isCallback }) => {
+    async ({
+      layer2Identifier,
+      tokenAmount,
+      network = 'mainnet',
+      isCallback,
+    }) => {
       const targetAddress = resolveLayer2Address(layer2Identifier, network);
       const networkAddresses = getNetworkAddresses(network);
       const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;

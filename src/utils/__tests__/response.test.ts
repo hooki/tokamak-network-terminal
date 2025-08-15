@@ -10,7 +10,9 @@ describe('response.ts', () => {
       });
 
       expect(response).toContain('"status":"success"');
-      expect(response).toContain('"message":"Operation completed successfully"');
+      expect(response).toContain(
+        '"message":"Operation completed successfully"'
+      );
     });
 
     it('should create error response', () => {
@@ -33,7 +35,9 @@ describe('response.ts', () => {
 
       expect(response).toContain('"status":"continue"');
       expect(response).toContain('"message":"Please approve the token"');
-      expect(response).toContain('"nextStep":"approve TON for WTON amount 100"');
+      expect(response).toContain(
+        '"nextStep":"approve TON for WTON amount 100"'
+      );
       expect(response).toContain('"callback":"stake-tokens hammer 100"');
     });
 

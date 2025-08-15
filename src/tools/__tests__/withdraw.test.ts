@@ -39,7 +39,9 @@ vi.mock('@wagmi/core/chains', () => ({
 // Mock viem functions
 vi.mock('viem', () => ({
   parseAbi: vi.fn((abi) => abi),
-  formatUnits: vi.fn((value, decimals) => (Number(value) / Math.pow(10, decimals)).toString()),
+  formatUnits: vi.fn((value, decimals) =>
+    (Number(value) / Math.pow(10, decimals)).toString()
+  ),
 }));
 
 // Mock constants
@@ -113,7 +115,9 @@ describe('withdraw.ts', () => {
         'pending-withdrawal-requests',
         expect.objectContaining({
           title: 'Get pending withdrawal requests',
-          description: expect.stringContaining('Get pending withdrawal requests from a Layer2 network operator'),
+          description: expect.stringContaining(
+            'Get pending withdrawal requests from a Layer2 network operator'
+          ),
           inputSchema: expect.objectContaining({
             network: expect.any(Object),
             layer2Identifier: expect.any(Object),
@@ -151,8 +155,12 @@ describe('withdraw.ts', () => {
 
   describe('get-current-block-number tool', () => {
     it('should get current block number successfully', async () => {
-      const mockGetBlockNumber = vi.mocked(await import('@wagmi/core')).getBlockNumber;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockGetBlockNumber = vi.mocked(
+        await import('@wagmi/core')
+      ).getBlockNumber;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
       mockGetBlockNumber.mockResolvedValue(BigInt('18456789'));
       mockCreateMCPResponse.mockReturnValue('success response');
@@ -175,7 +183,9 @@ describe('withdraw.ts', () => {
       );
       expect(mockCreateMCPResponse).toHaveBeenCalledWith({
         status: 'success',
-        message: expect.stringContaining('Current block number on mainnet: 18456789'),
+        message: expect.stringContaining(
+          'Current block number on mainnet: 18456789'
+        ),
       });
       expect(result).toEqual({
         content: [
@@ -188,7 +198,9 @@ describe('withdraw.ts', () => {
     });
 
     it('should handle sepolia network', async () => {
-      const mockGetBlockNumber = vi.mocked(await import('@wagmi/core')).getBlockNumber;
+      const mockGetBlockNumber = vi.mocked(
+        await import('@wagmi/core')
+      ).getBlockNumber;
 
       mockGetBlockNumber.mockResolvedValue(BigInt('12345678'));
 
@@ -211,8 +223,12 @@ describe('withdraw.ts', () => {
     });
 
     it('should handle error', async () => {
-      const mockGetBlockNumber = vi.mocked(await import('@wagmi/core')).getBlockNumber;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockGetBlockNumber = vi.mocked(
+        await import('@wagmi/core')
+      ).getBlockNumber;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
       mockGetBlockNumber.mockRejectedValue(new Error('Network error'));
       mockCreateMCPResponse.mockReturnValue('error response');
@@ -231,7 +247,8 @@ describe('withdraw.ts', () => {
 
       expect(mockCreateMCPResponse).toHaveBeenCalledWith({
         status: 'error',
-        message: 'Failed to get current block number on mainnet: Error: Network error',
+        message:
+          'Failed to get current block number on mainnet: Error: Network error',
       });
       expect(result).toEqual({
         content: [
@@ -246,7 +263,9 @@ describe('withdraw.ts', () => {
 
   describe('pending-withdrawal-requests tool', () => {
     it('should return error when wallet address is not provided', async () => {
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
       mockCreateMCPResponse.mockReturnValue('error response');
 
@@ -280,15 +299,23 @@ describe('withdraw.ts', () => {
 
     it('should return no withdrawal requests when none found', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
 
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
         content: [{ type: 'text', text: 'Wallet is connected' }],
       });
-      mockGetAccount.mockReturnValue({ address: '0x1234567890123456789012345678901234567890' } as any);
+      mockGetAccount.mockReturnValue({
+        address: '0x1234567890123456789012345678901234567890',
+      } as any);
       mockReadContracts.mockResolvedValue([
         { result: BigInt(0), status: 'success' }, // withdrawalRequestIndex
         { result: BigInt(0), status: 'success' }, // numRequests
@@ -325,26 +352,43 @@ describe('withdraw.ts', () => {
 
     it('should return pending withdrawal requests successfully', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
       const mockFormatUnits = vi.mocked(await import('viem')).formatUnits;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
 
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
         content: [{ type: 'text', text: 'Wallet is connected' }],
       });
-      mockGetAccount.mockReturnValue({ address: '0x1234567890123456789012345678901234567890' } as any);
+      mockGetAccount.mockReturnValue({
+        address: '0x1234567890123456789012345678901234567890',
+      } as any);
       mockReadContracts
         .mockResolvedValueOnce([
           { result: BigInt(0), status: 'success' }, // withdrawalRequestIndex
           { result: BigInt(2), status: 'success' }, // numRequests
         ] as any)
         .mockResolvedValueOnce([
-          { result: [BigInt(1000), BigInt('100000000000000000000000000'), false], status: 'success' }, // pending request
+          {
+            result: [
+              BigInt(1000),
+              BigInt('100000000000000000000000000'),
+              false,
+            ],
+            status: 'success',
+          }, // pending request
         ] as any);
       mockFormatUnits.mockReturnValue('100.0');
-      mockCreateMCPResponse.mockImplementation((response) => JSON.stringify(response));
+      mockCreateMCPResponse.mockImplementation((response) =>
+        JSON.stringify(response)
+      );
 
       registerWithdrawTools(mockServer as any);
 
@@ -376,14 +420,20 @@ describe('withdraw.ts', () => {
 
     it('should handle sepolia network', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
 
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
         content: [{ type: 'text', text: 'Wallet is connected' }],
       });
-      mockGetAccount.mockReturnValue({ address: '0x1234567890123456789012345678901234567890' } as any);
+      mockGetAccount.mockReturnValue({
+        address: '0x1234567890123456789012345678901234567890',
+      } as any);
       mockReadContracts.mockResolvedValue([
         { result: BigInt(0), status: 'success' },
         { result: BigInt(0), status: 'success' },
@@ -418,7 +468,9 @@ describe('withdraw.ts', () => {
 
   describe('withdraw-tokens tool', () => {
     it('should handle wallet not connected', async () => {
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
 
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: false,
@@ -450,15 +502,23 @@ describe('withdraw.ts', () => {
 
     it('should return error when no withdrawal requests found', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
 
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
         content: [{ type: 'text', text: 'Wallet is connected' }],
       });
-      mockGetAccount.mockReturnValue({ address: '0x1234567890123456789012345678901234567890' } as any);
+      mockGetAccount.mockReturnValue({
+        address: '0x1234567890123456789012345678901234567890',
+      } as any);
       mockReadContracts.mockResolvedValue([
         { result: BigInt(0), status: 'success' }, // withdrawalRequestIndex
         { result: BigInt(0), status: 'success' }, // numRequests
@@ -494,26 +554,45 @@ describe('withdraw.ts', () => {
 
     it('should withdraw tokens successfully', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
 
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
         content: [{ type: 'text', text: 'Wallet is connected' }],
       });
-      mockGetAccount.mockReturnValue({ address: '0x1234567890123456789012345678901234567890' } as any);
+      mockGetAccount.mockReturnValue({
+        address: '0x1234567890123456789012345678901234567890',
+      } as any);
       mockReadContracts
         .mockResolvedValueOnce([
           { result: BigInt(0), status: 'success' }, // withdrawalRequestIndex
           { result: BigInt(2), status: 'success' }, // numRequests
         ] as any)
         .mockResolvedValueOnce([
-          { result: [BigInt(1000), BigInt('100000000000000000000000000'), false], status: 'success' }, // pending request
+          {
+            result: [
+              BigInt(1000),
+              BigInt('100000000000000000000000000'),
+              false,
+            ],
+            status: 'success',
+          }, // pending request
         ] as any);
       mockWriteContract.mockResolvedValue('0xtxhash' as any);
-      mockCreateMCPResponse.mockImplementation((response) => JSON.stringify(response));
+      mockCreateMCPResponse.mockImplementation((response) =>
+        JSON.stringify(response)
+      );
 
       registerWithdrawTools(mockServer as any);
 
@@ -548,7 +627,9 @@ describe('withdraw.ts', () => {
         content: [
           {
             type: 'text',
-            text: expect.stringContaining('Withdraw tokens successfully on mainnet'),
+            text: expect.stringContaining(
+              'Withdraw tokens successfully on mainnet'
+            ),
           },
         ],
       });
@@ -556,15 +637,23 @@ describe('withdraw.ts', () => {
 
     it('should handle address as layer2Identifier', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
 
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
         content: [{ type: 'text', text: 'Wallet is connected' }],
       });
-      mockGetAccount.mockReturnValue({ address: '0x1234567890123456789012345678901234567890' } as any);
+      mockGetAccount.mockReturnValue({
+        address: '0x1234567890123456789012345678901234567890',
+      } as any);
       mockReadContracts.mockResolvedValue([
         { result: BigInt(0), status: 'success' },
         { result: BigInt(1), status: 'success' },

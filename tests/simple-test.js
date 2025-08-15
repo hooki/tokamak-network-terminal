@@ -4,7 +4,7 @@ console.log('Testing get-agendas tool registration...\n');
 
 // Start the MCP server
 const serverProcess = spawn('node', ['dist/src/index.js'], {
-  stdio: ['pipe', 'pipe', 'pipe']
+  stdio: ['pipe', 'pipe', 'pipe'],
 });
 
 let output = '';
@@ -25,12 +25,14 @@ serverProcess.on('close', (code) => {
 // Send a simple test message
 setTimeout(() => {
   console.log('Sending test message...');
-  serverProcess.stdin.write(JSON.stringify({
-    jsonrpc: '2.0',
-    id: 1,
-    method: 'tools/list',
-    params: {}
-  }) + '\n');
+  serverProcess.stdin.write(
+    JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/list',
+      params: {},
+    }) + '\n'
+  );
 }, 1000);
 
 // Clean up after 5 seconds

@@ -129,10 +129,16 @@ describe('stake.ts', () => {
 
   describe('stake-tokens tool', () => {
     it('should handle wallet not connected', async () => {
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
-      const mockResolveLayer2Address = vi.mocked(await import('../../utils/layer2.js')).resolveLayer2Address;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
+      const mockResolveLayer2Address = vi.mocked(
+        await import('../../utils/layer2.js')
+      ).resolveLayer2Address;
 
-      mockResolveLayer2Address.mockReturnValue('0x1234567890123456789012345678901234567890');
+      mockResolveLayer2Address.mockReturnValue(
+        '0x1234567890123456789012345678901234567890'
+      );
       mockCheckWalletConnection.mockResolvedValue({
         content: [{ type: 'text', text: 'wallet not connected' }],
       });
@@ -156,25 +162,39 @@ describe('stake.ts', () => {
         'stake-tokens 0x1234567890123456789012345678901234567890 100 --network mainnet'
       );
       expect(result).toEqual({
-        content: [
-          { type: 'text', text: 'wallet not connected' },
-        ],
+        content: [{ type: 'text', text: 'wallet not connected' }],
       });
     });
 
     it('should stake tokens successfully', async () => {
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
       const mockParseEther = vi.mocked(await import('viem')).parseEther;
-      const mockEncodeAbiParameters = vi.mocked(await import('viem')).encodeAbiParameters;
-      const mockResolveLayer2Address = vi.mocked(await import('../../utils/layer2.js')).resolveLayer2Address;
-      const mockGetNetworkAddresses = vi.mocked(await import('../../constants.js')).getNetworkAddresses;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
+      const mockEncodeAbiParameters = vi.mocked(
+        await import('viem')
+      ).encodeAbiParameters;
+      const mockResolveLayer2Address = vi.mocked(
+        await import('../../utils/layer2.js')
+      ).resolveLayer2Address;
+      const mockGetNetworkAddresses = vi.mocked(
+        await import('../../constants.js')
+      ).getNetworkAddresses;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
 
-      mockResolveLayer2Address.mockReturnValue('0x1234567890123456789012345678901234567890');
+      mockResolveLayer2Address.mockReturnValue(
+        '0x1234567890123456789012345678901234567890'
+      );
       mockWriteContract.mockResolvedValue('0xtxhash' as any);
       mockParseEther.mockReturnValue(BigInt('100000000000000000000')); // 100 tokens
-      mockEncodeAbiParameters.mockReturnValue('0x1234567890123456789012345678901234567890123456789012345678901234567890' as `0x${string}`);
+      mockEncodeAbiParameters.mockReturnValue(
+        '0x1234567890123456789012345678901234567890123456789012345678901234567890' as `0x${string}`
+      );
       mockCreateMCPResponse.mockReturnValue('success response');
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
@@ -195,12 +215,18 @@ describe('stake.ts', () => {
         network: 'mainnet',
       });
 
-      expect(mockResolveLayer2Address).toHaveBeenCalledWith('hammer', 'mainnet');
+      expect(mockResolveLayer2Address).toHaveBeenCalledWith(
+        'hammer',
+        'mainnet'
+      );
       expect(mockGetNetworkAddresses).toHaveBeenCalledWith('mainnet');
       expect(mockParseEther).toHaveBeenCalledWith('100');
       expect(mockEncodeAbiParameters).toHaveBeenCalledWith(
         [{ type: 'address' }, { type: 'address' }],
-        ['0x1234567890123456789012345678901234567890', '0x1234567890123456789012345678901234567890']
+        [
+          '0x1234567890123456789012345678901234567890',
+          '0x1234567890123456789012345678901234567890',
+        ]
       );
       expect(mockWriteContract).toHaveBeenCalledWith(
         { id: 'wagmi-config' },
@@ -231,11 +257,19 @@ describe('stake.ts', () => {
     });
 
     it('should handle sepolia network', async () => {
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
-      const mockResolveLayer2Address = vi.mocked(await import('../../utils/layer2.js')).resolveLayer2Address;
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
+      const mockResolveLayer2Address = vi.mocked(
+        await import('../../utils/layer2.js')
+      ).resolveLayer2Address;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
 
-      mockResolveLayer2Address.mockReturnValue('0x1234567890123456789012345678901234567890');
+      mockResolveLayer2Address.mockReturnValue(
+        '0x1234567890123456789012345678901234567890'
+      );
       mockWriteContract.mockResolvedValue('0xtxhash' as any);
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
@@ -267,10 +301,16 @@ describe('stake.ts', () => {
 
   describe('update-seigniorage tool', () => {
     it('should handle wallet not connected', async () => {
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
-      const mockResolveLayer2Address = vi.mocked(await import('../../utils/layer2.js')).resolveLayer2Address;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
+      const mockResolveLayer2Address = vi.mocked(
+        await import('../../utils/layer2.js')
+      ).resolveLayer2Address;
 
-      mockResolveLayer2Address.mockReturnValue('0x1234567890123456789012345678901234567890');
+      mockResolveLayer2Address.mockReturnValue(
+        '0x1234567890123456789012345678901234567890'
+      );
       mockCheckWalletConnection.mockResolvedValue({
         content: [{ type: 'text', text: 'wallet not connected' }],
       });
@@ -298,12 +338,22 @@ describe('stake.ts', () => {
     });
 
     it('should update seigniorage successfully', async () => {
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
-      const mockResolveLayer2Address = vi.mocked(await import('../../utils/layer2.js')).resolveLayer2Address;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
+      const mockResolveLayer2Address = vi.mocked(
+        await import('../../utils/layer2.js')
+      ).resolveLayer2Address;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
 
-      mockResolveLayer2Address.mockReturnValue('0x1234567890123456789012345678901234567890');
+      mockResolveLayer2Address.mockReturnValue(
+        '0x1234567890123456789012345678901234567890'
+      );
       mockWriteContract.mockResolvedValue('0xtxhash' as any);
       mockCreateMCPResponse.mockReturnValue('success response');
       mockCheckWalletConnection.mockResolvedValue({
@@ -324,7 +374,10 @@ describe('stake.ts', () => {
         network: 'mainnet',
       });
 
-      expect(mockResolveLayer2Address).toHaveBeenCalledWith('hammer', 'mainnet');
+      expect(mockResolveLayer2Address).toHaveBeenCalledWith(
+        'hammer',
+        'mainnet'
+      );
       expect(mockWriteContract).toHaveBeenCalledWith(
         { id: 'wagmi-config' },
         {
@@ -350,10 +403,16 @@ describe('stake.ts', () => {
     });
 
     it('should handle sepolia network for update-seigniorage', async () => {
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
-      const mockResolveLayer2Address = vi.mocked(await import('../../utils/layer2.js')).resolveLayer2Address;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
+      const mockResolveLayer2Address = vi.mocked(
+        await import('../../utils/layer2.js')
+      ).resolveLayer2Address;
 
-      mockResolveLayer2Address.mockReturnValue('0x1234567890123456789012345678901234567890');
+      mockResolveLayer2Address.mockReturnValue(
+        '0x1234567890123456789012345678901234567890'
+      );
       mockWriteContract.mockResolvedValue('0xtxhash' as any);
 
       registerStakeTools(mockServer as any);

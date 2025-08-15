@@ -62,11 +62,17 @@ export async function checkWalletConnection(
           isConnected: false,
           content: [
             { type: 'text' as const, text: createMCPResponse(response) },
-            { type: 'text' as const, text: 'Please scan the QR code with your wallet to connect\n\n' + qrCodeText },
+            {
+              type: 'text' as const,
+              text:
+                'Please scan the QR code with your wallet to connect\n\n' +
+                qrCodeText,
+            },
           ],
         };
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         const response: MCPResponse = {
           status: 'error',
           message: `QR Code generation failed: ${errorMessage}`,
@@ -74,7 +80,9 @@ export async function checkWalletConnection(
 
         return {
           isConnected: false,
-          content: [{ type: 'text' as const, text: createMCPResponse(response) }],
+          content: [
+            { type: 'text' as const, text: createMCPResponse(response) },
+          ],
         };
       }
     }
@@ -83,9 +91,14 @@ export async function checkWalletConnection(
   // 지갑이 연결되어 있으면 성공 상태 반환
   return {
     isConnected: true,
-    content: [{ type: 'text' as const, text: createMCPResponse({
-      status: 'success',
-      message: `Wallet is connected: ${account.address}`,
-    }) }],
+    content: [
+      {
+        type: 'text' as const,
+        text: createMCPResponse({
+          status: 'success',
+          message: `Wallet is connected: ${account.address}`,
+        }),
+      },
+    ],
   };
 }

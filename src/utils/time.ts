@@ -5,7 +5,9 @@
  */
 export function formatTimestamp(timestamp: bigint | number | string): string {
   const numTimestamp = Number(timestamp);
-  return numTimestamp > 0 ? new Date(numTimestamp * 1000).toISOString() : 'Not set';
+  return numTimestamp > 0
+    ? new Date(numTimestamp * 1000).toISOString()
+    : 'Not set';
 }
 
 /**
@@ -13,7 +15,9 @@ export function formatTimestamp(timestamp: bigint | number | string): string {
  * @param timestamp - The timestamp to convert
  * @returns Human readable date string or "Not set"
  */
-export function formatTimestampToDate(timestamp: bigint | number | string): string {
+export function formatTimestampToDate(
+  timestamp: bigint | number | string
+): string {
   const numTimestamp = Number(timestamp);
   if (numTimestamp <= 0) return 'Not set';
 
@@ -25,6 +29,6 @@ export function formatTimestampToDate(timestamp: bigint | number | string): stri
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    timeZoneName: 'short'
+    timeZoneName: 'short',
   });
 }

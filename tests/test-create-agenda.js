@@ -2,7 +2,7 @@ const { spawn } = require('child_process');
 
 // Start the MCP server
 const server = spawn('node', ['dist/src/index.js'], {
-  stdio: ['pipe', 'pipe', 'pipe']
+  stdio: ['pipe', 'pipe', 'pipe'],
 });
 
 let serverReady = false;
@@ -27,7 +27,7 @@ function sendRequest(method, params) {
       jsonrpc: '2.0',
       id: Date.now(),
       method,
-      params
+      params,
     };
 
     server.stdin.write(JSON.stringify(request) + '\n');
@@ -61,13 +61,19 @@ async function testCreateAgenda() {
           {
             target: '0x1234567890123456789012345678901234567890',
             functionName: 'approve(address,uint256)',
-            args: ['0xabcdefabcdefabcdefabcdefabcdefabcdefabcd', '1000000000000000000']
-          }
+            args: [
+              '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+              '1000000000000000000',
+            ],
+          },
         ],
-        network: 'mainnet'
-      }
+        network: 'mainnet',
+      },
     });
-    console.log('✅ Response:', result1.result?.content?.[0]?.text || 'No response');
+    console.log(
+      '✅ Response:',
+      result1.result?.content?.[0]?.text || 'No response'
+    );
 
     // Test 2: Multiple actions with agenda URL
     console.log('\n=== Test 2: Multiple actions with agenda URL ===');
@@ -78,19 +84,25 @@ async function testCreateAgenda() {
           {
             target: '0x1234567890123456789012345678901234567890',
             functionName: 'approve(address,uint256)',
-            args: ['0xabcdefabcdefabcdefabcdefabcdefabcdefabcd', '500000000000000000']
+            args: [
+              '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+              '500000000000000000',
+            ],
           },
           {
             target: '0x9876543210987654321098765432109876543210',
             functionName: 'setValue(uint256,string)',
-            args: ['42', 'test value']
-          }
+            args: ['42', 'test value'],
+          },
         ],
         agendaUrl: 'https://forum.tokamak.network/agenda/123',
-        network: 'sepolia'
-      }
+        network: 'sepolia',
+      },
     });
-    console.log('✅ Response:', result2.result?.content?.[0]?.text || 'No response');
+    console.log(
+      '✅ Response:',
+      result2.result?.content?.[0]?.text || 'No response'
+    );
 
     // Test 3: Error handling - empty actions
     console.log('\n=== Test 3: Error handling - empty actions ===');
@@ -98,11 +110,13 @@ async function testCreateAgenda() {
       name: 'create-agenda',
       arguments: {
         actions: [],
-        network: 'mainnet'
-      }
+        network: 'mainnet',
+      },
     });
-    console.log('✅ Response:', result3.result?.content?.[0]?.text || 'No response');
-
+    console.log(
+      '✅ Response:',
+      result3.result?.content?.[0]?.text || 'No response'
+    );
   } catch (error) {
     console.error('❌ Test failed:', error);
   } finally {

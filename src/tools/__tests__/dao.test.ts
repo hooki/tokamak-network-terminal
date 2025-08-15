@@ -32,9 +32,10 @@ vi.mock('@wagmi/core', () => ({
 // Mock constants
 vi.mock('../../constants.js', () => ({
   getNetworkAddresses: vi.fn((network) => ({
-    DAO_COMMITTEE: network === 'mainnet'
-      ? '0x1234567890123456789012345678901234567890'
-      : '0x0987654321098765432109876543210987654321',
+    DAO_COMMITTEE:
+      network === 'mainnet'
+        ? '0x1234567890123456789012345678901234567890'
+        : '0x0987654321098765432109876543210987654321',
     LAYER2_MANAGER: '0x2345678901234567890123456789012345678901',
     SEIG_MANAGER: '0x3456789012345678901234567890123456789012',
   })),
@@ -167,7 +168,9 @@ describe('dao.ts', () => {
     });
 
     it('should return success when getDAOMemberCount succeeds', async () => {
-      const mockGetDAOMemberCount = vi.mocked(await import('../../utils/dao.js')).getDAOMemberCount;
+      const mockGetDAOMemberCount = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getDAOMemberCount;
 
       mockGetDAOMemberCount.mockResolvedValue(10);
 
@@ -191,7 +194,9 @@ describe('dao.ts', () => {
     });
 
     it('should return error when getDAOMemberCount fails', async () => {
-      const mockGetDAOMemberCount = vi.mocked(await import('../../utils/dao.js')).getDAOMemberCount;
+      const mockGetDAOMemberCount = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getDAOMemberCount;
 
       mockGetDAOMemberCount.mockRejectedValue(new Error('Network error'));
 
@@ -209,7 +214,9 @@ describe('dao.ts', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('error');
-      expect(response.message).toBe('Failed to get DAO member count on mainnet: Network error');
+      expect(response.message).toBe(
+        'Failed to get DAO member count on mainnet: Network error'
+      );
     });
   });
 
@@ -226,7 +233,9 @@ describe('dao.ts', () => {
     });
 
     it('should return success when getDAOMemberCandidateInfo succeeds', async () => {
-      const mockGetDAOMemberCandidateInfo = vi.mocked(await import('../../utils/dao.js')).getDAOMemberCandidateInfo;
+      const mockGetDAOMemberCandidateInfo = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getDAOMemberCandidateInfo;
 
       mockGetDAOMemberCandidateInfo.mockResolvedValue([
         {
@@ -257,13 +266,19 @@ describe('dao.ts', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('success');
-      expect(response.message).toBe('Found 1 DAO members on mainnet. Member count: 1');
+      expect(response.message).toBe(
+        'Found 1 DAO members on mainnet. Member count: 1'
+      );
     });
 
     it('should return error when getDAOMemberCandidateInfo fails', async () => {
-      const mockGetDAOMemberCandidateInfo = vi.mocked(await import('../../utils/dao.js')).getDAOMemberCandidateInfo;
+      const mockGetDAOMemberCandidateInfo = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getDAOMemberCandidateInfo;
 
-      mockGetDAOMemberCandidateInfo.mockRejectedValue(new Error('Network error'));
+      mockGetDAOMemberCandidateInfo.mockRejectedValue(
+        new Error('Network error')
+      );
 
       registerDAOTools(mockServer as any);
 
@@ -279,7 +294,9 @@ describe('dao.ts', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('error');
-      expect(response.message).toBe('Failed to get DAO member candidate info on mainnet: Network error');
+      expect(response.message).toBe(
+        'Failed to get DAO member candidate info on mainnet: Network error'
+      );
     });
   });
 
@@ -291,11 +308,15 @@ describe('dao.ts', () => {
         (call: any) => call[0] === 'get-dao-member-operator-manager-info'
       );
       expect(toolCall).toBeDefined();
-      expect(toolCall![1].title).toBe('Get DAO member operator manager information');
+      expect(toolCall![1].title).toBe(
+        'Get DAO member operator manager information'
+      );
     });
 
     it('should return success when getDAOMemberOperatorManagerInfo succeeds', async () => {
-      const mockGetDAOMemberOperatorManagerInfo = vi.mocked(await import('../../utils/dao.js')).getDAOMemberOperatorManagerInfo;
+      const mockGetDAOMemberOperatorManagerInfo = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getDAOMemberOperatorManagerInfo;
 
       mockGetDAOMemberOperatorManagerInfo.mockResolvedValue([
         {
@@ -324,17 +345,25 @@ describe('dao.ts', () => {
         network: 'mainnet',
       });
 
-      expect(mockGetDAOMemberOperatorManagerInfo).toHaveBeenCalledWith('mainnet');
+      expect(mockGetDAOMemberOperatorManagerInfo).toHaveBeenCalledWith(
+        'mainnet'
+      );
 
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('success');
-      expect(response.message).toBe('Found 1 DAO members with operator manager info on mainnet. Member count: 1');
+      expect(response.message).toBe(
+        'Found 1 DAO members with operator manager info on mainnet. Member count: 1'
+      );
     });
 
     it('should return error when getDAOMemberOperatorManagerInfo fails', async () => {
-      const mockGetDAOMemberOperatorManagerInfo = vi.mocked(await import('../../utils/dao.js')).getDAOMemberOperatorManagerInfo;
+      const mockGetDAOMemberOperatorManagerInfo = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getDAOMemberOperatorManagerInfo;
 
-      mockGetDAOMemberOperatorManagerInfo.mockRejectedValue(new Error('Network error'));
+      mockGetDAOMemberOperatorManagerInfo.mockRejectedValue(
+        new Error('Network error')
+      );
 
       registerDAOTools(mockServer as any);
 
@@ -350,7 +379,9 @@ describe('dao.ts', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('error');
-      expect(response.message).toBe('Failed to get DAO member operator manager info on mainnet: Network error');
+      expect(response.message).toBe(
+        'Failed to get DAO member operator manager info on mainnet: Network error'
+      );
     });
   });
 
@@ -366,7 +397,9 @@ describe('dao.ts', () => {
     });
 
     it('should return success when address is a DAO member', async () => {
-      const mockCheckDAOMembership = vi.mocked(await import('../../utils/dao.js')).checkDAOMembership;
+      const mockCheckDAOMembership = vi.mocked(
+        await import('../../utils/dao.js')
+      ).checkDAOMembership;
 
       mockCheckDAOMembership.mockResolvedValue(true);
 
@@ -383,15 +416,22 @@ describe('dao.ts', () => {
         network: 'mainnet',
       });
 
-      expect(mockCheckDAOMembership).toHaveBeenCalledWith('0x1234567890123456789012345678901234567890', 'mainnet');
+      expect(mockCheckDAOMembership).toHaveBeenCalledWith(
+        '0x1234567890123456789012345678901234567890',
+        'mainnet'
+      );
 
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('success');
-      expect(response.message).toBe('Address 0x1234567890123456789012345678901234567890 is a DAO member on mainnet');
+      expect(response.message).toBe(
+        'Address 0x1234567890123456789012345678901234567890 is a DAO member on mainnet'
+      );
     });
 
     it('should return success when address is not a DAO member', async () => {
-      const mockCheckDAOMembership = vi.mocked(await import('../../utils/dao.js')).checkDAOMembership;
+      const mockCheckDAOMembership = vi.mocked(
+        await import('../../utils/dao.js')
+      ).checkDAOMembership;
 
       mockCheckDAOMembership.mockResolvedValue(false);
 
@@ -410,11 +450,15 @@ describe('dao.ts', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('success');
-      expect(response.message).toBe('Address 0x1234567890123456789012345678901234567890 is not a DAO member on mainnet');
+      expect(response.message).toBe(
+        'Address 0x1234567890123456789012345678901234567890 is not a DAO member on mainnet'
+      );
     });
 
     it('should return error when checkDAOMembership fails', async () => {
-      const mockCheckDAOMembership = vi.mocked(await import('../../utils/dao.js')).checkDAOMembership;
+      const mockCheckDAOMembership = vi.mocked(
+        await import('../../utils/dao.js')
+      ).checkDAOMembership;
 
       mockCheckDAOMembership.mockRejectedValue(new Error('Network error'));
 
@@ -433,7 +477,9 @@ describe('dao.ts', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('error');
-      expect(response.message).toBe('Failed to check DAO membership for 0x1234567890123456789012345678901234567890 on mainnet: Network error');
+      expect(response.message).toBe(
+        'Failed to check DAO membership for 0x1234567890123456789012345678901234567890 on mainnet: Network error'
+      );
     });
   });
 
@@ -449,7 +495,9 @@ describe('dao.ts', () => {
     });
 
     it('should return success when getDAOMembersStakingInfo succeeds', async () => {
-      const mockGetDAOMembersStakingInfo = vi.mocked(await import('../../utils/dao.js')).getDAOMembersStakingInfo;
+      const mockGetDAOMembersStakingInfo = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getDAOMembersStakingInfo;
 
       mockGetDAOMembersStakingInfo.mockResolvedValue([
         {
@@ -484,17 +532,26 @@ describe('dao.ts', () => {
         includeOperatorManager: true,
       });
 
-      expect(mockGetDAOMembersStakingInfo).toHaveBeenCalledWith('mainnet', true);
+      expect(mockGetDAOMembersStakingInfo).toHaveBeenCalledWith(
+        'mainnet',
+        true
+      );
 
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('success');
-      expect(response.message).toBe('Found 1 DAO members with staking info on mainnet. Member count: 1');
+      expect(response.message).toBe(
+        'Found 1 DAO members with staking info on mainnet. Member count: 1'
+      );
     });
 
     it('should return error when getDAOMembersStakingInfo fails', async () => {
-      const mockGetDAOMembersStakingInfo = vi.mocked(await import('../../utils/dao.js')).getDAOMembersStakingInfo;
+      const mockGetDAOMembersStakingInfo = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getDAOMembersStakingInfo;
 
-      mockGetDAOMembersStakingInfo.mockRejectedValue(new Error('Network error'));
+      mockGetDAOMembersStakingInfo.mockRejectedValue(
+        new Error('Network error')
+      );
 
       registerDAOTools(mockServer as any);
 
@@ -511,7 +568,9 @@ describe('dao.ts', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('error');
-      expect(response.message).toBe('Failed to get DAO members staking info on mainnet: Network error');
+      expect(response.message).toBe(
+        'Failed to get DAO members staking info on mainnet: Network error'
+      );
     });
   });
 
@@ -524,16 +583,23 @@ describe('dao.ts', () => {
       );
       expect(toolCall).toBeDefined();
       expect(toolCall![1]).toEqual({
-        title: 'Get DAO candidate\'s activity reward',
-        description: 'Get the activity reward for a specific DAO candidate. Set claim=true to also claim the reward.',
+        title: "Get DAO candidate's activity reward",
+        description:
+          'Get the activity reward for a specific DAO candidate. Set claim=true to also claim the reward.',
         inputSchema: expect.any(Object),
       });
     });
 
     it('should return success when no claimable reward', async () => {
-      const mockGetDAOMembersActivityReward = vi.mocked(await import('../../utils/dao.js')).getDAOMembersActivityReward;
-      const mockFormatTokenAmountWithUnitPrecise = vi.mocked(await import('../../utils/format.js')).formatTokenAmountWithUnitPrecise;
-      const mockGetNetworkAddresses = vi.mocked(await import('../../constants.js')).getNetworkAddresses;
+      const mockGetDAOMembersActivityReward = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getDAOMembersActivityReward;
+      const mockFormatTokenAmountWithUnitPrecise = vi.mocked(
+        await import('../../utils/format.js')
+      ).formatTokenAmountWithUnitPrecise;
+      const mockGetNetworkAddresses = vi.mocked(
+        await import('../../constants.js')
+      ).getNetworkAddresses;
 
       mockGetDAOMembersActivityReward.mockResolvedValue({
         result: true,
@@ -570,7 +636,10 @@ describe('dao.ts', () => {
 
       // console.log('Result:', JSON.stringify(result, null, 2));
 
-      expect(mockGetDAOMembersActivityReward).toHaveBeenCalledWith('mainnet', '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+      expect(mockGetDAOMembersActivityReward).toHaveBeenCalledWith(
+        'mainnet',
+        '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      );
 
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('success');
@@ -579,7 +648,9 @@ describe('dao.ts', () => {
     });
 
     it('should return error when getDAOMembersActivityReward fails', async () => {
-      const mockGetDAOMembersActivityReward = vi.mocked(await import('../../utils/dao.js')).getDAOMembersActivityReward;
+      const mockGetDAOMembersActivityReward = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getDAOMembersActivityReward;
 
       mockGetDAOMembersActivityReward.mockResolvedValue({
         result: false,
@@ -607,16 +678,24 @@ describe('dao.ts', () => {
     });
 
     it('should return reward info when claim=false', async () => {
-      const mockGetDAOMembersActivityReward = vi.mocked(await import('../../utils/dao.js')).getDAOMembersActivityReward;
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
-      const mockFormatTokenAmountWithUnitPrecise = vi.mocked(await import('../../utils/format.js')).formatTokenAmountWithUnitPrecise;
+      const mockGetDAOMembersActivityReward = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getDAOMembersActivityReward;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
+      const mockFormatTokenAmountWithUnitPrecise = vi.mocked(
+        await import('../../utils/format.js')
+      ).formatTokenAmountWithUnitPrecise;
 
       mockGetDAOMembersActivityReward.mockResolvedValue({
         result: true,
         candidate: '0x1234567890123456789012345678901234567890',
         reward: BigInt(1000000000000000000),
       });
-      mockReadContract.mockResolvedValue('0x1234567890123456789012345678901234567890'); // manager
+      mockReadContract.mockResolvedValue(
+        '0x1234567890123456789012345678901234567890'
+      ); // manager
       mockFormatTokenAmountWithUnitPrecise.mockReturnValue('1.0 WTON');
 
       registerDAOTools(mockServer as any);
@@ -638,29 +717,49 @@ describe('dao.ts', () => {
       expect(response.activityReward).toBe('1000000000000000000');
       expect(response.formattedReward).toBe('1.0 WTON');
       expect(response.claimed).toBe(false);
-      expect(response.claimAccount).toBe('0x1234567890123456789012345678901234567890');
+      expect(response.claimAccount).toBe(
+        '0x1234567890123456789012345678901234567890'
+      );
     });
 
     it('should return wallet connection error when claim=true but wallet not connected', async () => {
-      const mockGetDAOMembersActivityReward = vi.mocked(await import('../../utils/dao.js')).getDAOMembersActivityReward;
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockGetDAOMembersActivityReward = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getDAOMembersActivityReward;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockFormatTokenAmountWithUnitPrecise = vi.mocked(await import('../../utils/format.js')).formatTokenAmountWithUnitPrecise;
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
+      const mockFormatTokenAmountWithUnitPrecise = vi.mocked(
+        await import('../../utils/format.js')
+      ).formatTokenAmountWithUnitPrecise;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
 
       mockGetDAOMembersActivityReward.mockResolvedValue({
         result: true,
         candidate: '0x1234567890123456789012345678901234567890',
         reward: BigInt(1000000000000000000),
       });
-      mockReadContract.mockResolvedValue('0x1234567890123456789012345678901234567890'); // manager
+      mockReadContract.mockResolvedValue(
+        '0x1234567890123456789012345678901234567890'
+      ); // manager
       mockGetAccount.mockReturnValue({
-        isConnected: false
+        isConnected: false,
       } as any);
       mockFormatTokenAmountWithUnitPrecise.mockReturnValue('1.0 WTON');
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: false,
-        content: [{ type: 'text', text: JSON.stringify({ status: 'continue', message: 'waiting for wallet connection' }) }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              status: 'continue',
+              message: 'waiting for wallet connection',
+            }),
+          },
+        ],
       });
 
       registerDAOTools(mockServer as any);
@@ -683,22 +782,34 @@ describe('dao.ts', () => {
     });
 
     it('should claim activity reward successfully when wallet is connected', async () => {
-      const mockGetDAOMembersActivityReward = vi.mocked(await import('../../utils/dao.js')).getDAOMembersActivityReward;
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
+      const mockGetDAOMembersActivityReward = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getDAOMembersActivityReward;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockFormatTokenAmountWithUnitPrecise = vi.mocked(await import('../../utils/format.js')).formatTokenAmountWithUnitPrecise;
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
+      const mockFormatTokenAmountWithUnitPrecise = vi.mocked(
+        await import('../../utils/format.js')
+      ).formatTokenAmountWithUnitPrecise;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
       mockGetDAOMembersActivityReward.mockResolvedValue({
         result: true,
         candidate: '0x1234567890123456789012345678901234567890',
         reward: BigInt(1000000000000000000),
       });
-      mockReadContract.mockResolvedValue('0x1234567890123456789012345678901234567890'); // manager
+      mockReadContract.mockResolvedValue(
+        '0x1234567890123456789012345678901234567890'
+      ); // manager
       mockWriteContract.mockResolvedValue('0xtxhash' as any);
       mockGetAccount.mockReturnValue({
         isConnected: true,
-        address: '0x1234567890123456789012345678901234567890'
+        address: '0x1234567890123456789012345678901234567890',
       } as any);
       mockFormatTokenAmountWithUnitPrecise.mockReturnValue('1.0 WTON');
       mockCheckWalletConnection.mockResolvedValue(undefined); // 지갑이 연결되어 있으면 undefined 반환
@@ -717,17 +828,14 @@ describe('dao.ts', () => {
         claim: true,
       });
 
-      expect(mockWriteContract).toHaveBeenCalledWith(
-        expect.any(Object),
-        {
-          address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
-          abi: expect.any(Array),
-          functionName: 'claimActivityReward',
-          args: [],
-          chain: expect.any(Object),
-          account: expect.any(String),
-        }
-      );
+      expect(mockWriteContract).toHaveBeenCalledWith(expect.any(Object), {
+        address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        abi: expect.any(Array),
+        functionName: 'claimActivityReward',
+        args: [],
+        chain: expect.any(Object),
+        account: expect.any(String),
+      });
 
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('success');
@@ -738,18 +846,30 @@ describe('dao.ts', () => {
     });
 
     it('should handle writeContract error when claiming', async () => {
-      const mockGetDAOMembersActivityReward = vi.mocked(await import('../../utils/dao.js')).getDAOMembersActivityReward;
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
+      const mockGetDAOMembersActivityReward = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getDAOMembersActivityReward;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockFormatTokenAmountWithUnitPrecise = vi.mocked(await import('../../utils/format.js')).formatTokenAmountWithUnitPrecise;
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
+      const mockFormatTokenAmountWithUnitPrecise = vi.mocked(
+        await import('../../utils/format.js')
+      ).formatTokenAmountWithUnitPrecise;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
       mockGetDAOMembersActivityReward.mockResolvedValue({
         result: true,
         candidate: '0x1234567890123456789012345678901234567890',
         reward: BigInt(1000000000000000000),
       });
-      mockReadContract.mockResolvedValue('0x1234567890123456789012345678901234567890'); // manager
+      mockReadContract.mockResolvedValue(
+        '0x1234567890123456789012345678901234567890'
+      ); // manager
       mockWriteContract.mockRejectedValue(new Error('Transaction failed'));
       mockGetAccount.mockReturnValue({ isConnected: true } as any);
       mockFormatTokenAmountWithUnitPrecise.mockReturnValue('1.0 WTON');
@@ -776,11 +896,19 @@ describe('dao.ts', () => {
     });
 
     it('should handle operatorManager without manager function', async () => {
-      const mockGetDAOMembersActivityReward = vi.mocked(await import('../../utils/dao.js')).getDAOMembersActivityReward;
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
+      const mockGetDAOMembersActivityReward = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getDAOMembersActivityReward;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockFormatTokenAmountWithUnitPrecise = vi.mocked(await import('../../utils/format.js')).formatTokenAmountWithUnitPrecise;
+      const mockFormatTokenAmountWithUnitPrecise = vi.mocked(
+        await import('../../utils/format.js')
+      ).formatTokenAmountWithUnitPrecise;
 
       mockGetDAOMembersActivityReward.mockResolvedValue({
         result: true,
@@ -791,7 +919,7 @@ describe('dao.ts', () => {
       mockWriteContract.mockResolvedValue('0xtxhash' as any);
       mockGetAccount.mockReturnValue({
         isConnected: true,
-        address: '0x1234567890123456789012345678901234567890'
+        address: '0x1234567890123456789012345678901234567890',
       } as any);
       mockFormatTokenAmountWithUnitPrecise.mockReturnValue('1.0 WTON');
 
@@ -822,8 +950,12 @@ describe('dao.ts', () => {
     });
 
     it('should use default network when not provided', async () => {
-      const mockGetDAOMembersActivityReward = vi.mocked(await import('../../utils/dao.js')).getDAOMembersActivityReward;
-      const mockFormatTokenAmountWithUnitPrecise = vi.mocked(await import('../../utils/format.js')).formatTokenAmountWithUnitPrecise;
+      const mockGetDAOMembersActivityReward = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getDAOMembersActivityReward;
+      const mockFormatTokenAmountWithUnitPrecise = vi.mocked(
+        await import('../../utils/format.js')
+      ).formatTokenAmountWithUnitPrecise;
 
       mockGetDAOMembersActivityReward.mockResolvedValue({
         result: true,
@@ -847,7 +979,10 @@ describe('dao.ts', () => {
         throw error;
       });
 
-      expect(mockGetDAOMembersActivityReward).toHaveBeenCalledWith('mainnet', '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+      expect(mockGetDAOMembersActivityReward).toHaveBeenCalledWith(
+        'mainnet',
+        '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      );
     });
   });
 
@@ -863,7 +998,9 @@ describe('dao.ts', () => {
     });
 
     it('should return error when challenge is not possible', async () => {
-      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+      const mockGetChallengeInfo = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getChallengeInfo;
 
       mockGetChallengeInfo.mockResolvedValue({
         memberCandidate: '0x1234567890123456789012345678901234567890',
@@ -871,7 +1008,8 @@ describe('dao.ts', () => {
         requiredStake: BigInt(2000000000000000000),
         currentStake: BigInt(1000000000000000000),
         canChallenge: false,
-        challengeReason: 'Challenger stake (1000000000000000000) must be at least 2000000000000000000 TON',
+        challengeReason:
+          'Challenger stake (1000000000000000000) must be at least 2000000000000000000 TON',
       });
 
       registerDAOTools(mockServer as any);
@@ -888,17 +1026,27 @@ describe('dao.ts', () => {
         network: 'mainnet',
       });
 
-      expect(mockGetChallengeInfo).toHaveBeenCalledWith(0, '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd', 'mainnet');
+      expect(mockGetChallengeInfo).toHaveBeenCalledWith(
+        0,
+        '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        'mainnet'
+      );
 
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('error');
-      expect(response.error).toBe('Challenger stake (1000000000000000000) must be at least 2000000000000000000 TON');
+      expect(response.error).toBe(
+        'Challenger stake (1000000000000000000) must be at least 2000000000000000000 TON'
+      );
       expect(response.memberIndex).toBe(0);
-      expect(response.challengerCandidate).toBe('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+      expect(response.challengerCandidate).toBe(
+        '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      );
     });
 
     it('should return success when challenge is possible', async () => {
-      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+      const mockGetChallengeInfo = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getChallengeInfo;
 
       mockGetChallengeInfo.mockResolvedValue({
         memberCandidate: '0x1234567890123456789012345678901234567890',
@@ -927,11 +1075,12 @@ describe('dao.ts', () => {
       expect(response.status).toBe('success');
       expect(response.canChallenge).toBe(true);
       expect(response.memberIndex).toBe(1);
-      expect(response.challengerCandidate).toBe('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+      expect(response.challengerCandidate).toBe(
+        '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      );
       expect(response.requiredStake).toBe('1000000000000000000');
       expect(response.challengerStake).toBe('3000000000000000000');
     });
-
   });
 
   describe('execute-challenge-member tool', () => {
@@ -946,7 +1095,9 @@ describe('dao.ts', () => {
     });
 
     it('should return error when challenge is not possible', async () => {
-      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+      const mockGetChallengeInfo = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getChallengeInfo;
 
       mockGetChallengeInfo.mockResolvedValue({
         memberCandidate: '0x1234567890123456789012345678901234567890',
@@ -954,7 +1105,8 @@ describe('dao.ts', () => {
         requiredStake: BigInt(2000000000000000000),
         currentStake: BigInt(1000000000000000000),
         canChallenge: false,
-        challengeReason: 'Challenger stake (1000000000000000000) must be at least 2000000000000000000 TON',
+        challengeReason:
+          'Challenger stake (1000000000000000000) must be at least 2000000000000000000 TON',
       });
 
       registerDAOTools(mockServer as any);
@@ -973,13 +1125,19 @@ describe('dao.ts', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('error');
-      expect(response.error).toBe('Challenger stake (1000000000000000000) must be at least 2000000000000000000 TON');
+      expect(response.error).toBe(
+        'Challenger stake (1000000000000000000) must be at least 2000000000000000000 TON'
+      );
       expect(response.memberIndex).toBe(0);
-      expect(response.challengerCandidate).toBe('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+      expect(response.challengerCandidate).toBe(
+        '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      );
     });
 
     it('should return error when wallet is not connected', async () => {
-      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+      const mockGetChallengeInfo = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getChallengeInfo;
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
 
       mockGetChallengeInfo.mockResolvedValue({
@@ -1011,13 +1169,19 @@ describe('dao.ts', () => {
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('error');
       expect(response.error).toBe('UNAUTHORIZED_OPERATOR');
-      expect(response.message).toContain('Connected wallet is not the authorized operator for this challenger candidate.');
+      expect(response.message).toContain(
+        'Connected wallet is not the authorized operator for this challenger candidate.'
+      );
     });
 
     it('should return error when wallet is not the operator of challenger candidate', async () => {
-      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+      const mockGetChallengeInfo = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getChallengeInfo;
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
 
       mockGetChallengeInfo.mockResolvedValue({
         memberCandidate: '0x1234567890123456789012345678901234567890',
@@ -1031,7 +1195,9 @@ describe('dao.ts', () => {
         isConnected: true,
         address: '0x1111111111111111111111111111111111111111',
       } as any);
-      mockReadContract.mockResolvedValue('0x2222222222222222222222222222222222222222'); // Different operator
+      mockReadContract.mockResolvedValue(
+        '0x2222222222222222222222222222222222222222'
+      ); // Different operator
 
       registerDAOTools(mockServer as any);
 
@@ -1047,29 +1213,36 @@ describe('dao.ts', () => {
         network: 'mainnet',
       });
 
-      expect(mockReadContract).toHaveBeenCalledWith(
-        expect.any(Object),
-        {
-          address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
-          abi: expect.any(Array),
-          functionName: 'operator',
-          args: [],
-          chainId: expect.any(Number),
-        }
-      );
+      expect(mockReadContract).toHaveBeenCalledWith(expect.any(Object), {
+        address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        abi: expect.any(Array),
+        functionName: 'operator',
+        args: [],
+        chainId: expect.any(Number),
+      });
 
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('error');
       expect(response.error).toBe('UNAUTHORIZED_OPERATOR');
-      expect(response.message).toBe('Connected wallet is not the authorized operator for this challenger candidate.');
+      expect(response.message).toBe(
+        'Connected wallet is not the authorized operator for this challenger candidate.'
+      );
     });
 
     it('should execute challenge successfully when all conditions are met', async () => {
-      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+      const mockGetChallengeInfo = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getChallengeInfo;
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
-      const mockGetPublicClient = vi.mocked(await import('@wagmi/core')).getPublicClient;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
+      const mockGetPublicClient = vi.mocked(
+        await import('@wagmi/core')
+      ).getPublicClient;
 
       mockGetChallengeInfo.mockResolvedValue({
         memberCandidate: '0x1234567890123456789012345678901234567890',
@@ -1083,7 +1256,9 @@ describe('dao.ts', () => {
         isConnected: true,
         address: '0x1111111111111111111111111111111111111111',
       } as any);
-      mockReadContract.mockResolvedValue('0x1111111111111111111111111111111111111111'); // Same as wallet address
+      mockReadContract.mockResolvedValue(
+        '0x1111111111111111111111111111111111111111'
+      ); // Same as wallet address
       mockWriteContract.mockResolvedValue('0xtxhash' as any);
       mockGetPublicClient.mockReturnValue({
         waitForTransactionReceipt: vi.fn().mockResolvedValue({
@@ -1105,31 +1280,40 @@ describe('dao.ts', () => {
         network: 'mainnet',
       });
 
-      expect(mockWriteContract).toHaveBeenCalledWith(
-        expect.any(Object),
-        {
-          address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
-          abi: expect.any(Array),
-          functionName: 'changeMember',
-          args: [BigInt(4)],
-          chainId: expect.any(Number),
-        }
-      );
+      expect(mockWriteContract).toHaveBeenCalledWith(expect.any(Object), {
+        address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        abi: expect.any(Array),
+        functionName: 'changeMember',
+        args: [BigInt(4)],
+        chainId: expect.any(Number),
+      });
 
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('success');
       expect(response.transactionHash).toBe('0xtxhash');
       expect(response.memberIndex).toBe(4);
-      expect(response.challengerCandidate).toBe('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
-      expect(response.message).toContain('Successfully challenged member at index 4');
+      expect(response.challengerCandidate).toBe(
+        '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      );
+      expect(response.message).toContain(
+        'Successfully challenged member at index 4'
+      );
     });
 
     it('should handle transaction failure', async () => {
-      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+      const mockGetChallengeInfo = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getChallengeInfo;
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
-      const mockGetPublicClient = vi.mocked(await import('@wagmi/core')).getPublicClient;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
+      const mockGetPublicClient = vi.mocked(
+        await import('@wagmi/core')
+      ).getPublicClient;
 
       mockGetChallengeInfo.mockResolvedValue({
         memberCandidate: '0x1234567890123456789012345678901234567890',
@@ -1143,7 +1327,9 @@ describe('dao.ts', () => {
         isConnected: true,
         address: '0x1111111111111111111111111111111111111111',
       } as any);
-      mockReadContract.mockResolvedValue('0x1111111111111111111111111111111111111111');
+      mockReadContract.mockResolvedValue(
+        '0x1111111111111111111111111111111111111111'
+      );
       mockWriteContract.mockResolvedValue('0xtxhash' as any);
       mockGetPublicClient.mockReturnValue({
         waitForTransactionReceipt: vi.fn().mockResolvedValue({
@@ -1169,14 +1355,22 @@ describe('dao.ts', () => {
       expect(response.status).toBe('error');
       expect(response.error).toBe('Transaction reverted or failed');
       expect(response.transactionHash).toBe('0xtxhash');
-      expect(response.message).toContain('Transaction failed for challenge at index 5');
+      expect(response.message).toContain(
+        'Transaction failed for challenge at index 5'
+      );
     });
 
     it('should handle writeContract error', async () => {
-      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+      const mockGetChallengeInfo = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getChallengeInfo;
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
 
       mockGetChallengeInfo.mockResolvedValue({
         memberCandidate: '0x1234567890123456789012345678901234567890',
@@ -1190,7 +1384,9 @@ describe('dao.ts', () => {
         isConnected: true,
         address: '0x1111111111111111111111111111111111111111',
       } as any);
-      mockReadContract.mockResolvedValue('0x1111111111111111111111111111111111111111');
+      mockReadContract.mockResolvedValue(
+        '0x1111111111111111111111111111111111111111'
+      );
       mockWriteContract.mockRejectedValue(new Error('Transaction failed'));
 
       registerDAOTools(mockServer as any);
@@ -1210,11 +1406,15 @@ describe('dao.ts', () => {
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('error');
       expect(response.error).toBe('Transaction failed');
-      expect(response.message).toContain('Failed to execute challenge on mainnet: Transaction failed');
+      expect(response.message).toContain(
+        'Failed to execute challenge on mainnet: Transaction failed'
+      );
     });
 
     it('should use default values when optional parameters are not provided', async () => {
-      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+      const mockGetChallengeInfo = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getChallengeInfo;
 
       mockGetChallengeInfo.mockResolvedValue({
         memberCandidate: '0x1234567890123456789012345678901234567890',
@@ -1238,7 +1438,11 @@ describe('dao.ts', () => {
         challengerCandidate: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
       });
 
-      expect(mockGetChallengeInfo).toHaveBeenCalledWith(7, '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd', 'mainnet');
+      expect(mockGetChallengeInfo).toHaveBeenCalledWith(
+        7,
+        '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        'mainnet'
+      );
 
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('success');
@@ -1246,7 +1450,9 @@ describe('dao.ts', () => {
     });
 
     it('should work with sepolia network', async () => {
-      const mockGetChallengeInfo = vi.mocked(await import('../../utils/dao.js')).getChallengeInfo;
+      const mockGetChallengeInfo = vi.mocked(
+        await import('../../utils/dao.js')
+      ).getChallengeInfo;
 
       mockGetChallengeInfo.mockResolvedValue({
         memberCandidate: '0x1234567890123456789012345678901234567890',
@@ -1271,7 +1477,11 @@ describe('dao.ts', () => {
         network: 'sepolia',
       });
 
-      expect(mockGetChallengeInfo).toHaveBeenCalledWith(8, '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd', 'sepolia');
+      expect(mockGetChallengeInfo).toHaveBeenCalledWith(
+        8,
+        '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+        'sepolia'
+      );
 
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('success');

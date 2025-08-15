@@ -112,7 +112,7 @@ describe('wagmi-config.ts', () => {
   });
 
   describe('storage integration', () => {
-        it('should use async storage functions', async () => {
+    it('should use async storage functions', async () => {
       const storage = wagmiConfig.storage;
 
       expect(storage).toBeDefined();

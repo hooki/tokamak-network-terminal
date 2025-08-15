@@ -6,7 +6,14 @@ import {
   readContracts,
 } from '@wagmi/core';
 import { mainnet, sepolia } from '@wagmi/core/chains';
-import { encodeAbiParameters, isAddress, isAddressEqual, parseAbi, parseEther, parseUnits } from 'viem';
+import {
+  encodeAbiParameters,
+  isAddress,
+  isAddressEqual,
+  parseAbi,
+  parseEther,
+  parseUnits,
+} from 'viem';
 import { z } from 'zod';
 import { getNetworkAddresses } from '../constants.js';
 import { checkApproval } from '../utils/approve.js';
@@ -43,7 +50,12 @@ export function registerTONCommands(server: McpServer) {
           .describe('If true, indicates this is a callback execution'),
       },
     },
-    async ({ tokenAmount, transferToAddress, network = 'mainnet', isCallback }) => {
+    async ({
+      tokenAmount,
+      transferToAddress,
+      network = 'mainnet',
+      isCallback,
+    }) => {
       const networkAddresses = getNetworkAddresses(network);
       const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
       let callbackCommand = `wrap-ton ${tokenAmount} --network ${network}`;
@@ -60,7 +72,9 @@ export function registerTONCommands(server: McpServer) {
         contracts: [
           {
             address: networkAddresses.TON_ADDRESS,
-            abi: parseAbi(['function balanceOf(address) view returns (uint256)']),
+            abi: parseAbi([
+              'function balanceOf(address) view returns (uint256)',
+            ]),
             functionName: 'balanceOf',
             args: [account],
             chainId,
@@ -90,8 +104,8 @@ export function registerTONCommands(server: McpServer) {
         };
       }
 
-       // SwapProxy를 이용한 Wrap TON to WTON
-       const tx = await writeContract(wagmiConfig, {
+      // SwapProxy를 이용한 Wrap TON to WTON
+      const tx = await writeContract(wagmiConfig, {
         abi: parseAbi(['function approveAndCall(address, uint256, bytes)']),
         address: networkAddresses.TON_ADDRESS,
         functionName: 'approveAndCall',
@@ -111,48 +125,49 @@ export function registerTONCommands(server: McpServer) {
         chainId,
       });
 
-      if (transferToAddress && isAddress(transferToAddress) && account !== transferToAddress) {
-          const tx1 = await writeContract(wagmiConfig, {
-            abi: parseAbi(['function transfer(address, uint256)']),
-            address: networkAddresses.WTON_ADDRESS,
-            functionName: 'transfer',
-            args: [transferToAddress, parseUnits(tokenAmount, decimals)],
-            chainId,
-          });
+      if (
+        transferToAddress &&
+        isAddress(transferToAddress) &&
+        account !== transferToAddress
+      ) {
+        const tx1 = await writeContract(wagmiConfig, {
+          abi: parseAbi(['function transfer(address, uint256)']),
+          address: networkAddresses.WTON_ADDRESS,
+          functionName: 'transfer',
+          args: [transferToAddress, parseUnits(tokenAmount, decimals)],
+          chainId,
+        });
 
-          await waitForTransactionReceipt(wagmiConfig, {
-            hash: tx1,
-            chainId,
-          });
+        await waitForTransactionReceipt(wagmiConfig, {
+          hash: tx1,
+          chainId,
+        });
 
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text: createMCPResponse({
-                  status: 'success',
-                  message: `Wrap TON tokens to WTON and transfer to ${account} successfully on ${network} (wrap tx: ${tx}) and (transfer tx: ${tx1})`,
-                }),
-              },
-            ],
-          };
-
-        } else {
-
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text: createMCPResponse({
-                  status: 'success',
-                  message: `Wrap TON tokens to WTON and transfer to ${account} successfully on ${network} (tx: ${tx})`,
-                }),
-              },
-            ],
-          };
-        }
-
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: createMCPResponse({
+                status: 'success',
+                message: `Wrap TON tokens to WTON and transfer to ${account} successfully on ${network} (wrap tx: ${tx}) and (transfer tx: ${tx1})`,
+              }),
+            },
+          ],
+        };
+      } else {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: createMCPResponse({
+                status: 'success',
+                message: `Wrap TON tokens to WTON and transfer to ${account} successfully on ${network} (tx: ${tx})`,
+              }),
+            },
+          ],
+        };
       }
+    }
   );
 
   server.registerTool(
@@ -181,7 +196,12 @@ export function registerTONCommands(server: McpServer) {
           .describe('If true, indicates this is a callback execution'),
       },
     },
-    async ({ tokenAmount, transferToAddress, network = 'mainnet', isCallback }) => {
+    async ({
+      tokenAmount,
+      transferToAddress,
+      network = 'mainnet',
+      isCallback,
+    }) => {
       const networkAddresses = getNetworkAddresses(network);
       const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
       let callbackCommand = `unwrap-wton ${tokenAmount} --network ${network}`;
@@ -198,7 +218,9 @@ export function registerTONCommands(server: McpServer) {
         contracts: [
           {
             address: networkAddresses.WTON_ADDRESS,
-            abi: parseAbi(['function balanceOf(address) view returns (uint256)']),
+            abi: parseAbi([
+              'function balanceOf(address) view returns (uint256)',
+            ]),
             functionName: 'balanceOf',
             args: [account],
             chainId,
@@ -253,7 +275,11 @@ export function registerTONCommands(server: McpServer) {
             },
           ],
         };
-      } else if (transferToAddress && isAddress(transferToAddress) && account !== transferToAddress) {
+      } else if (
+        transferToAddress &&
+        isAddress(transferToAddress) &&
+        account !== transferToAddress
+      ) {
         const tx = await writeContract(wagmiConfig, {
           abi: parseAbi(['function swapToTONAndTransfer(address, uint256)']),
           address: networkAddresses.WTON_ADDRESS,

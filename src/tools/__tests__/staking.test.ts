@@ -35,7 +35,9 @@ vi.mock('@wagmi/core/chains', () => ({
 // Mock viem functions
 vi.mock('viem', () => ({
   parseAbi: vi.fn((abi) => abi),
-  formatUnits: vi.fn((value, decimals) => (Number(value) / Math.pow(10, decimals)).toString()),
+  formatUnits: vi.fn((value, decimals) =>
+    (Number(value) / Math.pow(10, decimals)).toString()
+  ),
 }));
 
 // Mock constants
@@ -83,13 +85,17 @@ describe('staking.ts', () => {
 
       // Check if get-staked-balance was registered
       const calls = mockServer.registerTool.mock.calls;
-      const stakedBalanceCall = calls.find((call: any) => call[0] === 'get-staked-balance');
+      const stakedBalanceCall = calls.find(
+        (call: any) => call[0] === 'get-staked-balance'
+      );
 
       expect(stakedBalanceCall).toBeDefined();
       expect(stakedBalanceCall![1]).toEqual(
         expect.objectContaining({
           title: 'Get staked balance for Layer2 operator(s)',
-          description: expect.stringContaining("Get the amount of staked WTON to one or multiple Layer2 operators. You can specify operators by name (e.g., 'hammer', 'tokamak1', 'level') or by address."),
+          description: expect.stringContaining(
+            "Get the amount of staked WTON to one or multiple Layer2 operators. You can specify operators by name (e.g., 'hammer', 'tokamak1', 'level') or by address."
+          ),
           inputSchema: expect.objectContaining({
             network: expect.any(Object),
             layer2Identifiers: expect.any(Object),
@@ -106,7 +112,9 @@ describe('staking.ts', () => {
         'get-total-staked',
         expect.objectContaining({
           title: 'Get total staked amount for user across all Layer2 operators',
-          description: expect.stringContaining('Get the total amount of tokens staked'),
+          description: expect.stringContaining(
+            'Get the total amount of tokens staked'
+          ),
           inputSchema: expect.objectContaining({
             network: expect.any(Object),
             walletAddress: expect.any(Object),
@@ -121,13 +129,17 @@ describe('staking.ts', () => {
 
       // Check if get-total-staked-layer was registered (it should be the 3rd call)
       const calls = mockServer.registerTool.mock.calls;
-      const totalStakedLayerCall = calls.find((call: any) => call[0] === 'get-total-staked-layer');
+      const totalStakedLayerCall = calls.find(
+        (call: any) => call[0] === 'get-total-staked-layer'
+      );
 
       expect(totalStakedLayerCall).toBeDefined();
       expect(totalStakedLayerCall![1]).toEqual(
         expect.objectContaining({
           title: 'Get total staked amount for Layer2 operator',
-          description: expect.stringContaining('Get the total amount of staked WTON'),
+          description: expect.stringContaining(
+            'Get the total amount of staked WTON'
+          ),
           inputSchema: expect.objectContaining({
             network: expect.any(Object),
             layer2Identifier: expect.any(Object),
@@ -135,7 +147,6 @@ describe('staking.ts', () => {
         })
       );
     });
-
 
     it('should register exactly 3 tools', () => {
       registerStakingInfoTools(mockServer as any);
@@ -146,8 +157,12 @@ describe('staking.ts', () => {
 
   describe('get-staked-balance tool', () => {
     it('should return error when wallet address is not provided', async () => {
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
       mockCreateMCPResponse.mockReturnValue('error response');
 
@@ -180,9 +195,13 @@ describe('staking.ts', () => {
     });
 
     it('should get staked amount successfully', async () => {
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
       const mockFormatUnits = vi.mocked(await import('viem')).formatUnits;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
       mockReadContracts.mockResolvedValue([
         { result: BigInt('100000000000000000000000000'), status: 'success' }, // 100 tokens (27 decimals)
@@ -215,7 +234,10 @@ describe('staking.ts', () => {
               address: '0x0b55a0f463b6defb81c6063973763951712d0e5f',
               abi: ['function stakeOf(address,address) view returns (uint256)'],
               functionName: 'stakeOf',
-              args: ['0xhammermainnetaddress', '0x1234567890123456789012345678901234567890'],
+              args: [
+                '0xhammermainnetaddress',
+                '0x1234567890123456789012345678901234567890',
+              ],
               chainId: 1,
             },
           ],
@@ -223,7 +245,8 @@ describe('staking.ts', () => {
       );
       expect(mockCreateMCPResponse).toHaveBeenCalledWith({
         status: 'success',
-        message: '100.0 staked WTON to hammer on mainnet (address: 0x1234567890123456789012345678901234567890)',
+        message:
+          '100.0 staked WTON to hammer on mainnet (address: 0x1234567890123456789012345678901234567890)',
       });
       expect(result).toEqual({
         content: [
@@ -236,7 +259,9 @@ describe('staking.ts', () => {
     });
 
     it('should handle sepolia network', async () => {
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
       const mockFormatUnits = vi.mocked(await import('viem')).formatUnits;
 
       mockReadContracts.mockResolvedValue([
@@ -271,18 +296,22 @@ describe('staking.ts', () => {
     });
 
     it('should handle multiple layer2 identifiers', async () => {
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
       const mockFormatUnits = vi.mocked(await import('viem')).formatUnits;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
       mockReadContracts.mockResolvedValue([
         { result: BigInt('100000000000000000000000000'), status: 'success' }, // hammer
-        { result: BigInt('50000000000000000000000000'), status: 'success' },  // level
-        { result: BigInt('75000000000000000000000000'), status: 'success' },  // tokamak1
+        { result: BigInt('50000000000000000000000000'), status: 'success' }, // level
+        { result: BigInt('75000000000000000000000000'), status: 'success' }, // tokamak1
       ] as any);
       mockFormatUnits
         .mockReturnValueOnce('100.0') // hammer
-        .mockReturnValueOnce('50.0')  // level
+        .mockReturnValueOnce('50.0') // level
         .mockReturnValueOnce('75.0'); // tokamak1
       mockCreateMCPResponse.mockReturnValue('success response');
 
@@ -308,21 +337,30 @@ describe('staking.ts', () => {
               address: '0x0b55a0f463b6defb81c6063973763951712d0e5f',
               abi: ['function stakeOf(address,address) view returns (uint256)'],
               functionName: 'stakeOf',
-              args: ['0xhammermainnetaddress', '0x1234567890123456789012345678901234567890'],
+              args: [
+                '0xhammermainnetaddress',
+                '0x1234567890123456789012345678901234567890',
+              ],
               chainId: 1,
             },
             {
               address: '0x0b55a0f463b6defb81c6063973763951712d0e5f',
               abi: ['function stakeOf(address,address) view returns (uint256)'],
               functionName: 'stakeOf',
-              args: ['0xlevelmainnetaddress', '0x1234567890123456789012345678901234567890'],
+              args: [
+                '0xlevelmainnetaddress',
+                '0x1234567890123456789012345678901234567890',
+              ],
               chainId: 1,
             },
             {
               address: '0x0b55a0f463b6defb81c6063973763951712d0e5f',
               abi: ['function stakeOf(address,address) view returns (uint256)'],
               functionName: 'stakeOf',
-              args: ['0xtokamak1mainnetaddress', '0x1234567890123456789012345678901234567890'],
+              args: [
+                '0xtokamak1mainnetaddress',
+                '0x1234567890123456789012345678901234567890',
+              ],
               chainId: 1,
             },
           ],
@@ -330,7 +368,9 @@ describe('staking.ts', () => {
       );
       expect(mockCreateMCPResponse).toHaveBeenCalledWith({
         status: 'success',
-        message: expect.stringContaining('Staked amounts for 0x1234567890123456789012345678901234567890 on mainnet'),
+        message: expect.stringContaining(
+          'Staked amounts for 0x1234567890123456789012345678901234567890 on mainnet'
+        ),
       });
       expect(result).toEqual({
         content: [
@@ -345,7 +385,9 @@ describe('staking.ts', () => {
 
   describe('get-total-staked tool', () => {
     it('should return error when wallet address is not provided', async () => {
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
       mockCreateMCPResponse.mockReturnValue('error response');
 
@@ -377,9 +419,13 @@ describe('staking.ts', () => {
     });
 
     it('should get total staked amount successfully', async () => {
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
       const mockFormatUnits = vi.mocked(await import('viem')).formatUnits;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
       mockReadContracts.mockResolvedValue([
         { result: BigInt('1000000000000000000000000000'), status: 'success' }, // 1000 tokens (27 decimals)
@@ -416,7 +462,8 @@ describe('staking.ts', () => {
       );
       expect(mockCreateMCPResponse).toHaveBeenCalledWith({
         status: 'success',
-        message: 'Total 1000.0 WTON staked by 0x1234567890123456789012345678901234567890 across all Layer2 operators on mainnet',
+        message:
+          'Total 1000.0 WTON staked by 0x1234567890123456789012345678901234567890 across all Layer2 operators on mainnet',
       });
       expect(result).toEqual({
         content: [
@@ -429,7 +476,9 @@ describe('staking.ts', () => {
     });
 
     it('should handle sepolia network', async () => {
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
       const mockFormatUnits = vi.mocked(await import('viem')).formatUnits;
 
       mockReadContracts.mockResolvedValue([
@@ -465,9 +514,13 @@ describe('staking.ts', () => {
 
   describe('get-total-staked-layer tool', () => {
     it('should get total staked amount successfully', async () => {
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
       const mockFormatUnits = vi.mocked(await import('viem')).formatUnits;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
       mockReadContracts.mockResolvedValue([
         { result: BigInt('1000000000000000000000000000'), status: 'success' }, // 1000 tokens (27 decimals)
@@ -523,7 +576,9 @@ describe('staking.ts', () => {
     });
 
     it('should handle address as layer2Identifier', async () => {
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
       const mockFormatUnits = vi.mocked(await import('viem')).formatUnits;
 
       mockReadContracts.mockResolvedValue([

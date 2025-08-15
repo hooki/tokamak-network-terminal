@@ -40,7 +40,7 @@ describe('Agenda Tools - Real Tool Tests', () => {
 
       const result = await getAgendaHandler({
         agendaId: '0',
-        network: 'mainnet'
+        network: 'mainnet',
       });
 
       expect(result).toBeDefined();
@@ -59,7 +59,7 @@ describe('Agenda Tools - Real Tool Tests', () => {
 
       const result = await getAgendaHandler({
         agendaId: '0',
-        network: 'sepolia'
+        network: 'sepolia',
       });
 
       expect(result).toBeDefined();
@@ -78,10 +78,10 @@ describe('Agenda Tools - Real Tool Tests', () => {
 
       const result = await getAgendaHandler({
         agendaId: '',
-        network: 'mainnet'
+        network: 'mainnet',
       });
 
-    //   console.log('Missing ID result:', result);
+      //   console.log('Missing ID result:', result);
 
       expect(result).toBeDefined();
       expect(result.content).toBeDefined();
@@ -101,7 +101,7 @@ describe('Agenda Tools - Real Tool Tests', () => {
       }
 
       const result = await getAgendasHandler({
-        network: 'mainnet'
+        network: 'mainnet',
       });
 
       expect(result).toBeDefined();
@@ -125,7 +125,7 @@ describe('Agenda Tools - Real Tool Tests', () => {
 
       const result = await getAgendasHandler({
         start: '0',
-        network: 'mainnet'
+        network: 'mainnet',
       });
 
       expect(result).toBeDefined();
@@ -150,7 +150,7 @@ describe('Agenda Tools - Real Tool Tests', () => {
       const result = await getAgendasHandler({
         start: '0',
         end: '5',
-        network: 'mainnet'
+        network: 'mainnet',
       });
 
       expect(result).toBeDefined();
@@ -173,7 +173,7 @@ describe('Agenda Tools - Real Tool Tests', () => {
       }
 
       const result = await getAgendasHandler({
-        network: 'sepolia'
+        network: 'sepolia',
       });
 
       expect(result).toBeDefined();
@@ -197,7 +197,7 @@ describe('Agenda Tools - Real Tool Tests', () => {
       const result = await getAgendasHandler({
         start: '10',
         end: '5', // Invalid: start > end
-        network: 'mainnet'
+        network: 'mainnet',
       });
 
       expect(result).toBeDefined();
@@ -206,7 +206,9 @@ describe('Agenda Tools - Real Tool Tests', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.status).toBe('error');
-      expect(response.message).toContain('Start ID must be less than or equal to end ID');
+      expect(response.message).toContain(
+        'Start ID must be less than or equal to end ID'
+      );
     });
 
     it('should handle out of range agenda IDs', async () => {
@@ -218,7 +220,7 @@ describe('Agenda Tools - Real Tool Tests', () => {
       const result = await getAgendasHandler({
         start: '0',
         end: '100', // Out of range
-        network: 'mainnet'
+        network: 'mainnet',
       });
 
       expect(result).toBeDefined();
@@ -239,7 +241,7 @@ describe('Agenda Tools - Real Tool Tests', () => {
       }
 
       const result = await getAgendaCountHandler({
-        network: 'mainnet'
+        network: 'mainnet',
       });
 
       expect(result).toBeDefined();
@@ -263,7 +265,7 @@ describe('Agenda Tools - Real Tool Tests', () => {
       }
 
       const result = await getAgendaCountHandler({
-        network: 'sepolia'
+        network: 'sepolia',
       });
 
       expect(result).toBeDefined();
@@ -287,7 +289,7 @@ describe('Agenda Tools - Real Tool Tests', () => {
       }
 
       const result = await getAgendaCountHandler({
-        network: 'invalid-network'
+        network: 'invalid-network',
       });
 
       expect(result).toBeDefined();
@@ -317,11 +319,14 @@ describe('Agenda Tools - Real Tool Tests', () => {
           {
             target: '0x1234567890123456789012345678901234567890',
             functionName: 'approve(address,uint256)',
-            args: ['0xabcdefabcdefabcdefabcdefabcdefabcdefabcd', '500000000000000000']
-          }
+            args: [
+              '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+              '500000000000000000',
+            ],
+          },
         ],
         execute: false,
-        network: 'mainnet'
+        network: 'mainnet',
       });
 
       expect(result).toBeDefined();
@@ -351,17 +356,20 @@ describe('Agenda Tools - Real Tool Tests', () => {
           {
             target: '0x1234567890123456789012345678901234567890',
             functionName: 'approve(address,uint256)',
-            args: ['0xabcdefabcdefabcdefabcdefabcdefabcdefabcd', '500000000000000000']
+            args: [
+              '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+              '500000000000000000',
+            ],
           },
           {
             target: '0x9876543210987654321098765432109876543210',
             functionName: 'setValue(uint256,string)',
-            args: ['42', 'test value']
-          }
+            args: ['42', 'test value'],
+          },
         ],
         agendaUrl: 'https://forum.tokamak.network/agenda/123',
         execute: false,
-        network: 'sepolia'
+        network: 'sepolia',
       });
 
       expect(result).toBeDefined();
@@ -389,7 +397,7 @@ describe('Agenda Tools - Real Tool Tests', () => {
       const result = await createAgendaHandler({
         actions: [],
         execute: false,
-        network: 'mainnet'
+        network: 'mainnet',
       });
 
       expect(result).toBeDefined();
@@ -412,11 +420,11 @@ describe('Agenda Tools - Real Tool Tests', () => {
           {
             target: '0x1234567890123456789012345678901234567890',
             functionName: 'invalidFunction',
-            args: ['0xabcdefabcdefabcdefabcdefabcdefabcdefabcd']
-          }
+            args: ['0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'],
+          },
         ],
         execute: false,
-        network: 'mainnet'
+        network: 'mainnet',
       });
 
       expect(result).toBeDefined();
@@ -439,11 +447,14 @@ describe('Agenda Tools - Real Tool Tests', () => {
           {
             target: '0x1234567890123456789012345678901234567890',
             functionName: 'approve(address,uint256)',
-            args: ['0xabcdefabcdefabcdefabcdefabcdefabcdefabcd', '1000000000000000000']
-          }
+            args: [
+              '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+              '1000000000000000000',
+            ],
+          },
         ],
         execute: true,
-        network: 'mainnet'
+        network: 'mainnet',
       });
 
       expect(result).toBeDefined();

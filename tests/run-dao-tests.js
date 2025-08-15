@@ -13,13 +13,13 @@ const TEST_CONFIG = {
   delay: 2000,
   testFiles: [
     'test-dao-integration.js',
-    'test-dao-integration-comprehensive.js'
+    'test-dao-integration-comprehensive.js',
   ],
   testOptions: {
     basic: true,
     comprehensive: true,
-    network: 'mainnet' // 'mainnet', 'sepolia', 'both'
-  }
+    network: 'mainnet', // 'mainnet', 'sepolia', 'both'
+  },
 };
 
 // Parse command line arguments
@@ -27,8 +27,10 @@ const args = process.argv.slice(2);
 const options = {
   basic: args.includes('--basic') || args.includes('-b'),
   comprehensive: args.includes('--comprehensive') || args.includes('-c'),
-  network: args.find(arg => arg.startsWith('--network='))?.split('=')[1] || 'mainnet',
-  help: args.includes('--help') || args.includes('-h')
+  network:
+    args.find((arg) => arg.startsWith('--network='))?.split('=')[1] ||
+    'mainnet',
+  help: args.includes('--help') || args.includes('-h'),
 };
 
 if (options.help) {
@@ -53,7 +55,9 @@ Examples:
 
 // Check if dist directory exists
 if (!existsSync('dist')) {
-  console.log('❌ Error: dist directory not found. Please build the project first:');
+  console.log(
+    '❌ Error: dist directory not found. Please build the project first:'
+  );
   console.log('   npm run build');
   process.exit(1);
 }
@@ -73,7 +77,7 @@ class DAOTestRunner {
     return new Promise((resolve) => {
       const testProcess = spawn('node', [testFile], {
         stdio: ['pipe', 'pipe', 'pipe'],
-        cwd: process.cwd()
+        cwd: process.cwd(),
       });
 
       let output = '';
@@ -97,7 +101,7 @@ class DAOTestRunner {
           exitCode: code,
           output,
           errorOutput,
-          duration: Date.now() - this.startTime
+          duration: Date.now() - this.startTime,
         };
 
         this.results.push(result);
@@ -134,18 +138,16 @@ class DAOTestRunner {
     if (options.basic || args.includes('--all')) {
       testsToRun.push({
         file: 'tests/test-dao-integration.js',
-        name: 'Basic DAO Integration Tests'
+        name: 'Basic DAO Integration Tests',
       });
     }
 
     if (options.comprehensive || args.includes('--all')) {
       testsToRun.push({
         file: 'tests/test-dao-integration-comprehensive.js',
-        name: 'Comprehensive DAO Integration Tests'
+        name: 'Comprehensive DAO Integration Tests',
       });
     }
-
-
 
     if (testsToRun.length === 0) {
       console.log('❌ No tests selected. Use --help for options.');
@@ -171,32 +173,44 @@ class DAOTestRunner {
     console.log('========================');
 
     const totalTests = this.results.length;
-    const passedTests = this.results.filter(r => r.success).length;
-    const failedTests = this.results.filter(r => !r.success).length;
+    const passedTests = this.results.filter((r) => r.success).length;
+    const failedTests = this.results.filter((r) => !r.success).length;
     const totalDuration = this.results.reduce((sum, r) => sum + r.duration, 0);
 
     console.log(`Total Tests: ${totalTests}`);
     console.log(`Passed: ${passedTests}`);
     console.log(`Failed: ${failedTests}`);
-    console.log(`Success Rate: ${((passedTests / totalTests) * 100).toFixed(2)}%`);
+    console.log(
+      `Success Rate: ${((passedTests / totalTests) * 100).toFixed(2)}%`
+    );
     console.log(`Total Duration: ${(totalDuration / 1000).toFixed(2)}s`);
 
     if (failedTests > 0) {
       console.log('\n❌ Failed Tests:');
-      this.results.filter(r => !r.success).forEach(result => {
-        console.log(`  - ${result.testName}: Exit code ${result.exitCode}`);
-        if (result.errorOutput) {
-          console.log(`    Error: ${result.errorOutput.substring(0, 200)}...`);
-        }
-      });
+      this.results
+        .filter((r) => !r.success)
+        .forEach((result) => {
+          console.log(`  - ${result.testName}: Exit code ${result.exitCode}`);
+          if (result.errorOutput) {
+            console.log(
+              `    Error: ${result.errorOutput.substring(0, 200)}...`
+            );
+          }
+        });
     }
 
     // Performance analysis
     const avgDuration = totalDuration / totalTests;
     console.log(`\n📈 Performance:`);
-    console.log(`  - Average test duration: ${(avgDuration / 1000).toFixed(2)}s`);
-    console.log(`  - Fastest test: ${(Math.min(...this.results.map(r => r.duration)) / 1000).toFixed(2)}s`);
-    console.log(`  - Slowest test: ${(Math.max(...this.results.map(r => r.duration)) / 1000).toFixed(2)}s`);
+    console.log(
+      `  - Average test duration: ${(avgDuration / 1000).toFixed(2)}s`
+    );
+    console.log(
+      `  - Fastest test: ${(Math.min(...this.results.map((r) => r.duration)) / 1000).toFixed(2)}s`
+    );
+    console.log(
+      `  - Slowest test: ${(Math.max(...this.results.map((r) => r.duration)) / 1000).toFixed(2)}s`
+    );
 
     console.log('\n✅ DAO test suite completed');
   }

@@ -38,7 +38,9 @@ vi.mock('@wagmi/core/chains', () => ({
 // Mock viem functions
 vi.mock('viem', () => ({
   parseAbi: vi.fn((abi) => abi),
-  parseUnits: vi.fn((value, decimals) => BigInt(value) * BigInt(10 ** decimals)),
+  parseUnits: vi.fn(
+    (value, decimals) => BigInt(value) * BigInt(10 ** decimals)
+  ),
 }));
 
 // Mock utils
@@ -103,8 +105,12 @@ describe('approve.ts', () => {
 
   describe('approve tool', () => {
     it('should return error for unknown token', async () => {
-      const mockResolveTokenAddress = vi.mocked(await import('../../utils/resolve.js')).resolveTokenAddress;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockResolveTokenAddress = vi.mocked(
+        await import('../../utils/resolve.js')
+      ).resolveTokenAddress;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
       mockResolveTokenAddress.mockReturnValue(undefined);
 
@@ -138,11 +144,19 @@ describe('approve.ts', () => {
     });
 
     it('should return error for unknown spender', async () => {
-      const mockResolveTokenAddress = vi.mocked(await import('../../utils/resolve.js')).resolveTokenAddress;
-      const mockResolveAddress = vi.mocked(await import('../../utils/resolve.js')).resolveAddress;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockResolveTokenAddress = vi.mocked(
+        await import('../../utils/resolve.js')
+      ).resolveTokenAddress;
+      const mockResolveAddress = vi.mocked(
+        await import('../../utils/resolve.js')
+      ).resolveAddress;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
-      mockResolveTokenAddress.mockReturnValue('0x1234567890123456789012345678901234567890');
+      mockResolveTokenAddress.mockReturnValue(
+        '0x1234567890123456789012345678901234567890'
+      );
       mockResolveAddress.mockReturnValue(undefined);
 
       registerApproveTools(mockServer as any);
@@ -176,12 +190,22 @@ describe('approve.ts', () => {
 
     it('should handle wallet not connected', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
-      const mockResolveTokenAddress = vi.mocked(await import('../../utils/resolve.js')).resolveTokenAddress;
-      const mockResolveAddress = vi.mocked(await import('../../utils/resolve.js')).resolveAddress;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
+      const mockResolveTokenAddress = vi.mocked(
+        await import('../../utils/resolve.js')
+      ).resolveTokenAddress;
+      const mockResolveAddress = vi.mocked(
+        await import('../../utils/resolve.js')
+      ).resolveAddress;
 
-      mockResolveTokenAddress.mockReturnValue('0x1234567890123456789012345678901234567890');
-      mockResolveAddress.mockReturnValue('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
+      mockResolveTokenAddress.mockReturnValue(
+        '0x1234567890123456789012345678901234567890'
+      );
+      mockResolveAddress.mockReturnValue(
+        '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      );
       mockGetAccount.mockReturnValue({ address: undefined } as any);
       mockCheckWalletConnection.mockResolvedValue({
         content: [{ type: 'text', text: 'wallet not connected' }],
@@ -207,22 +231,34 @@ describe('approve.ts', () => {
         'approve TON for WTON amount 100 --network mainnet'
       );
       expect(result).toEqual({
-        content: [
-          { type: 'text', text: 'wallet not connected' },
-        ],
+        content: [{ type: 'text', text: 'wallet not connected' }],
       });
     });
 
     it('should handle max amount approval', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
-      const mockResolveTokenAddress = vi.mocked(await import('../../utils/resolve.js')).resolveTokenAddress;
-      const mockResolveAddress = vi.mocked(await import('../../utils/resolve.js')).resolveAddress;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
+      const mockResolveTokenAddress = vi.mocked(
+        await import('../../utils/resolve.js')
+      ).resolveTokenAddress;
+      const mockResolveAddress = vi.mocked(
+        await import('../../utils/resolve.js')
+      ).resolveAddress;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
-      mockResolveTokenAddress.mockReturnValue('0x1234567890123456789012345678901234567890');
-      mockResolveAddress.mockReturnValue('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
-      mockGetAccount.mockReturnValue({ address: '0x1234567890123456789012345678901234567890' } as any);
+      mockResolveTokenAddress.mockReturnValue(
+        '0x1234567890123456789012345678901234567890'
+      );
+      mockResolveAddress.mockReturnValue(
+        '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      );
+      mockGetAccount.mockReturnValue({
+        address: '0x1234567890123456789012345678901234567890',
+      } as any);
       mockWriteContract.mockResolvedValue('0xtxhash' as any);
       mockCreateMCPResponse.mockReturnValue('success response');
 
@@ -247,13 +283,20 @@ describe('approve.ts', () => {
           abi: ['function approve(address, uint256)'],
           address: '0x1234567890123456789012345678901234567890',
           functionName: 'approve',
-          args: ['0xabcdefabcdefabcdefabcdefabcdefabcdefabcd', BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')],
+          args: [
+            '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+            BigInt(
+              '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+            ),
+          ],
           chainId: 1,
         }
       );
       expect(mockCreateMCPResponse).toHaveBeenCalledWith({
         status: 'success',
-        message: expect.stringContaining('Approve max tokens from TON to WTON successfully'),
+        message: expect.stringContaining(
+          'Approve max tokens from TON to WTON successfully'
+        ),
       });
       expect(result).toEqual({
         content: [
@@ -267,15 +310,29 @@ describe('approve.ts', () => {
 
     it('should handle specific amount approval with provided decimals', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
       const mockParseUnits = vi.mocked(await import('viem')).parseUnits;
-      const mockResolveTokenAddress = vi.mocked(await import('../../utils/resolve.js')).resolveTokenAddress;
-      const mockResolveAddress = vi.mocked(await import('../../utils/resolve.js')).resolveAddress;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
+      const mockResolveTokenAddress = vi.mocked(
+        await import('../../utils/resolve.js')
+      ).resolveTokenAddress;
+      const mockResolveAddress = vi.mocked(
+        await import('../../utils/resolve.js')
+      ).resolveAddress;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
 
-      mockResolveTokenAddress.mockReturnValue('0x1234567890123456789012345678901234567890');
-      mockResolveAddress.mockReturnValue('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
-      mockGetAccount.mockReturnValue({ address: '0x1234567890123456789012345678901234567890' } as any);
+      mockResolveTokenAddress.mockReturnValue(
+        '0x1234567890123456789012345678901234567890'
+      );
+      mockResolveAddress.mockReturnValue(
+        '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      );
+      mockGetAccount.mockReturnValue({
+        address: '0x1234567890123456789012345678901234567890',
+      } as any);
       mockWriteContract.mockResolvedValue('0xtxhash' as any);
       mockParseUnits.mockReturnValue(BigInt('100000000000000000000')); // 100 tokens with 18 decimals
       mockCreateMCPResponse.mockReturnValue('success response');
@@ -303,7 +360,10 @@ describe('approve.ts', () => {
           abi: ['function approve(address, uint256)'],
           address: '0x1234567890123456789012345678901234567890',
           functionName: 'approve',
-          args: ['0xabcdefabcdefabcdefabcdefabcdefabcdefabcd', BigInt('100000000000000000000')],
+          args: [
+            '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+            BigInt('100000000000000000000'),
+          ],
           chainId: 1,
         }
       );
@@ -319,13 +379,25 @@ describe('approve.ts', () => {
 
     it('should handle sepolia network', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
-      const mockResolveTokenAddress = vi.mocked(await import('../../utils/resolve.js')).resolveTokenAddress;
-      const mockResolveAddress = vi.mocked(await import('../../utils/resolve.js')).resolveAddress;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
+      const mockResolveTokenAddress = vi.mocked(
+        await import('../../utils/resolve.js')
+      ).resolveTokenAddress;
+      const mockResolveAddress = vi.mocked(
+        await import('../../utils/resolve.js')
+      ).resolveAddress;
 
-      mockResolveTokenAddress.mockReturnValue('0x1234567890123456789012345678901234567890');
-      mockResolveAddress.mockReturnValue('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd');
-      mockGetAccount.mockReturnValue({ address: '0x1234567890123456789012345678901234567890' } as any);
+      mockResolveTokenAddress.mockReturnValue(
+        '0x1234567890123456789012345678901234567890'
+      );
+      mockResolveAddress.mockReturnValue(
+        '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      );
+      mockGetAccount.mockReturnValue({
+        address: '0x1234567890123456789012345678901234567890',
+      } as any);
       mockWriteContract.mockResolvedValue('0xtxhash' as any);
 
       registerApproveTools(mockServer as any);

@@ -5,7 +5,7 @@ import {
   getTokenName,
   getTokenSymbol,
   getTokenAllowance,
-  getTokenInfo
+  getTokenInfo,
 } from '../erc20.js';
 
 // Mock wagmi functions
@@ -34,7 +34,9 @@ describe('erc20.ts', () => {
 
   describe('getTokenBalance', () => {
     it('should call readContract with correct parameters', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
       mockReadContract.mockResolvedValue(1000000000000000000n); // 1 ETH in wei
 
       const result = await getTokenBalance(
@@ -59,7 +61,9 @@ describe('erc20.ts', () => {
 
   describe('getTokenDecimals', () => {
     it('should call readContract with correct parameters', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
       mockReadContract.mockResolvedValue(18);
 
       const result = await getTokenDecimals(
@@ -82,7 +86,9 @@ describe('erc20.ts', () => {
 
   describe('getTokenName', () => {
     it('should call readContract with correct parameters', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
       mockReadContract.mockResolvedValue('Test Token');
 
       const result = await getTokenName(
@@ -105,7 +111,9 @@ describe('erc20.ts', () => {
 
   describe('getTokenSymbol', () => {
     it('should call readContract with correct parameters', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
       mockReadContract.mockResolvedValue('TEST');
 
       const result = await getTokenSymbol(
@@ -128,7 +136,9 @@ describe('erc20.ts', () => {
 
   describe('getTokenAllowance', () => {
     it('should call readContract with correct parameters', async () => {
-      const mockReadContract = vi.mocked(await import('@wagmi/core')).readContract;
+      const mockReadContract = vi.mocked(
+        await import('@wagmi/core')
+      ).readContract;
       mockReadContract.mockResolvedValue(1000000000000000000n);
 
       const result = await getTokenAllowance(
@@ -146,7 +156,7 @@ describe('erc20.ts', () => {
           functionName: 'allowance',
           args: [
             '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
-            '0x9876543210987654321098765432109876543210'
+            '0x9876543210987654321098765432109876543210',
           ],
           chainId: 1,
         }
@@ -157,7 +167,9 @@ describe('erc20.ts', () => {
 
   describe('getTokenInfo', () => {
     it('should call readContracts with correct parameters', async () => {
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
       mockReadContracts.mockResolvedValue([
         { result: 'Test Token', status: 'success' },
         { result: 'TEST', status: 'success' },

@@ -37,7 +37,9 @@ vi.mock('@wagmi/core/chains', () => ({
 // Mock viem functions
 vi.mock('viem', () => ({
   parseAbi: vi.fn((abi) => abi),
-  parseUnits: vi.fn((value, decimals) => BigInt(value) * BigInt(10 ** decimals)),
+  parseUnits: vi.fn(
+    (value, decimals) => BigInt(value) * BigInt(10 ** decimals)
+  ),
 }));
 
 // Mock constants
@@ -108,10 +110,16 @@ describe('unstake.ts', () => {
 
   describe('unstake-tokens tool', () => {
     it('should handle wallet not connected', async () => {
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
-      const mockResolveLayer2Address = vi.mocked(await import('../../utils/layer2.js')).resolveLayer2Address;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
+      const mockResolveLayer2Address = vi.mocked(
+        await import('../../utils/layer2.js')
+      ).resolveLayer2Address;
 
-      mockResolveLayer2Address.mockReturnValue('0x1234567890123456789012345678901234567890');
+      mockResolveLayer2Address.mockReturnValue(
+        '0x1234567890123456789012345678901234567890'
+      );
       mockCheckWalletConnection.mockResolvedValue({
         content: [{ type: 'text', text: 'wallet not connected' }],
       });
@@ -135,22 +143,32 @@ describe('unstake.ts', () => {
         'unstake-tokens 0x1234567890123456789012345678901234567890 100 --network mainnet'
       );
       expect(result).toEqual({
-        content: [
-          { type: 'text', text: 'wallet not connected' },
-        ],
+        content: [{ type: 'text', text: 'wallet not connected' }],
       });
     });
 
     it('should return error for insufficient staked amount', async () => {
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
       const mockParseUnits = vi.mocked(await import('viem')).parseUnits;
-      const mockResolveLayer2Address = vi.mocked(await import('../../utils/layer2.js')).resolveLayer2Address;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
+      const mockResolveLayer2Address = vi.mocked(
+        await import('../../utils/layer2.js')
+      ).resolveLayer2Address;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
 
-      mockResolveLayer2Address.mockReturnValue('0x1234567890123456789012345678901234567890');
-      mockGetAccount.mockReturnValue({ address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' } as any);
+      mockResolveLayer2Address.mockReturnValue(
+        '0x1234567890123456789012345678901234567890'
+      );
+      mockGetAccount.mockReturnValue({
+        address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+      } as any);
       mockReadContracts.mockResolvedValue([
         { result: BigInt('100000000000000000000000000'), status: 'success' }, // 100 tokens (27 decimals)
       ] as any);
@@ -183,7 +201,10 @@ describe('unstake.ts', () => {
               address: '0x1234567890123456789012345678901234567890',
               abi: ['function stakeOf(address,address) view returns (uint256)'],
               functionName: 'stakeOf',
-              args: ['0x1234567890123456789012345678901234567890', '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'],
+              args: [
+                '0x1234567890123456789012345678901234567890',
+                '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+              ],
               chainId: 1,
             },
           ],
@@ -204,16 +225,30 @@ describe('unstake.ts', () => {
     });
 
     it('should unstake tokens successfully', async () => {
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
       const mockParseUnits = vi.mocked(await import('viem')).parseUnits;
-      const mockResolveLayer2Address = vi.mocked(await import('../../utils/layer2.js')).resolveLayer2Address;
-      const mockCreateMCPResponse = vi.mocked(await import('../../utils/response.js')).createMCPResponse;
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
+      const mockResolveLayer2Address = vi.mocked(
+        await import('../../utils/layer2.js')
+      ).resolveLayer2Address;
+      const mockCreateMCPResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createMCPResponse;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
 
-      mockResolveLayer2Address.mockReturnValue('0x1234567890123456789012345678901234567890');
-      mockGetAccount.mockReturnValue({ address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' } as any);
+      mockResolveLayer2Address.mockReturnValue(
+        '0x1234567890123456789012345678901234567890'
+      );
+      mockGetAccount.mockReturnValue({
+        address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+      } as any);
       mockReadContracts.mockResolvedValue([
         { result: BigInt('500000000000000000000000000'), status: 'success' }, // 500 tokens (27 decimals)
       ] as any);
@@ -246,7 +281,10 @@ describe('unstake.ts', () => {
           abi: ['function requestWithdrawal(address, uint256)'],
           address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
           functionName: 'requestWithdrawal',
-          args: ['0x1234567890123456789012345678901234567890', BigInt('100000000000000000000000000')],
+          args: [
+            '0x1234567890123456789012345678901234567890',
+            BigInt('100000000000000000000000000'),
+          ],
           chainId: 1,
         }
       );
@@ -265,14 +303,26 @@ describe('unstake.ts', () => {
     });
 
     it('should handle sepolia network', async () => {
-      const mockReadContracts = vi.mocked(await import('@wagmi/core')).readContracts;
-      const mockWriteContract = vi.mocked(await import('@wagmi/core')).writeContract;
+      const mockReadContracts = vi.mocked(
+        await import('@wagmi/core')
+      ).readContracts;
+      const mockWriteContract = vi.mocked(
+        await import('@wagmi/core')
+      ).writeContract;
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      const mockResolveLayer2Address = vi.mocked(await import('../../utils/layer2.js')).resolveLayer2Address;
-      const mockCheckWalletConnection = vi.mocked(await import('../../utils/wallet.js')).checkWalletConnection;
+      const mockResolveLayer2Address = vi.mocked(
+        await import('../../utils/layer2.js')
+      ).resolveLayer2Address;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
 
-      mockResolveLayer2Address.mockReturnValue('0x1234567890123456789012345678901234567890');
-      mockGetAccount.mockReturnValue({ address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' } as any);
+      mockResolveLayer2Address.mockReturnValue(
+        '0x1234567890123456789012345678901234567890'
+      );
+      mockGetAccount.mockReturnValue({
+        address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+      } as any);
       mockReadContracts.mockResolvedValue([
         { result: BigInt('500000000000000000000000000'), status: 'success' },
       ] as any);
