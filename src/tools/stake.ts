@@ -5,9 +5,9 @@ import { encodeAbiParameters, parseAbi, parseEther } from 'viem';
 import { z } from 'zod';
 import {
   DEPOSIT_MANAGER,
+  getNetworkAddresses,
   TON_ADDRESS,
   WTON_ADDRESS,
-  getNetworkAddresses,
 } from '../constants.js';
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import { resolveLayer2Address } from '../utils/layer2.js';

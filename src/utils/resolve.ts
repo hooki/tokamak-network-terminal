@@ -1,5 +1,5 @@
 import type { Address } from 'viem';
-import { getNetworkTokens, getNetworkAddresses } from '../constants.js';
+import { getNetworkAddresses, getNetworkTokens } from '../constants.js';
 
 const resolveTokenAddress = (
   tokenAddressOrName: Address | string,

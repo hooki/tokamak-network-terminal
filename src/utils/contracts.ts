@@ -1,6 +1,6 @@
 import { readContracts } from '@wagmi/core';
-import { wagmiConfig } from './wagmi-config.js';
 import { daoCommitteeAbi } from '../abis/daoCommittee.js';
+import { wagmiConfig } from './wagmi-config.js';
 
 /**
  * Read agenda data from contract

@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  getTokenAllowance,
   getTokenBalance,
   getTokenDecimals,
+  getTokenInfo,
   getTokenName,
   getTokenSymbol,
-  getTokenAllowance,
-  getTokenInfo,
 } from '../erc20.js';
 
 // Mock wagmi functions

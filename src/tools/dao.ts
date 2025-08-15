@@ -1,34 +1,34 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { z } from 'zod';
 import {
+  getAccount,
+  getPublicClient,
   readContract,
   readContracts,
   writeContract,
-  getAccount,
-  getPublicClient,
 } from '@wagmi/core';
 import { mainnet, sepolia } from '@wagmi/core/chains';
-import { wagmiConfig } from '../utils/wagmi-config.js';
-import { getNetworkAddresses } from '../constants.js';
+import { connectMutationOptions } from '@wagmi/core/query';
+import { z } from 'zod';
+import { daoCandidateAbi } from '../abis/daoCandidate.js';
 import { daoCommitteeAbi } from '../abis/daoCommittee.js';
 import { operatorManagerAbi } from '../abis/operatorManager.js';
-import { daoCandidateAbi } from '../abis/daoCandidate.js';
+import { getNetworkAddresses } from '../constants.js';
 import {
-  createMCPResponse,
-  createErrorResponse,
-  createSuccessResponse,
-} from '../utils/response.js';
-import {
-  getDAOMemberCandidateInfo,
-  getDAOMemberOperatorManagerInfo,
-  getDAOMemberCount,
   checkDAOMembership,
-  getDAOMembersStakingInfo,
-  getDAOMembersActivityReward,
   getChallengeInfo,
+  getDAOMemberCandidateInfo,
+  getDAOMemberCount,
+  getDAOMemberOperatorManagerInfo,
+  getDAOMembersActivityReward,
+  getDAOMembersStakingInfo,
 } from '../utils/dao.js';
 import { formatTokenAmountWithUnitPrecise } from '../utils/format.js';
-import { connectMutationOptions } from '@wagmi/core/query';
+import {
+  createErrorResponse,
+  createMCPResponse,
+  createSuccessResponse,
+} from '../utils/response.js';
+import { wagmiConfig } from '../utils/wagmi-config.js';
 import { checkWalletConnection } from '../utils/wallet.js';
 
 export function registerDAOTools(server: McpServer) {

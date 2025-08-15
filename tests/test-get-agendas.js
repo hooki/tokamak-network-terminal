@@ -1,4 +1,4 @@
-import { spawn } from 'child_process';
+import { spawn } from 'node:child_process';
 
 console.log('Testing get-agendas tool with actual calls...\n');
 
@@ -18,14 +18,14 @@ function sendRequest(method, params = {}) {
   };
 
   console.log(`Sending: ${method}`);
-  serverProcess.stdin.write(JSON.stringify(request) + '\n');
+  serverProcess.stdin.write(`${JSON.stringify(request)}\n`);
 }
 
 function parseResponse(data) {
   try {
     const response = JSON.parse(data.toString());
     return response;
-  } catch (error) {
+  } catch (_error) {
     console.log('Raw response:', data.toString());
     return null;
   }
@@ -36,8 +36,8 @@ serverProcess.stdout.on('data', (data) => {
   if (response) {
     console.log(`✅ Response for ID ${response.id}:`);
     if (response.result) {
-      if (response.result.content && response.result.content[0]) {
-        console.log(response.result.content[0].text.substring(0, 300) + '...');
+      if (response.result.content?.[0]) {
+        console.log(`${response.result.content[0].text.substring(0, 300)}...`);
       } else {
         console.log('Result:', JSON.stringify(response.result, null, 2));
       }

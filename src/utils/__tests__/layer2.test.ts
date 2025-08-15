@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { resolveLayer2Address, getNetworkLayer2Operators } from '../layer2.js';
+import { describe, expect, it } from 'vitest';
+import { getNetworkLayer2Operators, resolveLayer2Address } from '../layer2.js';
 
 describe('layer2.ts', () => {
   describe('resolveLayer2Address', () => {

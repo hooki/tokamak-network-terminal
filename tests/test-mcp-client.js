@@ -1,4 +1,4 @@
-import { spawn } from 'child_process';
+import { spawn } from 'node:child_process';
 import { McpClient } from '@modelcontextprotocol/sdk/client/mcp.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
@@ -40,7 +40,7 @@ async function testGetAgendas() {
       const result1 = await client.callTool('get-agendas', {});
       console.log(
         '✅ Success:',
-        result1.content[0].text.substring(0, 200) + '...'
+        `${result1.content[0].text.substring(0, 200)}...`
       );
     } catch (error) {
       console.log('❌ Error:', error.message);
@@ -52,7 +52,7 @@ async function testGetAgendas() {
       const result2 = await client.callTool('get-agendas', { start: '0' });
       console.log(
         '✅ Success:',
-        result2.content[0].text.substring(0, 200) + '...'
+        `${result2.content[0].text.substring(0, 200)}...`
       );
     } catch (error) {
       console.log('❌ Error:', error.message);
@@ -67,7 +67,7 @@ async function testGetAgendas() {
       });
       console.log(
         '✅ Success:',
-        result3.content[0].text.substring(0, 200) + '...'
+        `${result3.content[0].text.substring(0, 200)}...`
       );
     } catch (error) {
       console.log('❌ Error:', error.message);
@@ -81,7 +81,7 @@ async function testGetAgendas() {
       });
       console.log(
         '✅ Success:',
-        result4.content[0].text.substring(0, 200) + '...'
+        `${result4.content[0].text.substring(0, 200)}...`
       );
     } catch (error) {
       console.log('❌ Error:', error.message);

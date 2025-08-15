@@ -3,12 +3,12 @@ import {
   getAccount,
   getBlockNumber,
   readContract,
-  writeContract,
   readContracts,
+  writeContract,
 } from '@wagmi/core';
+import { mainnet, sepolia } from '@wagmi/core/chains';
 import { formatUnits, parseAbi } from 'viem';
 import { z } from 'zod';
-import { mainnet, sepolia } from '@wagmi/core/chains';
 import { getNetworkAddresses } from '../constants.js';
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import { resolveLayer2Address } from '../utils/layer2.js';

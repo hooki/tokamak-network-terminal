@@ -1,19 +1,19 @@
 import {
-  readContract,
-  readContracts,
   getPublicClient,
   http,
+  readContract,
+  readContracts,
   writeContract,
 } from '@wagmi/core';
 import { mainnet, sepolia } from '@wagmi/core/chains';
-import { wagmiConfig } from './wagmi-config.js';
-import { getNetworkAddresses } from '../constants.js';
-import { daoCommitteeAbi } from '../abis/daoCommittee.js';
-import { operatorManagerAbi } from '../abis/operatorManager.js';
-import { layer2ManagerAbi } from '../abis/layer2Manager.js';
 import { daoCandidateAbi } from '../abis/daoCandidate.js';
+import { daoCommitteeAbi } from '../abis/daoCommittee.js';
+import { layer2ManagerAbi } from '../abis/layer2Manager.js';
+import { operatorManagerAbi } from '../abis/operatorManager.js';
 import { seigManagerAbi } from '../abis/seigManager.js';
+import { getNetworkAddresses } from '../constants.js';
 import { formatTokenAmountWithUnitPrecise } from './format.js';
+import { wagmiConfig } from './wagmi-config.js';
 
 /**
  * DAO Committee 관련 유틸리티 함수들
@@ -341,41 +341,39 @@ export async function getDAOMembersStakingInfo(
     const stakingInfo: DAOMembersStakingInfo[] = [];
 
     // 멀티콜로 스테이킹 정보 조회
-    const stakingContracts = members
-      .map((member) => {
-        const candidateContract = member.candidateInfo?.candidateContract;
-        return [
-          {
-            address: candidateContract as `0x${string}`,
-            abi: daoCandidateAbi as any,
-            functionName: 'memo',
-            args: [],
-            chainId,
-          },
-          {
-            address: candidateContract as `0x${string}`,
-            abi: daoCandidateAbi as any,
-            functionName: 'totalStaked',
-            args: [],
-            chainId,
-          },
-          {
-            address: networkAddresses.DAO_COMMITTEE,
-            abi: daoCommitteeAbi as any,
-            functionName: 'getClaimableActivityReward',
-            args: [member.candidate as `0x${string}`],
-            chainId,
-          },
-          {
-            address: networkAddresses.SEIG_MANAGER,
-            abi: seigManagerAbi as any,
-            functionName: 'lastCommitBlock',
-            args: [candidateContract as `0x${string}`],
-            chainId,
-          },
-        ];
-      })
-      .flat();
+    const stakingContracts = members.flatMap((member) => {
+      const candidateContract = member.candidateInfo?.candidateContract;
+      return [
+        {
+          address: candidateContract as `0x${string}`,
+          abi: daoCandidateAbi as any,
+          functionName: 'memo',
+          args: [],
+          chainId,
+        },
+        {
+          address: candidateContract as `0x${string}`,
+          abi: daoCandidateAbi as any,
+          functionName: 'totalStaked',
+          args: [],
+          chainId,
+        },
+        {
+          address: networkAddresses.DAO_COMMITTEE,
+          abi: daoCommitteeAbi as any,
+          functionName: 'getClaimableActivityReward',
+          args: [member.candidate as `0x${string}`],
+          chainId,
+        },
+        {
+          address: networkAddresses.SEIG_MANAGER,
+          abi: seigManagerAbi as any,
+          functionName: 'lastCommitBlock',
+          args: [candidateContract as `0x${string}`],
+          chainId,
+        },
+      ];
+    });
 
     const stakingResults = await readContracts(wagmiConfig, {
       contracts: stakingContracts,
@@ -610,7 +608,7 @@ export async function getChallengeInfo(
       challengerStakeResult >= minStake;
 
     // 더 상세한 챌린지 조건 검증
-    let challengeReason = undefined;
+    let challengeReason;
 
     if (challengerStakeResult < minStake) {
       challengeReason = `Challenger stake (${challengerStakeResult}) must be at least ${minStake} TON`;

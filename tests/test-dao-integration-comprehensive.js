@@ -20,7 +20,7 @@ const serverProcess = spawn('node', ['dist/src/index.js'], {
 });
 
 let requestId = 1;
-let testResults = [];
+const testResults = [];
 let currentTest = '';
 
 function sendRequest(method, params = {}) {
@@ -49,10 +49,7 @@ function parseResponse(data) {
       if (response.jsonrpc === '2.0' && (response.result || response.error)) {
         return response;
       }
-    } catch (error) {
-      // 이 줄은 JSON이 아님, 다음 줄 시도
-      continue;
-    }
+    } catch (error) {}
   }
 
   return null;

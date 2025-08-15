@@ -1,9 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
   getAccount,
+  readContracts,
   waitForTransactionReceipt,
   writeContract,
-  readContracts,
 } from '@wagmi/core';
 import { mainnet, sepolia } from '@wagmi/core/chains';
 import {

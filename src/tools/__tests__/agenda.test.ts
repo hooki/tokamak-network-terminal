@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import { registerAgendaTools } from '../agenda.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { registerAgendaTools } from '../agenda.js';
 
 describe('Agenda Tools - Real Tool Tests', () => {
   let server: McpServer;

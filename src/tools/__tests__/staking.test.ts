@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerStakingInfoTools } from '../staking.js';
 
 // Mock MCP Server
@@ -36,7 +36,7 @@ vi.mock('@wagmi/core/chains', () => ({
 vi.mock('viem', () => ({
   parseAbi: vi.fn((abi) => abi),
   formatUnits: vi.fn((value, decimals) =>
-    (Number(value) / Math.pow(10, decimals)).toString()
+    (Number(value) / 10 ** decimals).toString()
   ),
 }));
 

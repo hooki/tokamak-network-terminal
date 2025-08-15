@@ -1,8 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { writeContract, readContracts, getAccount } from '@wagmi/core';
+import { getAccount, readContracts, writeContract } from '@wagmi/core';
+import { mainnet, sepolia } from '@wagmi/core/chains';
 import { parseAbi, parseUnits } from 'viem';
 import { z } from 'zod';
-import { mainnet, sepolia } from '@wagmi/core/chains';
 import { getNetworkAddresses } from '../constants.js';
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import { resolveLayer2Address } from '../utils/layer2.js';

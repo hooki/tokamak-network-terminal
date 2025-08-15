@@ -35,10 +35,7 @@ function parseResponse(data) {
       if (response.jsonrpc === '2.0' && (response.result || response.error)) {
         return response;
       }
-    } catch (error) {
-      // 이 줄은 JSON이 아님, 다음 줄 시도
-      continue;
-    }
+    } catch (error) {}
   }
 
   // // JSON-RPC 응답을 찾지 못한 경우

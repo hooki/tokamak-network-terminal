@@ -1,29 +1,28 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { readContracts } from '@wagmi/core';
 import { mainnet, sepolia } from '@wagmi/core/chains';
-import { z } from 'zod';
 import { encodeAbiParameters, encodeFunctionData } from 'viem';
-import { getNetworkAddresses } from '../constants.js';
-import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
+import { z } from 'zod';
+import { agendaManagerAbi } from '../abis/agendaManager.js';
+import { daoAgendaManagerAbi } from '../abis/daoAgendaManager.js';
+import { daoCommitteeAbi } from '../abis/daoCommittee.js';
+import { tonAbi } from '../abis/ton.js';
+import { getNetworkAddresses, MAX_AGENDAS_PER_REQUEST } from '../constants.js';
 import {
-  createMCPResponse,
-  createErrorResponse,
-  createSuccessResponse,
-  createResponse,
-} from '../utils/response.js';
-import { formatTimestamp } from '../utils/time.js';
-import {
+  createAgendaMessage,
   getAgendaResultText,
   getAgendaStatusText,
   getAgendaStatusTextV1,
-  createAgendaMessage,
 } from '../utils/agenda.js';
+import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
+import {
+  createErrorResponse,
+  createMCPResponse,
+  createResponse,
+  createSuccessResponse,
+} from '../utils/response.js';
+import { formatTimestamp } from '../utils/time.js';
 import { wagmiConfig } from '../utils/wagmi-config.js';
-import { daoAgendaManagerAbi } from '../abis/daoAgendaManager.js';
-import { daoCommitteeAbi } from '../abis/daoCommittee.js';
-import { agendaManagerAbi } from '../abis/agendaManager.js';
-import { tonAbi } from '../abis/ton.js';
-import { MAX_AGENDAS_PER_REQUEST } from '../constants.js';
 
 export function registerAgendaTools(server: McpServer) {
   server.registerTool(
@@ -774,7 +773,7 @@ export function registerAgendaTools(server: McpServer) {
 
         // If execute is false, show preview only
         if (!execute) {
-          const tonFees = Number(requiredFees) / Math.pow(10, 18);
+          const tonFees = Number(requiredFees) / 10 ** 18;
           const message =
             `📝 **Create Agenda Preview on ${network}**\n\n` +
             `**Committee Version:** ${isVersion2 ? '2.0.0' : '1.0.0'}\n` +
@@ -817,7 +816,7 @@ export function registerAgendaTools(server: McpServer) {
             `**Current Agenda Details:**\n` +
             `- Network: ${network}\n` +
             `- Actions: ${actions.length} action(s)\n` +
-            `- Required Fees: ${(Number(requiredFees) / Math.pow(10, 18)).toFixed(6)} TON\n` +
+            `- Required Fees: ${(Number(requiredFees) / 10 ** 18).toFixed(6)} TON\n` +
             (agendaUrl ? `- Agenda URL: ${agendaUrl}\n` : '') +
             `\n💡 **Tip:** Use \`execute=false\` to preview agenda details without connecting wallet.`;
 
@@ -834,8 +833,8 @@ export function registerAgendaTools(server: McpServer) {
           chainId,
         });
 
-        const tonFees = Number(requiredFees) / Math.pow(10, 18);
-        const userTonBalance = Number(tonBalance) / Math.pow(10, 18);
+        const tonFees = Number(requiredFees) / 10 ** 18;
+        const userTonBalance = Number(tonBalance) / 10 ** 18;
 
         if (tonBalance < requiredFees) {
           return createErrorResponse(
