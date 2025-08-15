@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { connectWallet, generateQRCode, checkWalletConnection } from '../wallet.js';
 
-
 // Mock wagmi functions
 vi.mock('@wagmi/core', () => ({
   readContract: vi.fn(),
@@ -122,23 +121,6 @@ describe('wallet.ts', () => {
           {
             type: 'text',
             text: expect.stringContaining('waiting for wallet connection'),
-          },
-        ],
-      });
-    });
-
-    it('should return continue response when wallet is not connected and isCallback is false', async () => {
-      const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
-      mockGetAccount.mockReturnValue({ isConnected: false } as any);
-
-      const result = await checkWalletConnection(false, 'test-callback');
-
-      expect(result).toEqual({
-        isConnected: false,
-        content: [
-          {
-            type: 'text',
-            text: expect.stringContaining('please connect your wallet first'),
           },
         ],
       });

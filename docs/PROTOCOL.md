@@ -431,6 +431,302 @@ The Tokamak Network Terminal is an MCP (Model Context Protocol) server that prov
 }
 ```
 
+### 6. DAO Tools
+
+#### `get-dao-member-count`
+**Title**: Get DAO member count
+**Description**: Get the total number of DAO members on the specified network. No wallet connection required.
+**Input Schema**:
+- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
+
+**Client Request (Input)**:
+```json
+{
+  "network": "mainnet"
+}
+```
+
+**Server Response (Output)**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"message\":\"DAO member count on mainnet: 3\"}"
+    }
+  ]
+}
+```
+
+#### `get-dao-member-candidate-info`
+**Title**: Get DAO member candidate information
+**Description**: Get detailed information about DAO member candidates including their contract addresses, staking details, and candidate information. No wallet connection required.
+**Input Schema**:
+- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
+
+**Client Request (Input)**:
+```json
+{
+  "network": "mainnet"
+}
+```
+
+**Server Response (Output)**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"network\":\"mainnet\",\"memberCount\":3,\"members\":[{\"candidate\":\"0xf3B17FDB808c7d0Df9ACd24dA34700ce069007DF\",\"candidateInfo\":{\"candidateContract\":\"0xf3B17FDB808c7d0Df9ACd24dA34700ce069007DF\",\"indexMembers\":\"0\",\"memberJoinedTime\":\"1705123456\",\"rewardPeriod\":\"604800\",\"claimedTimestamp\":\"0\"}}],\"message\":\"Found 3 DAO members on mainnet. Member count: 3\"}"
+    }
+  ]
+}
+```
+
+#### `get-dao-member-operator-manager-info`
+**Title**: Get DAO member operator manager information
+**Description**: Get detailed information about DAO members including their operator manager and manager addresses. No wallet connection required.
+**Input Schema**:
+- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
+
+**Client Request (Input)**:
+```json
+{
+  "network": "mainnet"
+}
+```
+
+**Server Response (Output)**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"message\":\"Found 3 DAO members with operator manager info on mainnet. Member count: 3\",\"memberCount\":3,\"members\":[{\"candidate\":\"0xf3B17FDB808c7d0Df9ACd24dA34700ce069007DF\",\"candidateInfo\":{\"candidateContract\":\"0xf3B17FDB808c7d0Df9ACd24dA34700ce069007DF\",\"indexMembers\":\"0\",\"memberJoinedTime\":\"1705123456\",\"rewardPeriod\":\"604800\",\"claimedTimestamp\":\"0\"}}]}"
+    }
+  ]
+}
+```
+
+#### `check-dao-membership`
+**Title**: Check DAO membership
+**Description**: Check if a specific address is a DAO member (either as candidate or manager). No wallet connection required.
+**Input Schema**:
+- `address`: The address to check for DAO membership
+- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
+
+**Client Request (Input)**:
+```json
+{
+  "address": "0x1234567890123456789012345678901234567890",
+  "network": "mainnet"
+}
+```
+
+**Server Response (Output)**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"message\":\"Address 0x1234567890123456789012345678901234567890 is not a DAO member on mainnet\"}"
+    }
+  ]
+}
+```
+
+#### `get-dao-members-staking-info`
+**Title**: Get DAO members staking information
+**Description**: Get detailed staking information for all DAO members including total staked, memo, and claimable rewards. No wallet connection required.
+**Input Schema**:
+- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
+- `includeOperatorManager` (optional, default: false): Whether to include operator manager information
+
+**Client Request (Input)**:
+```json
+{
+  "network": "mainnet",
+  "includeOperatorManager": true
+}
+```
+
+**Server Response (Output)**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"network\":\"mainnet\",\"memberCount\":3,\"members\":[{\"candidate\":\"0xf3B17FDB808c7d0Df9ACd24dA34700ce069007DF\",\"memo\":\"tokamak1\",\"totalStaked\":\"1000\",\"lastCommitBlock\":\"12345678\",\"lastUpdateSeigniorageTime\":\"1705123456\",\"claimableActivityReward\":\"1679200000000000000000\",\"operatorManager\":\"0x1234567890123456789012345678901234567890\",\"manager\":\"0xabcdefabcdefabcdefabcdefabcdefabcdefabcd\"}],\"message\":\"Found 3 DAO members with staking info on mainnet. Member count: 3\"}"
+    }
+  ]
+}
+```
+
+#### `dao-candidate-activity-reward`
+**Title**: Get DAO candidate's activity reward
+**Description**: Get the claimable activity reward for a specific DAO candidate contract. Use claim=true to claim the reward (requires wallet connection), claim=false to only check the reward amount. No wallet connection required for checking.
+**Input Schema**:
+- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
+- `candidateContract`: The candidate contract address to check for activity rewards
+- `claim` (optional, default: false): Whether to claim the reward (requires wallet connection if true)
+
+**Client Request (Input) - Check Reward**:
+```json
+{
+  "network": "mainnet",
+  "candidateContract": "0x0F42D1C40b95DF7A1478639918fc358B4aF5298D",
+  "claim": false
+}
+```
+
+**Server Response (Output) - Check Reward**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"network\":\"mainnet\",\"candidateContract\":\"0x0F42D1C40b95DF7A1478639918fc358B4aF5298D\",\"candidate\":\"0x0F42D1C40b95DF7A1478639918fc358B4aF5298D\",\"claimAccount\":\"0x0F42D1C40b95DF7A1478639918fc358B4aF5298D\",\"activityReward\":\"4360110000000000000000\",\"formattedReward\":\"4,360.11 WTON\",\"claimed\":false,\"message\":\"DAO candidate's activity reward on mainnet: 4,360.11 WTON\"}"
+    }
+  ]
+}
+```
+
+**Client Request (Input) - Claim Reward**:
+```json
+{
+  "network": "mainnet",
+  "candidateContract": "0x0F42D1C40b95DF7A1478639918fc358B4aF5298D",
+  "claim": true
+}
+```
+
+**Server Response (Output) - Claim Reward**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"network\":\"mainnet\",\"candidateContract\":\"0x0F42D1C40b95DF7A1478639918fc358B4aF5298D\",\"claimAccount\":\"0x0F42D1C40b95DF7A1478639918fc358B4aF5298D\",\"activityReward\":\"4360110000000000000000\",\"formattedReward\":\"4,360.11 WTON\",\"transactionHash\":\"0x1234...\",\"claimed\":true,\"message\":\"Activity reward has been claimed successfully. Transaction hash: 0x1234...\"}"
+    }
+  ]
+}
+```
+
+**Error Response - Invalid Contract**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"network\":\"mainnet\",\"candidateContract\":\"0x1234567890123456789012345678901234567890\",\"candidate\":\"0x1234567890123456789012345678901234567890\",\"claimAccount\":\"0x1234567890123456789012345678901234567890\",\"activityReward\":\"0\",\"formattedReward\":\"0 WTON\",\"claimed\":false,\"message\":\"No claimable activity reward for 0x1234567890123456789012345678901234567890. Nothing to claim.\"}"
+    }
+  ]
+}
+```
+
+#### `get-challenge-member-info`
+**Title**: Get challenge member information
+**Description**: Get information about challenging a DAO committee member including required stake and eligibility. No wallet connection required.
+**Input Schema**:
+- `memberIndex`: The index of the current DAO member slot to challenge
+- `challengerCandidate`: The address of the challenger candidate contract
+- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
+
+**Client Request (Input)**:
+```json
+{
+  "memberIndex": 0,
+  "challengerCandidate": "0x0F42D1C40b95DF7A1478639918fc358B4aF5298D",
+  "network": "mainnet"
+}
+```
+
+**Server Response (Output) - Challenge Possible**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"network\":\"mainnet\",\"memberIndex\":0,\"memberCandidate\":\"0xf3B17FDB808c7d0Df9ACd24dA34700ce069007DF\",\"challengerCandidate\":\"0x0F42D1C40b95DF7A1478639918fc358B4aF5298D\",\"requiredStake\":\"1000\",\"challengerStake\":\"1200\",\"canChallenge\":true,\"message\":\"Challenge is possible. Challenger stake (1200) is greater than member stake (1000)\"}"
+    }
+  ]
+}
+```
+
+**Server Response (Output) - Challenge Not Possible**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"error\",\"network\":\"mainnet\",\"memberIndex\":0,\"memberCandidate\":\"0xf3B17FDB808c7d0Df9ACd24dA34700ce069007DF\",\"challengerCandidate\":\"0x0F42D1C40b95DF7A1478639918fc358B4aF5298D\",\"requiredStake\":\"1000\",\"challengerStake\":\"800\",\"error\":\"Challenger stake (800) must be at least 1000 TON\",\"message\":\"Cannot challenge member: Challenger stake (800) must be at least 1000 TON\"}"
+    }
+  ]
+}
+```
+
+#### `execute-challenge-member`
+**Title**: Execute challenge member
+**Description**: Execute a challenge against a DAO committee member by staking the required amount of tokens. The challenger must have more stake than the current member. Requires wallet connection and proper authorization (connected wallet must be the operator of the challenger candidate).
+**Input Schema**:
+- `memberIndex`: The index of the current DAO member slot to challenge
+- `challengerCandidate`: The address of the challenger candidate contract
+- `network` (optional, default: 'mainnet'): The network to use (mainnet, sepolia, etc.)
+
+**Client Request (Input) - Get Challenge Info**:
+```json
+{
+  "network": "mainnet",
+  "memberIndex": 0,
+  "challengerCandidate": "0x0F42D1C40b95DF7A1478639918fc358B4aF5298D"
+}
+```
+
+**Server Response (Output) - Challenge Info**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"network\":\"mainnet\",\"memberIndex\":0,\"memberCandidate\":\"0xf3B17FDB808c7d0Df9ACd24dA34700ce069007DF\",\"challengerCandidate\":\"0x0F42D1C40b95DF7A1478639918fc358B4aF5298D\",\"requiredStake\":\"1000\",\"challengerStake\":\"1200\",\"canChallenge\":true,\"message\":\"Challenge is possible. Challenger stake (1200) is greater than member stake (1000)\"}"
+    }
+  ]
+}
+```
+
+**Client Request (Input) - Execute Challenge**:
+```json
+{
+  "network": "mainnet",
+  "memberIndex": 0,
+  "challengerCandidate": "0x0F42D1C40b95DF7A1478639918fc358B4aF5298D"
+}
+```
+
+**Server Response (Output) - Challenge Executed**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"network\":\"mainnet\",\"memberIndex\":0,\"memberCandidate\":\"0xf3B17FDB808c7d0Df9ACd24dA34700ce069007DF\",\"challengerCandidate\":\"0x0F42D1C40b95DF7A1478639918fc358B4aF5298D\",\"transactionHash\":\"0x1234...\",\"message\":\"Successfully challenged member at index 0 (0xf3B17FDB808c7d0Df9ACd24dA34700ce069007DF) with 0x0F42D1C40b95DF7A1478639918fc358B4aF5298D on mainnet. Transaction: 0x1234...\"}"
+    }
+  ]
+}
+```
+
+**Server Response (Output) - Invalid Challenge**:
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"error\",\"network\":\"mainnet\",\"memberIndex\":0,\"memberCandidate\":\"0xf3B17FDB808c7d0Df9ACd24dA34700ce069007DF\",\"challengerCandidate\":\"0x0F42D1C40b95DF7A1478639918fc358B4aF5298D\",\"requiredStake\":\"1000\",\"challengerStake\":\"800\",\"error\":\"Challenger stake is less than required stake\",\"message\":\"Cannot execute challenge: Challenger stake is less than required stake\"}"
+    }
+  ]
+}
+```
+
 ### 4. Agenda Tools
 
 #### `get-agenda`

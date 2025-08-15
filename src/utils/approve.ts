@@ -2,7 +2,7 @@ import { readContract } from '@wagmi/core';
 import type { Address } from 'viem';
 import { formatUnits, parseAbi } from 'viem';
 import { mainnet, sepolia } from '@wagmi/core/chains';
-import { createMCPResponse } from './response.js';
+import { createMCPResponse, type MCPResponse } from './response.js';
 import { wagmiConfig } from './wagmi-config.js';
 
 export async function checkApproval(

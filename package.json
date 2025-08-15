@@ -8,6 +8,10 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
+    "test:dao": "node tests/run-dao-tests.js",
+    "test:dao:basic": "node tests/run-dao-tests.js --basic",
+    "test:dao:comprehensive": "node tests/run-dao-tests.js --comprehensive",
+    "test:dao:all": "node tests/run-dao-tests.js --all",
     "format": "biome format --write .",
     "lint": "biome lint .",
     "check": "biome check --write ."
