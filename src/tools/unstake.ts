@@ -6,7 +6,10 @@ import { z } from 'zod';
 import { getNetworkAddresses } from '../constants.js';
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import { resolveLayer2Address } from '../utils/layer2.js';
-import { createMCPResponse } from '../utils/response.js';
+import {
+  createErrorResponse,
+  createSuccessResponse,
+} from '../utils/response.js';
 import { wagmiConfig } from '../utils/wagmi-config.js';
 import { checkWalletConnection } from '../utils/wallet.js';
 
@@ -73,17 +76,9 @@ export function registerUnstakeTools(server: McpServer) {
 
       const stakedAmount = results[0].result as bigint;
       if (stakedAmount < parseUnits(tokenAmount, 27)) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: createMCPResponse({
-                status: 'error',
-                message: `Insufficient staked amount of ${layer2Identifier} on ${network} (staked amount: ${stakedAmount}, token amount: ${tokenAmount})`,
-              }),
-            },
-          ],
-        };
+        return createErrorResponse(
+          `Insufficient staked amount of ${layer2Identifier} on ${network} (staked amount: ${stakedAmount}, token amount: ${tokenAmount})`
+        );
       }
 
       const tx = await writeContract(wagmiConfig, {
@@ -94,17 +89,9 @@ export function registerUnstakeTools(server: McpServer) {
         chainId,
       });
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: createMCPResponse({
-              status: 'success',
-              message: `Unstake tokens successfully on ${network} (tx: ${tx})`,
-            }),
-          },
-        ],
-      };
+      return createSuccessResponse(
+        `Unstake tokens successfully on ${network} (tx: ${tx})`
+      );
     }
   );
 }

@@ -1,4 +1,4 @@
-const { spawn } = require('child_process');
+const { spawn } = require('node:child_process');
 
 // Start the MCP server
 const server = spawn('node', ['dist/src/index.js'], {
@@ -30,7 +30,7 @@ function sendRequest(method, params) {
       params,
     };
 
-    server.stdin.write(JSON.stringify(request) + '\n');
+    server.stdin.write(`${JSON.stringify(request)}\n`);
 
     const timeout = setTimeout(() => {
       reject(new Error('Request timeout'));

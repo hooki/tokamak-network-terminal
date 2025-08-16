@@ -4,16 +4,21 @@ import type { Address } from 'viem';
 export const MAX_AGENDAS_PER_REQUEST = 50;
 
 // 네트워크별 토큰 주소
-const TOKENS: Record<string, Record<string, Address>> = {
+interface TokenAddresses {
+  TON: Address;
+  WTON: Address;
+}
+
+const TOKENS = {
   mainnet: {
-    TON: '0x2be5e8c109e2197D077D13A82dAead6a9b3433C5',
-    WTON: '0xc4A11aaf6ea915Ed7Ac194161d2fC9384F15bff2',
+    TON: '0x2be5e8c109e2197D077D13A82dAead6a9b3433C5' as Address,
+    WTON: '0xc4A11aaf6ea915Ed7Ac194161d2fC9384F15bff2' as Address,
   },
   sepolia: {
-    TON: '0xa30fe40285b8f5c0457dbc3b7c8a280373c40044',
-    WTON: '0x79e0d92670106c85e9067b56b8f674340dca0bbd',
+    TON: '0xa30fe40285b8f5c0457dbc3b7c8a280373c40044' as Address,
+    WTON: '0x79e0d92670106c85e9067b56b8f674340dca0bbd' as Address,
   },
-};
+} as const;
 
 // 네트워크별 개별 주소 상수들
 const NETWORK_ADDRESSES = {
@@ -56,8 +61,9 @@ export function getNetworkAddresses(network: string) {
   );
 }
 
-export function getNetworkTokens(network: string) {
-  return TOKENS[network as keyof typeof TOKENS] || TOKENS.mainnet;
+export function getNetworkTokens(network: string): TokenAddresses {
+  const tokens = TOKENS[network as keyof typeof TOKENS];
+  return tokens ?? TOKENS.mainnet;
 }
 
 export {

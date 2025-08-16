@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 
-import { spawn } from 'child_process';
-import { existsSync, readFileSync } from 'fs';
-import { join } from 'path';
-import { setTimeout } from 'timers/promises';
+import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { setTimeout } from 'node:timers/promises';
 
 console.log('🚀 DAO Test Runner\n');
 

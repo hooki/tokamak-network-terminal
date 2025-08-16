@@ -1,8 +1,16 @@
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { GetAccountReturnType } from '@wagmi/core';
+import type { MockedFunction } from 'vitest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerTONCommands } from '../ton.js';
 
+// Define proper mock server interface
+interface MockServer {
+  registerTool: MockedFunction<McpServer['registerTool']>;
+}
+
 // Mock MCP Server
-const mockServer = {
+const mockServer: MockServer = {
   registerTool: vi.fn(),
 };
 
@@ -43,8 +51,8 @@ vi.mock('viem', () => ({
     (value, decimals) => BigInt(value) * BigInt(10 ** decimals)
   ),
   encodeAbiParameters: vi.fn(
-    (types, values) =>
-      `0x${values.map((v: any) => v.slice(2)).join('')}` as `0x${string}`
+    (_types, values) =>
+      `0x${(values as string[]).map((v: string) => v.slice(2)).join('')}` as `0x${string}`
   ),
   isAddress: vi.fn(
     (address) => address.startsWith('0x') && address.length === 42
@@ -54,7 +62,7 @@ vi.mock('viem', () => ({
 
 // Mock constants
 vi.mock('../../constants.js', () => ({
-  getNetworkAddresses: vi.fn((network) => ({
+  getNetworkAddresses: vi.fn((_network) => ({
     TON_ADDRESS: '0x1234567890123456789012345678901234567890',
     WTON_ADDRESS: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
     SWAPPROXY: '0x9876543210987654321098765432109876543210',
@@ -81,6 +89,12 @@ vi.mock('../../utils/erc20.js', () => ({
 
 vi.mock('../../utils/response.js', () => ({
   createMCPResponse: vi.fn((response) => JSON.stringify(response)),
+  createSuccessResponse: vi.fn((message) => ({
+    content: [{ type: 'text', text: message }],
+  })),
+  createErrorResponse: vi.fn((message) => ({
+    content: [{ type: 'text', text: message }],
+  })),
 }));
 
 vi.mock('../../utils/wagmi-config.js', () => ({
@@ -98,7 +112,7 @@ describe('ton.ts', () => {
 
   describe('registerTONCommands', () => {
     it('should register wrap-ton tool', () => {
-      registerTONCommands(mockServer as any);
+      registerTONCommands(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledWith(
         'wrap-ton',
@@ -117,7 +131,7 @@ describe('ton.ts', () => {
     });
 
     it('should register unwrap-wton tool', () => {
-      registerTONCommands(mockServer as any);
+      registerTONCommands(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledWith(
         'unwrap-wton',
@@ -136,7 +150,7 @@ describe('ton.ts', () => {
     });
 
     it('should register exactly 2 tools', () => {
-      registerTONCommands(mockServer as any);
+      registerTONCommands(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledTimes(2);
     });
@@ -149,19 +163,32 @@ describe('ton.ts', () => {
         await import('../../utils/wallet.js')
       ).checkWalletConnection;
 
-      mockGetAccount.mockReturnValue({ address: undefined } as any);
+      mockGetAccount.mockReturnValue({
+        address: undefined,
+        addresses: undefined,
+        chain: undefined,
+        chainId: undefined,
+        connector: undefined,
+        isConnected: false,
+        isConnecting: false,
+        isDisconnected: true,
+        isReconnecting: false,
+        status: 'disconnected',
+      } as unknown as GetAccountReturnType);
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: false,
         content: [{ type: 'text', text: 'wallet not connected' }],
       });
 
-      registerTONCommands(mockServer as any);
+      registerTONCommands(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'wrap-ton'
+        (call: readonly unknown[]) => call[0] === 'wrap-ton'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      const toolFunction = toolCall?.[2] as (
+        params: unknown
+      ) => Promise<globalThis.WalletCheckResult>;
 
       const result = await toolFunction({
         tokenAmount: '100',
@@ -184,37 +211,51 @@ describe('ton.ts', () => {
         await import('@wagmi/core')
       ).readContracts;
       const mockParseUnits = vi.mocked(await import('viem')).parseUnits;
-      const mockCreateMCPResponse = vi.mocked(
+      const mockCreateErrorResponse = vi.mocked(
         await import('../../utils/response.js')
-      ).createMCPResponse;
+      ).createErrorResponse;
 
       mockGetAccount.mockReturnValue({
-        address: '0x1234567890123456789012345678901234567890',
-      } as any);
+        address: '0x1234567890123456789012345678901234567890' as `0x${string}`,
+        addresses: [
+          '0x1234567890123456789012345678901234567890' as `0x${string}`,
+        ],
+        chain: { id: 1, name: 'Ethereum' },
+        chainId: 1,
+        connector: {} as unknown,
+        isConnected: true,
+        isConnecting: false,
+        isDisconnected: false,
+        isReconnecting: false,
+        status: 'connected',
+      } as unknown as GetAccountReturnType);
       mockReadContracts.mockResolvedValue([
         { result: BigInt('50000000000000000000'), status: 'success' }, // 50 tokens
         { result: 18, status: 'success' }, // 18 decimals
-      ] as any);
+      ]);
       mockParseUnits.mockReturnValue(BigInt('100000000000000000000')); // 100 tokens
-      mockCreateMCPResponse.mockReturnValue('error response');
+      mockCreateErrorResponse.mockReturnValue({
+        content: [{ type: 'text', text: 'error response' }],
+      });
 
-      registerTONCommands(mockServer as any);
+      registerTONCommands(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'wrap-ton'
+        (call: readonly unknown[]) => call[0] === 'wrap-ton'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      const toolFunction = toolCall?.[2] as (
+        params: unknown
+      ) => Promise<globalThis.CallToolResult>;
 
       const result = await toolFunction({
         tokenAmount: '100',
         network: 'mainnet',
       });
 
-      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
-        status: 'error',
-        message: 'Insufficient balance on mainnet',
-      });
+      expect(mockCreateErrorResponse).toHaveBeenCalledWith(
+        'Insufficient balance on mainnet'
+      );
       expect(result).toEqual({
         content: [
           {
@@ -240,32 +281,63 @@ describe('ton.ts', () => {
       const mockEncodeAbiParameters = vi.mocked(
         await import('viem')
       ).encodeAbiParameters;
-      const mockCreateMCPResponse = vi.mocked(
+      const mockCreateSuccessResponse = vi.mocked(
         await import('../../utils/response.js')
-      ).createMCPResponse;
+      ).createSuccessResponse;
 
       mockGetAccount.mockReturnValue({
-        address: '0x1234567890123456789012345678901234567890',
-      } as any);
+        address: '0x1234567890123456789012345678901234567890' as `0x${string}`,
+        addresses: [
+          '0x1234567890123456789012345678901234567890' as `0x${string}`,
+        ],
+        chain: { id: 1, name: 'Ethereum' },
+        chainId: 1,
+        connector: {} as unknown,
+        isConnected: true,
+        isConnecting: false,
+        isDisconnected: false,
+        isReconnecting: false,
+        status: 'connected',
+      } as unknown as GetAccountReturnType);
       mockReadContracts.mockResolvedValue([
         { result: BigInt('1000000000000000000000'), status: 'success' }, // 1000 tokens
         { result: 18, status: 'success' }, // 18 decimals
-      ] as any);
-      mockWriteContract.mockResolvedValue('0xtxhash' as any);
-      mockWaitForTransactionReceipt.mockResolvedValue({} as any);
+      ]);
+      mockWriteContract.mockResolvedValue('0xtxhash' as `0x${string}`);
+      mockWaitForTransactionReceipt.mockResolvedValue({
+        blockHash: '0x123' as `0x${string}`,
+        blockNumber: BigInt(1),
+        contractAddress: null,
+        cumulativeGasUsed: BigInt(21000),
+        effectiveGasPrice: BigInt(20000000000),
+        from: '0x123' as `0x${string}`,
+        gasUsed: BigInt(21000),
+        logs: [],
+        logsBloom: '0x' as `0x${string}`,
+        status: 'success' as const,
+        to: '0x123' as `0x${string}`,
+        transactionHash: '0x123' as `0x${string}`,
+        transactionIndex: 0,
+        type: 'legacy' as const,
+        chainId: 1,
+      });
       mockParseEther.mockReturnValue(BigInt('100000000000000000000')); // 100 tokens
       mockEncodeAbiParameters.mockReturnValue(
         '0xencoded_params' as `0x${string}`
       );
-      mockCreateMCPResponse.mockReturnValue('success response');
+      mockCreateSuccessResponse.mockReturnValue({
+        content: [{ type: 'text', text: 'success response' }],
+      });
 
-      registerTONCommands(mockServer as any);
+      registerTONCommands(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'wrap-ton'
+        (call: readonly unknown[]) => call[0] === 'wrap-ton'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      const toolFunction = toolCall?.[2] as (
+        params: unknown
+      ) => Promise<globalThis.CallToolResult>;
 
       const result = await toolFunction({
         tokenAmount: '100',
@@ -293,10 +365,9 @@ describe('ton.ts', () => {
           chainId: 1,
         }
       );
-      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
-        status: 'success',
-        message: expect.stringContaining('Wrap TON tokens to WTON'),
-      });
+      expect(mockCreateSuccessResponse).toHaveBeenCalledWith(
+        expect.stringContaining('Wrap TON tokens to WTON')
+      );
       expect(result).toEqual({
         content: [
           {
@@ -320,22 +391,51 @@ describe('ton.ts', () => {
       ).waitForTransactionReceipt;
 
       mockGetAccount.mockReturnValue({
-        address: '0x1234567890123456789012345678901234567890',
-      } as any);
+        address: '0x1234567890123456789012345678901234567890' as `0x${string}`,
+        addresses: [
+          '0x1234567890123456789012345678901234567890' as `0x${string}`,
+        ],
+        chain: { id: 1, name: 'Ethereum' },
+        chainId: 1,
+        connector: {} as unknown,
+        isConnected: true,
+        isConnecting: false,
+        isDisconnected: false,
+        isReconnecting: false,
+        status: 'connected',
+      } as unknown as GetAccountReturnType);
       mockReadContracts.mockResolvedValue([
         { result: BigInt('1000000000000000000000'), status: 'success' },
         { result: 18, status: 'success' },
-      ] as any);
-      mockWriteContract.mockResolvedValue('0xtxhash' as any);
-      mockWaitForTransactionReceipt.mockResolvedValue({} as any);
+      ]);
+      mockWriteContract.mockResolvedValue('0xtxhash' as `0x${string}`);
+      mockWaitForTransactionReceipt.mockResolvedValue({
+        blockHash: '0x123' as `0x${string}`,
+        blockNumber: BigInt(1),
+        contractAddress: null,
+        cumulativeGasUsed: BigInt(21000),
+        effectiveGasPrice: BigInt(20000000000),
+        from: '0x123' as `0x${string}`,
+        gasUsed: BigInt(21000),
+        logs: [],
+        logsBloom: '0x' as `0x${string}`,
+        status: 'success' as const,
+        to: '0x123' as `0x${string}`,
+        transactionHash: '0x123' as `0x${string}`,
+        transactionIndex: 0,
+        type: 'legacy' as const,
+        chainId: 1,
+      });
 
-      registerTONCommands(mockServer as any);
+      registerTONCommands(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'wrap-ton'
+        (call: readonly unknown[]) => call[0] === 'wrap-ton'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      const toolFunction = toolCall?.[2] as (
+        params: unknown
+      ) => Promise<globalThis.CallToolResult>;
 
       await toolFunction({
         tokenAmount: '100',
@@ -358,19 +458,32 @@ describe('ton.ts', () => {
         await import('../../utils/wallet.js')
       ).checkWalletConnection;
 
-      mockGetAccount.mockReturnValue({ address: undefined } as any);
+      mockGetAccount.mockReturnValue({
+        address: undefined,
+        addresses: undefined,
+        chain: undefined,
+        chainId: undefined,
+        connector: undefined,
+        isConnected: false,
+        isConnecting: false,
+        isDisconnected: true,
+        isReconnecting: false,
+        status: 'disconnected',
+      } as unknown as GetAccountReturnType);
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: false,
         content: [{ type: 'text', text: 'wallet not connected' }],
       });
 
-      registerTONCommands(mockServer as any);
+      registerTONCommands(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'unwrap-wton'
+        (call: readonly unknown[]) => call[0] === 'unwrap-wton'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      const toolFunction = toolCall?.[2] as (
+        params: unknown
+      ) => Promise<globalThis.WalletCheckResult>;
 
       const result = await toolFunction({
         tokenAmount: '100',
@@ -399,29 +512,60 @@ describe('ton.ts', () => {
         await import('@wagmi/core')
       ).waitForTransactionReceipt;
       const mockParseUnits = vi.mocked(await import('viem')).parseUnits;
-      const mockCreateMCPResponse = vi.mocked(
+      const mockCreateSuccessResponse = vi.mocked(
         await import('../../utils/response.js')
-      ).createMCPResponse;
+      ).createSuccessResponse;
 
       mockGetAccount.mockReturnValue({
-        address: '0x1234567890123456789012345678901234567890',
-      } as any);
+        address: '0x1234567890123456789012345678901234567890' as `0x${string}`,
+        addresses: [
+          '0x1234567890123456789012345678901234567890' as `0x${string}`,
+        ],
+        chain: { id: 1, name: 'Ethereum' },
+        chainId: 1,
+        connector: {} as unknown,
+        isConnected: true,
+        isConnecting: false,
+        isDisconnected: false,
+        isReconnecting: false,
+        status: 'connected',
+      } as unknown as GetAccountReturnType);
       mockReadContracts.mockResolvedValue([
         { result: BigInt('1000000000000000000000000000'), status: 'success' }, // 10000 tokens (27 decimals)
         { result: 27, status: 'success' }, // 27 decimals
-      ] as any);
-      mockWriteContract.mockResolvedValue('0xtxhash' as any);
-      mockWaitForTransactionReceipt.mockResolvedValue({} as any);
+      ]);
+      mockWriteContract.mockResolvedValue('0xtxhash' as `0x${string}`);
+      mockWaitForTransactionReceipt.mockResolvedValue({
+        blockHash: '0x123' as `0x${string}`,
+        blockNumber: BigInt(1),
+        contractAddress: null,
+        cumulativeGasUsed: BigInt(21000),
+        effectiveGasPrice: BigInt(20000000000),
+        from: '0x123' as `0x${string}`,
+        gasUsed: BigInt(21000),
+        logs: [],
+        logsBloom: '0x' as `0x${string}`,
+        status: 'success' as const,
+        to: '0x123' as `0x${string}`,
+        transactionHash: '0x123' as `0x${string}`,
+        transactionIndex: 0,
+        type: 'legacy' as const,
+        chainId: 1,
+      });
       mockParseUnits.mockReturnValue(BigInt('100000000000000000000000000')); // 100 tokens (27 decimals)
-      mockCreateMCPResponse.mockReturnValue('success response');
+      mockCreateSuccessResponse.mockReturnValue({
+        content: [{ type: 'text', text: 'success response' }],
+      });
 
-      registerTONCommands(mockServer as any);
+      registerTONCommands(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'unwrap-wton'
+        (call: readonly unknown[]) => call[0] === 'unwrap-wton'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      const toolFunction = toolCall?.[2] as (
+        params: unknown
+      ) => Promise<globalThis.CallToolResult>;
 
       const result = await toolFunction({
         tokenAmount: '100',
@@ -445,10 +589,9 @@ describe('ton.ts', () => {
           chainId: 1,
         }
       );
-      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
-        status: 'success',
-        message: expect.stringContaining('Unwrap WTON tokens to TON'),
-      });
+      expect(mockCreateSuccessResponse).toHaveBeenCalledWith(
+        expect.stringContaining('Unwrap WTON tokens to TON')
+      );
       expect(result).toEqual({
         content: [
           {

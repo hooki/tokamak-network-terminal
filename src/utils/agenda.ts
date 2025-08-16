@@ -1,3 +1,4 @@
+import type { AgendaData } from '../tools/agenda.js';
 import { formatTimestamp } from './time.js';
 
 /**
@@ -78,7 +79,7 @@ export function isAgendaExecutable(status: number): boolean {
 export function createAgendaMessage(
   agendaId: string,
   network: string,
-  agendaData: any,
+  agendaData: AgendaData,
   statusText: string,
   resultText?: string,
   version?: string

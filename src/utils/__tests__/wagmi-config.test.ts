@@ -78,7 +78,7 @@ describe('wagmi-config.ts', () => {
 
     it('should handle null values', () => {
       const key = 'null-key';
-      memoryStorage.setItem(key, null as any);
+      memoryStorage.setItem(key, null as string | null);
 
       expect(memoryStorage.getItem(key)).toBeNull();
     });

@@ -1,10 +1,18 @@
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerDAOTools } from '../dao.js';
 
-// Mock MCP Server
+// Type definitions for better type safety
+type MockCall = unknown[]; // vi.fn mock calls are unknown[]
+type ToolFunction<T = Record<string, unknown>> = (
+  params: T
+) => Promise<{ content: Array<{ text: string }> }>;
+type MockRegisterTool = ReturnType<typeof vi.fn>;
+
+// Mock MCP Server with proper typing
 const mockServer = {
   registerTool: vi.fn(),
-};
+} as unknown as McpServer;
 
 // Mock wagmi functions
 vi.mock('@wagmi/core', () => ({
@@ -151,6 +159,28 @@ vi.mock('../../abis/operatorManager.js', () => ({
   ],
 }));
 
+// Helper function to find tool calls with proper type safety
+function findToolCall(toolName: string): unknown[] | undefined {
+  const registerToolMock = mockServer.registerTool as MockRegisterTool;
+  return registerToolMock.mock.calls.find(
+    (call: MockCall) => call[0] === toolName
+  );
+}
+
+// Helper function to get tool function with type safety
+function getToolFunction<T = Record<string, unknown>>(
+  toolCall: unknown[]
+): ToolFunction<T> {
+  const func = toolCall[2] as ToolFunction<T>;
+  if (!func) throw new Error('Tool function not found');
+  return func;
+}
+
+// Helper function to get tool config with type safety
+function getToolConfig(toolCall: unknown[]): { title: string } {
+  return toolCall[1] as { title: string };
+}
+
 describe('dao.ts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -158,13 +188,13 @@ describe('dao.ts', () => {
 
   describe('get-dao-member-count tool', () => {
     it('should register the tool correctly', () => {
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-dao-member-count'
-      );
+      const toolCall = findToolCall('get-dao-member-count');
       expect(toolCall).toBeDefined();
-      expect(toolCall![1].title).toBe('Get DAO member count');
+      if (toolCall) {
+        expect(getToolConfig(toolCall).title).toBe('Get DAO member count');
+      }
     });
 
     it('should return success when getDAOMemberCount succeeds', async () => {
@@ -174,13 +204,13 @@ describe('dao.ts', () => {
 
       mockGetDAOMemberCount.mockResolvedValue(10);
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-dao-member-count'
-      );
+      const toolCall = findToolCall('get-dao-member-count');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{ network: string }>(toolCall);
 
       const result = await toolFunction({
         network: 'mainnet',
@@ -188,7 +218,7 @@ describe('dao.ts', () => {
 
       expect(mockGetDAOMemberCount).toHaveBeenCalledWith('mainnet');
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('success');
       expect(response.message).toBe('DAO member count on mainnet: 10');
     });
@@ -200,19 +230,19 @@ describe('dao.ts', () => {
 
       mockGetDAOMemberCount.mockRejectedValue(new Error('Network error'));
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-dao-member-count'
-      );
+      const toolCall = findToolCall('get-dao-member-count');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{ network: string }>(toolCall);
 
       const result = await toolFunction({
         network: 'mainnet',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('error');
       expect(response.message).toBe(
         'Failed to get DAO member count on mainnet: Network error'
@@ -222,14 +252,15 @@ describe('dao.ts', () => {
 
   describe('get-dao-member-candidate-info tool', () => {
     it('should register the tool correctly', () => {
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-dao-member-candidate-info'
-      );
-
+      const toolCall = findToolCall('get-dao-member-candidate-info');
       expect(toolCall).toBeDefined();
-      expect(toolCall![1].title).toBe('Get DAO member candidate information');
+      if (toolCall) {
+        expect(getToolConfig(toolCall).title).toBe(
+          'Get DAO member candidate information'
+        );
+      }
     });
 
     it('should return success when getDAOMemberCandidateInfo succeeds', async () => {
@@ -250,13 +281,13 @@ describe('dao.ts', () => {
         },
       ]);
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-dao-member-candidate-info'
-      );
+      const toolCall = findToolCall('get-dao-member-candidate-info');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{ network: string }>(toolCall);
 
       const result = await toolFunction({
         network: 'mainnet',
@@ -264,7 +295,7 @@ describe('dao.ts', () => {
 
       expect(mockGetDAOMemberCandidateInfo).toHaveBeenCalledWith('mainnet');
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('success');
       expect(response.message).toBe(
         'Found 1 DAO members on mainnet. Member count: 1'
@@ -280,19 +311,19 @@ describe('dao.ts', () => {
         new Error('Network error')
       );
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-dao-member-candidate-info'
-      );
+      const toolCall = findToolCall('get-dao-member-candidate-info');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{ network: string }>(toolCall);
 
       const result = await toolFunction({
         network: 'mainnet',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('error');
       expect(response.message).toBe(
         'Failed to get DAO member candidate info on mainnet: Network error'
@@ -302,15 +333,15 @@ describe('dao.ts', () => {
 
   describe('get-dao-member-operator-manager-info tool', () => {
     it('should register the tool correctly', () => {
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-dao-member-operator-manager-info'
-      );
+      const toolCall = findToolCall('get-dao-member-operator-manager-info');
       expect(toolCall).toBeDefined();
-      expect(toolCall![1].title).toBe(
-        'Get DAO member operator manager information'
-      );
+      if (toolCall) {
+        expect(getToolConfig(toolCall).title).toBe(
+          'Get DAO member operator manager information'
+        );
+      }
     });
 
     it('should return success when getDAOMemberOperatorManagerInfo succeeds', async () => {
@@ -333,13 +364,13 @@ describe('dao.ts', () => {
         },
       ]);
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-dao-member-operator-manager-info'
-      );
+      const toolCall = findToolCall('get-dao-member-operator-manager-info');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{ network: string }>(toolCall);
 
       const result = await toolFunction({
         network: 'mainnet',
@@ -349,7 +380,7 @@ describe('dao.ts', () => {
         'mainnet'
       );
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('success');
       expect(response.message).toBe(
         'Found 1 DAO members with operator manager info on mainnet. Member count: 1'
@@ -365,19 +396,19 @@ describe('dao.ts', () => {
         new Error('Network error')
       );
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-dao-member-operator-manager-info'
-      );
+      const toolCall = findToolCall('get-dao-member-operator-manager-info');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{ network: string }>(toolCall);
 
       const result = await toolFunction({
         network: 'mainnet',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('error');
       expect(response.message).toBe(
         'Failed to get DAO member operator manager info on mainnet: Network error'
@@ -387,13 +418,13 @@ describe('dao.ts', () => {
 
   describe('check-dao-membership tool', () => {
     it('should register the tool correctly', () => {
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'check-dao-membership'
-      );
+      const toolCall = findToolCall('check-dao-membership');
       expect(toolCall).toBeDefined();
-      expect(toolCall![1].title).toBe('Check DAO membership');
+      if (toolCall) {
+        expect(getToolConfig(toolCall).title).toBe('Check DAO membership');
+      }
     });
 
     it('should return success when address is a DAO member', async () => {
@@ -403,13 +434,16 @@ describe('dao.ts', () => {
 
       mockCheckDAOMembership.mockResolvedValue(true);
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'check-dao-membership'
-      );
+      const toolCall = findToolCall('check-dao-membership');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        address: string;
+        network: string;
+      }>(toolCall);
 
       const result = await toolFunction({
         address: '0x1234567890123456789012345678901234567890',
@@ -421,7 +455,7 @@ describe('dao.ts', () => {
         'mainnet'
       );
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('success');
       expect(response.message).toBe(
         'Address 0x1234567890123456789012345678901234567890 is a DAO member on mainnet'
@@ -435,20 +469,23 @@ describe('dao.ts', () => {
 
       mockCheckDAOMembership.mockResolvedValue(false);
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'check-dao-membership'
-      );
+      const toolCall = findToolCall('check-dao-membership');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        address: string;
+        network: string;
+      }>(toolCall);
 
       const result = await toolFunction({
         address: '0x1234567890123456789012345678901234567890',
         network: 'mainnet',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('success');
       expect(response.message).toBe(
         'Address 0x1234567890123456789012345678901234567890 is not a DAO member on mainnet'
@@ -462,20 +499,23 @@ describe('dao.ts', () => {
 
       mockCheckDAOMembership.mockRejectedValue(new Error('Network error'));
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'check-dao-membership'
-      );
+      const toolCall = findToolCall('check-dao-membership');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        address: string;
+        network: string;
+      }>(toolCall);
 
       const result = await toolFunction({
         address: '0x1234567890123456789012345678901234567890',
         network: 'mainnet',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('error');
       expect(response.message).toBe(
         'Failed to check DAO membership for 0x1234567890123456789012345678901234567890 on mainnet: Network error'
@@ -485,13 +525,15 @@ describe('dao.ts', () => {
 
   describe('get-dao-members-staking-info tool', () => {
     it('should register the tool correctly', () => {
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-dao-members-staking-info'
-      );
+      const toolCall = findToolCall('get-dao-members-staking-info');
       expect(toolCall).toBeDefined();
-      expect(toolCall![1].title).toBe('Get DAO members staking information');
+      if (toolCall) {
+        expect(getToolConfig(toolCall).title).toBe(
+          'Get DAO members staking information'
+        );
+      }
     });
 
     it('should return success when getDAOMembersStakingInfo succeeds', async () => {
@@ -519,13 +561,16 @@ describe('dao.ts', () => {
         },
       ]);
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-dao-members-staking-info'
-      );
+      const toolCall = findToolCall('get-dao-members-staking-info');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        network: string;
+        includeOperatorManager: boolean;
+      }>(toolCall);
 
       const result = await toolFunction({
         network: 'mainnet',
@@ -537,7 +582,7 @@ describe('dao.ts', () => {
         true
       );
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('success');
       expect(response.message).toBe(
         'Found 1 DAO members with staking info on mainnet. Member count: 1'
@@ -553,20 +598,23 @@ describe('dao.ts', () => {
         new Error('Network error')
       );
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-dao-members-staking-info'
-      );
+      const toolCall = findToolCall('get-dao-members-staking-info');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        network: string;
+        includeOperatorManager: boolean;
+      }>(toolCall);
 
       const result = await toolFunction({
         network: 'mainnet',
         includeOperatorManager: false,
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('error');
       expect(response.message).toBe(
         'Failed to get DAO members staking info on mainnet: Network error'
@@ -576,18 +624,22 @@ describe('dao.ts', () => {
 
   describe('dao-candidate-activity-reward tool', () => {
     it('should register the tool correctly', () => {
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'dao-candidate-activity-reward'
-      );
+      const toolCall = findToolCall('dao-candidate-activity-reward');
       expect(toolCall).toBeDefined();
-      expect(toolCall![1]).toEqual({
-        title: "Get DAO candidate's activity reward",
-        description:
-          'Get the activity reward for a specific DAO candidate. Set claim=true to also claim the reward.',
-        inputSchema: expect.any(Object),
-      });
+      if (toolCall) {
+        const config = getToolConfig(toolCall) as {
+          title: string;
+          description: string;
+          inputSchema: unknown;
+        };
+        expect(config.title).toBe("Get DAO candidate's activity reward");
+        expect(config.description).toBe(
+          'Get the activity reward for a specific DAO candidate. Set claim=true to also claim the reward.'
+        );
+        expect(config.inputSchema).toBeDefined();
+      }
     });
 
     it('should return success when no claimable reward', async () => {
@@ -608,25 +660,29 @@ describe('dao.ts', () => {
       });
       mockFormatTokenAmountWithUnitPrecise.mockReturnValue('0 WTON');
       mockGetNetworkAddresses.mockReturnValue({
-        TON_ADDRESS: '0x2be5e8c109e2197D077D13A82dAead6a9b3433C5' as any,
-        WTON_ADDRESS: '0xc4A11aaf6ea915Ed7Ac194161d2fC9384F15bff2' as any,
-        DEPOSIT_MANAGER: '0x0b58ca72b12f01fc05f8f252e226f3e2089bd00e' as any,
-        SEIG_MANAGER: '0x0b55a0f463b6defb81c6063973763951712d0e5f' as any,
-        LAYER2_REGISTRY: '0x7846c2248a7b4de77e9c2bae7fbb93bfc286837b' as any,
-        SWAPPROXY: '0x30e65B3A6e6868F044944Aa0e9C5d52F8dcb138d' as any,
-        L1BRIDGE_REGISTRY: '0x39d43281A4A5e922AB0DCf89825D73273D8C5BA4' as any,
-        LAYER2_MANAGER: '0xD6Bf6B2b7553c8064Ba763AD6989829060FdFC1D' as any,
-        DAO_COMMITTEE: '0xDD9f0cCc044B0781289Ee318e5971b0139602C26' as any,
-        AGENDA_MANAGER: '0xcD4421d082752f363E1687544a09d5112cD4f484' as any,
+        TON_ADDRESS: '0x2be5e8c109e2197D077D13A82dAead6a9b3433C5',
+        WTON_ADDRESS: '0xc4A11aaf6ea915Ed7Ac194161d2fC9384F15bff2',
+        DEPOSIT_MANAGER: '0x0b58ca72b12f01fc05f8f252e226f3e2089bd00e',
+        SEIG_MANAGER: '0x0b55a0f463b6defb81c6063973763951712d0e5f',
+        LAYER2_REGISTRY: '0x7846c2248a7b4de77e9c2bae7fbb93bfc286837b',
+        SWAPPROXY: '0x30e65B3A6e6868F044944Aa0e9C5d52F8dcb138d',
+        L1BRIDGE_REGISTRY: '0x39d43281A4A5e922AB0DCf89825D73273D8C5BA4',
+        LAYER2_MANAGER: '0xD6Bf6B2b7553c8064Ba763AD6989829060FdFC1D',
+        DAO_COMMITTEE: '0xDD9f0cCc044B0781289Ee318e5971b0139602C26',
+        AGENDA_MANAGER: '0xcD4421d082752f363E1687544a09d5112cD4f484',
       });
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'dao-candidate-activity-reward'
-      );
+      const toolCall = findToolCall('dao-candidate-activity-reward');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        network: string;
+        candidateContract: string;
+        claim: boolean;
+      }>(toolCall);
 
       const result = await toolFunction({
         network: 'mainnet',
@@ -634,14 +690,12 @@ describe('dao.ts', () => {
         claim: false,
       });
 
-      // console.log('Result:', JSON.stringify(result, null, 2));
-
       expect(mockGetDAOMembersActivityReward).toHaveBeenCalledWith(
         'mainnet',
         '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
       );
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('success');
       expect(response.activityReward).toBe('0');
       expect(response.formattedReward).toBe('0 WTON');
@@ -658,13 +712,17 @@ describe('dao.ts', () => {
         reward: BigInt(0),
       });
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'dao-candidate-activity-reward'
-      );
+      const toolCall = findToolCall('dao-candidate-activity-reward');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        network: string;
+        candidateContract: string;
+        claim: boolean;
+      }>(toolCall);
 
       const result = await toolFunction({
         network: 'mainnet',
@@ -672,7 +730,7 @@ describe('dao.ts', () => {
         claim: false,
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('error');
       expect(response.error).toBe('Failed to get activity reward data');
     });
@@ -695,16 +753,20 @@ describe('dao.ts', () => {
       });
       mockReadContract.mockResolvedValue(
         '0x1234567890123456789012345678901234567890'
-      ); // manager
+      );
       mockFormatTokenAmountWithUnitPrecise.mockReturnValue('1.0 WTON');
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'dao-candidate-activity-reward'
-      );
+      const toolCall = findToolCall('dao-candidate-activity-reward');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        network: string;
+        candidateContract: string;
+        claim: boolean;
+      }>(toolCall);
 
       const result = await toolFunction({
         network: 'mainnet',
@@ -712,7 +774,7 @@ describe('dao.ts', () => {
         claim: false,
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('success');
       expect(response.activityReward).toBe('1000000000000000000');
       expect(response.formattedReward).toBe('1.0 WTON');
@@ -744,10 +806,10 @@ describe('dao.ts', () => {
       });
       mockReadContract.mockResolvedValue(
         '0x1234567890123456789012345678901234567890'
-      ); // manager
+      );
       mockGetAccount.mockReturnValue({
         isConnected: false,
-      } as any);
+      } as unknown as ReturnType<typeof mockGetAccount>);
       mockFormatTokenAmountWithUnitPrecise.mockReturnValue('1.0 WTON');
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: false,
@@ -762,13 +824,17 @@ describe('dao.ts', () => {
         ],
       });
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'dao-candidate-activity-reward'
-      );
+      const toolCall = findToolCall('dao-candidate-activity-reward');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        network: string;
+        candidateContract: string;
+        claim: boolean;
+      }>(toolCall);
 
       const result = await toolFunction({
         network: 'mainnet',
@@ -776,7 +842,7 @@ describe('dao.ts', () => {
         claim: true,
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('continue');
       expect(response.message).toBe('waiting for wallet connection');
     });
@@ -798,6 +864,7 @@ describe('dao.ts', () => {
       const mockCheckWalletConnection = vi.mocked(
         await import('../../utils/wallet.js')
       ).checkWalletConnection;
+
       mockGetDAOMembersActivityReward.mockResolvedValue({
         result: true,
         candidate: '0x1234567890123456789012345678901234567890',
@@ -805,22 +872,26 @@ describe('dao.ts', () => {
       });
       mockReadContract.mockResolvedValue(
         '0x1234567890123456789012345678901234567890'
-      ); // manager
-      mockWriteContract.mockResolvedValue('0xtxhash' as any);
+      );
+      mockWriteContract.mockResolvedValue('0xtxhash' as `0x${string}`);
       mockGetAccount.mockReturnValue({
         isConnected: true,
         address: '0x1234567890123456789012345678901234567890',
-      } as any);
+      } as unknown as ReturnType<typeof mockGetAccount>);
       mockFormatTokenAmountWithUnitPrecise.mockReturnValue('1.0 WTON');
-      mockCheckWalletConnection.mockResolvedValue(undefined); // 지갑이 연결되어 있으면 undefined 반환
+      mockCheckWalletConnection.mockResolvedValue(undefined);
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'dao-candidate-activity-reward'
-      );
+      const toolCall = findToolCall('dao-candidate-activity-reward');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        network: string;
+        candidateContract: string;
+        claim: boolean;
+      }>(toolCall);
 
       const result = await toolFunction({
         network: 'mainnet',
@@ -837,7 +908,7 @@ describe('dao.ts', () => {
         account: expect.any(String),
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('success');
       expect(response.claimed).toBe(true);
       expect(response.transactionHash).toBe('0xtxhash');
@@ -859,9 +930,7 @@ describe('dao.ts', () => {
       const mockFormatTokenAmountWithUnitPrecise = vi.mocked(
         await import('../../utils/format.js')
       ).formatTokenAmountWithUnitPrecise;
-      const mockCheckWalletConnection = vi.mocked(
-        await import('../../utils/wallet.js')
-      ).checkWalletConnection;
+
       mockGetDAOMembersActivityReward.mockResolvedValue({
         result: true,
         candidate: '0x1234567890123456789012345678901234567890',
@@ -869,18 +938,24 @@ describe('dao.ts', () => {
       });
       mockReadContract.mockResolvedValue(
         '0x1234567890123456789012345678901234567890'
-      ); // manager
+      );
       mockWriteContract.mockRejectedValue(new Error('Transaction failed'));
-      mockGetAccount.mockReturnValue({ isConnected: true } as any);
+      mockGetAccount.mockReturnValue({
+        isConnected: true,
+      } as unknown as ReturnType<typeof mockGetAccount>);
       mockFormatTokenAmountWithUnitPrecise.mockReturnValue('1.0 WTON');
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'dao-candidate-activity-reward'
-      );
+      const toolCall = findToolCall('dao-candidate-activity-reward');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        network: string;
+        candidateContract: string;
+        claim: boolean;
+      }>(toolCall);
 
       const result = await toolFunction({
         network: 'mainnet',
@@ -888,7 +963,7 @@ describe('dao.ts', () => {
         claim: true,
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('error');
       expect(response.error).toBe('Transaction failed');
       expect(response.activityReward).toBe('1000000000000000000');
@@ -915,21 +990,25 @@ describe('dao.ts', () => {
         candidate: '0x1234567890123456789012345678901234567890',
         reward: BigInt(1000000000000000000),
       });
-      mockReadContract.mockRejectedValue(new Error('execution reverted')); // manager function fails
-      mockWriteContract.mockResolvedValue('0xtxhash' as any);
+      mockReadContract.mockRejectedValue(new Error('execution reverted'));
+      mockWriteContract.mockResolvedValue('0xtxhash' as `0x${string}`);
       mockGetAccount.mockReturnValue({
         isConnected: true,
         address: '0x1234567890123456789012345678901234567890',
-      } as any);
+      } as unknown as ReturnType<typeof mockGetAccount>);
       mockFormatTokenAmountWithUnitPrecise.mockReturnValue('1.0 WTON');
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'dao-candidate-activity-reward'
-      );
+      const toolCall = findToolCall('dao-candidate-activity-reward');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        network: string;
+        candidateContract: string;
+        claim: boolean;
+      }>(toolCall);
 
       const result = await toolFunction({
         network: 'mainnet',
@@ -944,7 +1023,7 @@ describe('dao.ts', () => {
         })
       );
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('success');
       expect(response.claimed).toBe(true);
     });
@@ -964,17 +1043,19 @@ describe('dao.ts', () => {
       });
       mockFormatTokenAmountWithUnitPrecise.mockReturnValue('0 WTON');
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'dao-candidate-activity-reward'
-      );
+      const toolCall = findToolCall('dao-candidate-activity-reward');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        candidateContract: string;
+      }>(toolCall);
 
       await toolFunction({
         candidateContract: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
-      }).catch((error: any) => {
+      }).catch((error: unknown) => {
         console.log('Error caught:', error);
         throw error;
       });
@@ -988,13 +1069,13 @@ describe('dao.ts', () => {
 
   describe('get-challenge-member-info tool', () => {
     it('should register the tool correctly', () => {
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-challenge-member-info'
-      );
+      const toolCall = findToolCall('get-challenge-member-info');
       expect(toolCall).toBeDefined();
-      expect(toolCall![1].title).toBe('Get challenge member info');
+      if (toolCall) {
+        expect(getToolConfig(toolCall).title).toBe('Get challenge member info');
+      }
     });
 
     it('should return error when challenge is not possible', async () => {
@@ -1012,13 +1093,17 @@ describe('dao.ts', () => {
           'Challenger stake (1000000000000000000) must be at least 2000000000000000000 TON',
       });
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-challenge-member-info'
-      );
+      const toolCall = findToolCall('get-challenge-member-info');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        memberIndex: number;
+        challengerCandidate: string;
+        network: string;
+      }>(toolCall);
 
       const result = await toolFunction({
         memberIndex: 0,
@@ -1032,7 +1117,7 @@ describe('dao.ts', () => {
         'mainnet'
       );
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('error');
       expect(response.error).toBe(
         'Challenger stake (1000000000000000000) must be at least 2000000000000000000 TON'
@@ -1057,13 +1142,17 @@ describe('dao.ts', () => {
         challengeReason: undefined,
       });
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-challenge-member-info'
-      );
+      const toolCall = findToolCall('get-challenge-member-info');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        memberIndex: number;
+        challengerCandidate: string;
+        network: string;
+      }>(toolCall);
 
       const result = await toolFunction({
         memberIndex: 1,
@@ -1071,7 +1160,7 @@ describe('dao.ts', () => {
         network: 'mainnet',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('success');
       expect(response.canChallenge).toBe(true);
       expect(response.memberIndex).toBe(1);
@@ -1085,13 +1174,13 @@ describe('dao.ts', () => {
 
   describe('execute-challenge-member tool', () => {
     it('should register the tool correctly', () => {
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'execute-challenge-member'
-      );
+      const toolCall = findToolCall('execute-challenge-member');
       expect(toolCall).toBeDefined();
-      expect(toolCall![1].title).toBe('Execute challenge member');
+      if (toolCall) {
+        expect(getToolConfig(toolCall).title).toBe('Execute challenge member');
+      }
     });
 
     it('should return error when challenge is not possible', async () => {
@@ -1109,13 +1198,17 @@ describe('dao.ts', () => {
           'Challenger stake (1000000000000000000) must be at least 2000000000000000000 TON',
       });
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'execute-challenge-member'
-      );
+      const toolCall = findToolCall('execute-challenge-member');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        memberIndex: number;
+        challengerCandidate: string;
+        network: string;
+      }>(toolCall);
 
       const result = await toolFunction({
         memberIndex: 0,
@@ -1123,7 +1216,7 @@ describe('dao.ts', () => {
         network: 'mainnet',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('error');
       expect(response.error).toBe(
         'Challenger stake (1000000000000000000) must be at least 2000000000000000000 TON'
@@ -1150,15 +1243,19 @@ describe('dao.ts', () => {
       });
       mockGetAccount.mockReturnValue({
         isConnected: false,
-      } as any);
+      } as unknown as ReturnType<typeof mockGetAccount>);
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'execute-challenge-member'
-      );
+      const toolCall = findToolCall('execute-challenge-member');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        memberIndex: number;
+        challengerCandidate: string;
+        network: string;
+      }>(toolCall);
 
       const result = await toolFunction({
         memberIndex: 2,
@@ -1166,7 +1263,7 @@ describe('dao.ts', () => {
         network: 'mainnet',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('error');
       expect(response.error).toBe('UNAUTHORIZED_OPERATOR');
       expect(response.message).toContain(
@@ -1194,18 +1291,22 @@ describe('dao.ts', () => {
       mockGetAccount.mockReturnValue({
         isConnected: true,
         address: '0x1111111111111111111111111111111111111111',
-      } as any);
+      } as unknown as ReturnType<typeof mockGetAccount>);
       mockReadContract.mockResolvedValue(
         '0x2222222222222222222222222222222222222222'
-      ); // Different operator
-
-      registerDAOTools(mockServer as any);
-
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'execute-challenge-member'
       );
+
+      registerDAOTools(mockServer);
+
+      const toolCall = findToolCall('execute-challenge-member');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        memberIndex: number;
+        challengerCandidate: string;
+        network: string;
+      }>(toolCall);
 
       const result = await toolFunction({
         memberIndex: 3,
@@ -1221,7 +1322,7 @@ describe('dao.ts', () => {
         chainId: expect.any(Number),
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('error');
       expect(response.error).toBe('UNAUTHORIZED_OPERATOR');
       expect(response.message).toBe(
@@ -1255,24 +1356,28 @@ describe('dao.ts', () => {
       mockGetAccount.mockReturnValue({
         isConnected: true,
         address: '0x1111111111111111111111111111111111111111',
-      } as any);
+      } as unknown as ReturnType<typeof mockGetAccount>);
       mockReadContract.mockResolvedValue(
         '0x1111111111111111111111111111111111111111'
-      ); // Same as wallet address
-      mockWriteContract.mockResolvedValue('0xtxhash' as any);
+      );
+      mockWriteContract.mockResolvedValue('0xtxhash' as `0x${string}`);
       mockGetPublicClient.mockReturnValue({
         waitForTransactionReceipt: vi.fn().mockResolvedValue({
           status: 'success',
         }),
-      } as any);
+      } as unknown as ReturnType<typeof mockGetPublicClient>);
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'execute-challenge-member'
-      );
+      const toolCall = findToolCall('execute-challenge-member');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        memberIndex: number;
+        challengerCandidate: string;
+        network: string;
+      }>(toolCall);
 
       const result = await toolFunction({
         memberIndex: 4,
@@ -1288,7 +1393,7 @@ describe('dao.ts', () => {
         chainId: expect.any(Number),
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('success');
       expect(response.transactionHash).toBe('0xtxhash');
       expect(response.memberIndex).toBe(4);
@@ -1326,24 +1431,28 @@ describe('dao.ts', () => {
       mockGetAccount.mockReturnValue({
         isConnected: true,
         address: '0x1111111111111111111111111111111111111111',
-      } as any);
+      } as unknown as ReturnType<typeof mockGetAccount>);
       mockReadContract.mockResolvedValue(
         '0x1111111111111111111111111111111111111111'
       );
-      mockWriteContract.mockResolvedValue('0xtxhash' as any);
+      mockWriteContract.mockResolvedValue('0xtxhash' as `0x${string}`);
       mockGetPublicClient.mockReturnValue({
         waitForTransactionReceipt: vi.fn().mockResolvedValue({
           status: 'reverted',
         }),
-      } as any);
+      } as unknown as ReturnType<typeof mockGetPublicClient>);
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'execute-challenge-member'
-      );
+      const toolCall = findToolCall('execute-challenge-member');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        memberIndex: number;
+        challengerCandidate: string;
+        network: string;
+      }>(toolCall);
 
       const result = await toolFunction({
         memberIndex: 5,
@@ -1351,7 +1460,7 @@ describe('dao.ts', () => {
         network: 'mainnet',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('error');
       expect(response.error).toBe('Transaction reverted or failed');
       expect(response.transactionHash).toBe('0xtxhash');
@@ -1383,19 +1492,23 @@ describe('dao.ts', () => {
       mockGetAccount.mockReturnValue({
         isConnected: true,
         address: '0x1111111111111111111111111111111111111111',
-      } as any);
+      } as unknown as ReturnType<typeof mockGetAccount>);
       mockReadContract.mockResolvedValue(
         '0x1111111111111111111111111111111111111111'
       );
       mockWriteContract.mockRejectedValue(new Error('Transaction failed'));
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'execute-challenge-member'
-      );
+      const toolCall = findToolCall('execute-challenge-member');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        memberIndex: number;
+        challengerCandidate: string;
+        network: string;
+      }>(toolCall);
 
       const result = await toolFunction({
         memberIndex: 6,
@@ -1403,7 +1516,7 @@ describe('dao.ts', () => {
         network: 'mainnet',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('error');
       expect(response.error).toBe('Transaction failed');
       expect(response.message).toContain(
@@ -1425,13 +1538,16 @@ describe('dao.ts', () => {
         challengeReason: undefined,
       });
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-challenge-member-info'
-      );
+      const toolCall = findToolCall('get-challenge-member-info');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        memberIndex: number;
+        challengerCandidate: string;
+      }>(toolCall);
 
       const result = await toolFunction({
         memberIndex: 7,
@@ -1444,7 +1560,7 @@ describe('dao.ts', () => {
         'mainnet'
       );
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('success');
       expect(response.network).toBe('mainnet');
     });
@@ -1463,13 +1579,17 @@ describe('dao.ts', () => {
         challengeReason: undefined,
       });
 
-      registerDAOTools(mockServer as any);
+      registerDAOTools(mockServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-challenge-member-info'
-      );
+      const toolCall = findToolCall('get-challenge-member-info');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+
+      const toolFunction = getToolFunction<{
+        memberIndex: number;
+        challengerCandidate: string;
+        network: string;
+      }>(toolCall);
 
       const result = await toolFunction({
         memberIndex: 8,
@@ -1483,7 +1603,7 @@ describe('dao.ts', () => {
         'sepolia'
       );
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse(result.content[0]?.text ?? '{}');
       expect(response.status).toBe('success');
       expect(response.network).toBe('sepolia');
     });

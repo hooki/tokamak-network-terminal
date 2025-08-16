@@ -40,19 +40,19 @@ describe('constants.ts', () => {
   describe('getNetworkTokens', () => {
     it('should return mainnet tokens', () => {
       const tokens = getNetworkTokens('mainnet');
-      expect(tokens.TON).toBe('0x2be5e8c109e2197D077D13A82dAead6a9b3433C5');
-      expect(tokens.WTON).toBe('0xc4A11aaf6ea915Ed7Ac194161d2fC9384F15bff2');
+      expect(tokens?.TON).toBe('0x2be5e8c109e2197D077D13A82dAead6a9b3433C5');
+      expect(tokens?.WTON).toBe('0xc4A11aaf6ea915Ed7Ac194161d2fC9384F15bff2');
     });
 
     it('should return sepolia tokens', () => {
       const tokens = getNetworkTokens('sepolia');
-      expect(tokens.TON).toBe('0xa30fe40285b8f5c0457dbc3b7c8a280373c40044');
-      expect(tokens.WTON).toBe('0x79e0d92670106c85e9067b56b8f674340dca0bbd');
+      expect(tokens?.TON).toBe('0xa30fe40285b8f5c0457dbc3b7c8a280373c40044');
+      expect(tokens?.WTON).toBe('0x79e0d92670106c85e9067b56b8f674340dca0bbd');
     });
 
     it('should fallback to mainnet for unknown network', () => {
       const tokens = getNetworkTokens('unknown');
-      expect(tokens.TON).toBe('0x2be5e8c109e2197D077D13A82dAead6a9b3433C5');
+      expect(tokens?.TON).toBe('0x2be5e8c109e2197D077D13A82dAead6a9b3433C5');
     });
   });
 });

@@ -1,8 +1,18 @@
+// Mock MCP Server with proper typing
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { MockedFunction } from 'vitest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerStakeTools } from '../stake.js';
 
-// Mock MCP Server
-const mockServer = {
+// Import global types
+/// <reference path="../../../global.d.ts" />
+
+// Define proper mock types
+interface MockServer {
+  registerTool: MockedFunction<McpServer['registerTool']>;
+}
+
+const mockServer: MockServer = {
   registerTool: vi.fn(),
 };
 
@@ -38,7 +48,7 @@ vi.mock('@wagmi/core/chains', () => ({
 vi.mock('viem', () => ({
   parseAbi: vi.fn((abi) => abi),
   parseEther: vi.fn((value) => BigInt(value) * BigInt(10 ** 18)),
-  encodeAbiParameters: vi.fn((types, values) => `encoded_${values.join('_')}`),
+  encodeAbiParameters: vi.fn((_types, values) => `encoded_${values.join('_')}`),
 }));
 
 // Mock constants
@@ -46,7 +56,7 @@ vi.mock('../../constants.js', () => ({
   DEPOSIT_MANAGER: '0x1234567890123456789012345678901234567890',
   TON_ADDRESS: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
   WTON_ADDRESS: '0x9876543210987654321098765432109876543210',
-  getNetworkAddresses: vi.fn((network) => ({
+  getNetworkAddresses: vi.fn((_network) => ({
     DEPOSIT_MANAGER: '0x1234567890123456789012345678901234567890',
     TON_ADDRESS: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
     WTON_ADDRESS: '0x9876543210987654321098765432109876543210',
@@ -67,6 +77,12 @@ vi.mock('../../utils/layer2.js', () => ({
 
 vi.mock('../../utils/response.js', () => ({
   createMCPResponse: vi.fn((response) => JSON.stringify(response)),
+  createSuccessResponse: vi.fn((message) => ({
+    content: [{ type: 'text', text: message }],
+  })),
+  createErrorResponse: vi.fn((message) => ({
+    content: [{ type: 'text', text: message }],
+  })),
 }));
 
 vi.mock('../../utils/wagmi-config.js', () => ({
@@ -84,7 +100,7 @@ describe('stake.ts', () => {
 
   describe('registerStakeTools', () => {
     it('should register stake-tokens tool', () => {
-      registerStakeTools(mockServer as any);
+      registerStakeTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledWith(
         'stake-tokens',
@@ -103,7 +119,7 @@ describe('stake.ts', () => {
     });
 
     it('should register update-seigniorage tool', () => {
-      registerStakeTools(mockServer as any);
+      registerStakeTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledWith(
         'update-seigniorage',
@@ -121,7 +137,7 @@ describe('stake.ts', () => {
     });
 
     it('should register exactly 2 tools', () => {
-      registerStakeTools(mockServer as any);
+      registerStakeTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledTimes(2);
     });
@@ -140,16 +156,20 @@ describe('stake.ts', () => {
         '0x1234567890123456789012345678901234567890'
       );
       mockCheckWalletConnection.mockResolvedValue({
+        isConnected: false,
         content: [{ type: 'text', text: 'wallet not connected' }],
-      });
+      } as WalletCheckResult);
 
-      registerStakeTools(mockServer as any);
+      registerStakeTools(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'stake-tokens'
+        (call: readonly unknown[]) => call[0] === 'stake-tokens'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       const result = await toolFunction({
         layer2Identifier: 'hammer',
@@ -162,6 +182,7 @@ describe('stake.ts', () => {
         'stake-tokens 0x1234567890123456789012345678901234567890 100 --network mainnet'
       );
       expect(result).toEqual({
+        isConnected: false,
         content: [{ type: 'text', text: 'wallet not connected' }],
       });
     });
@@ -180,9 +201,9 @@ describe('stake.ts', () => {
       const mockGetNetworkAddresses = vi.mocked(
         await import('../../constants.js')
       ).getNetworkAddresses;
-      const mockCreateMCPResponse = vi.mocked(
+      const mockCreateSuccessResponse = vi.mocked(
         await import('../../utils/response.js')
-      ).createMCPResponse;
+      ).createSuccessResponse;
       const mockCheckWalletConnection = vi.mocked(
         await import('../../utils/wallet.js')
       ).checkWalletConnection;
@@ -190,24 +211,29 @@ describe('stake.ts', () => {
       mockResolveLayer2Address.mockReturnValue(
         '0x1234567890123456789012345678901234567890'
       );
-      mockWriteContract.mockResolvedValue('0xtxhash' as any);
+      mockWriteContract.mockResolvedValue('0xtxhash' as `0x${string}`);
       mockParseEther.mockReturnValue(BigInt('100000000000000000000')); // 100 tokens
       mockEncodeAbiParameters.mockReturnValue(
         '0x1234567890123456789012345678901234567890123456789012345678901234567890' as `0x${string}`
       );
-      mockCreateMCPResponse.mockReturnValue('success response');
+      mockCreateSuccessResponse.mockReturnValue({
+        content: [{ type: 'text', text: 'success response' }],
+      });
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
         content: [{ type: 'text', text: 'Wallet is connected' }],
-      });
+      } as WalletCheckResult);
 
-      registerStakeTools(mockServer as any);
+      registerStakeTools(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'stake-tokens'
+        (call: readonly unknown[]) => call[0] === 'stake-tokens'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       const result = await toolFunction({
         layer2Identifier: 'hammer',
@@ -242,10 +268,9 @@ describe('stake.ts', () => {
           chainId: 1,
         }
       );
-      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
-        status: 'success',
-        message: 'Stake tokens successfully on mainnet (tx: 0xtxhash)',
-      });
+      expect(mockCreateSuccessResponse).toHaveBeenCalledWith(
+        'Stake tokens successfully on mainnet (tx: 0xtxhash)'
+      );
       expect(result).toEqual({
         content: [
           {
@@ -270,19 +295,22 @@ describe('stake.ts', () => {
       mockResolveLayer2Address.mockReturnValue(
         '0x1234567890123456789012345678901234567890'
       );
-      mockWriteContract.mockResolvedValue('0xtxhash' as any);
+      mockWriteContract.mockResolvedValue('0xtxhash' as `0x${string}`);
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
         content: [{ type: 'text', text: 'Wallet is connected' }],
-      });
+      } as WalletCheckResult);
 
-      registerStakeTools(mockServer as any);
+      registerStakeTools(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'stake-tokens'
+        (call: readonly unknown[]) => call[0] === 'stake-tokens'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       await toolFunction({
         layer2Identifier: 'hammer',
@@ -312,16 +340,20 @@ describe('stake.ts', () => {
         '0x1234567890123456789012345678901234567890'
       );
       mockCheckWalletConnection.mockResolvedValue({
+        isConnected: false,
         content: [{ type: 'text', text: 'wallet not connected' }],
-      });
+      } as WalletCheckResult);
 
-      registerStakeTools(mockServer as any);
+      registerStakeTools(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'update-seigniorage'
+        (call: readonly unknown[]) => call[0] === 'update-seigniorage'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       const result = await toolFunction({
         layer2Identifier: 'hammer',
@@ -333,6 +365,7 @@ describe('stake.ts', () => {
         'update-seigniorage 0x1234567890123456789012345678901234567890 --network mainnet'
       );
       expect(result).toEqual({
+        isConnected: false,
         content: [{ type: 'text', text: 'wallet not connected' }],
       });
     });
@@ -344,9 +377,9 @@ describe('stake.ts', () => {
       const mockResolveLayer2Address = vi.mocked(
         await import('../../utils/layer2.js')
       ).resolveLayer2Address;
-      const mockCreateMCPResponse = vi.mocked(
+      const mockCreateSuccessResponse = vi.mocked(
         await import('../../utils/response.js')
-      ).createMCPResponse;
+      ).createSuccessResponse;
       const mockCheckWalletConnection = vi.mocked(
         await import('../../utils/wallet.js')
       ).checkWalletConnection;
@@ -354,20 +387,25 @@ describe('stake.ts', () => {
       mockResolveLayer2Address.mockReturnValue(
         '0x1234567890123456789012345678901234567890'
       );
-      mockWriteContract.mockResolvedValue('0xtxhash' as any);
-      mockCreateMCPResponse.mockReturnValue('success response');
+      mockWriteContract.mockResolvedValue('0xtxhash' as `0x${string}`);
+      mockCreateSuccessResponse.mockReturnValue({
+        content: [{ type: 'text', text: 'success response' }],
+      });
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
         content: [{ type: 'text', text: 'Wallet is connected' }],
-      });
+      } as WalletCheckResult);
 
-      registerStakeTools(mockServer as any);
+      registerStakeTools(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'update-seigniorage'
+        (call: readonly unknown[]) => call[0] === 'update-seigniorage'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       const result = await toolFunction({
         layer2Identifier: 'hammer',
@@ -388,10 +426,9 @@ describe('stake.ts', () => {
           chainId: 1,
         }
       );
-      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
-        status: 'success',
-        message: 'Update seigniorage successfully on mainnet (tx: 0xtxhash)',
-      });
+      expect(mockCreateSuccessResponse).toHaveBeenCalledWith(
+        'Update seigniorage successfully on mainnet (tx: 0xtxhash)'
+      );
       expect(result).toEqual({
         content: [
           {
@@ -409,19 +446,29 @@ describe('stake.ts', () => {
       const mockResolveLayer2Address = vi.mocked(
         await import('../../utils/layer2.js')
       ).resolveLayer2Address;
+      const mockCheckWalletConnection = vi.mocked(
+        await import('../../utils/wallet.js')
+      ).checkWalletConnection;
 
       mockResolveLayer2Address.mockReturnValue(
         '0x1234567890123456789012345678901234567890'
       );
-      mockWriteContract.mockResolvedValue('0xtxhash' as any);
+      mockWriteContract.mockResolvedValue('0xtxhash' as `0x${string}`);
+      mockCheckWalletConnection.mockResolvedValue({
+        isConnected: true,
+        content: [{ type: 'text', text: 'Wallet is connected' }],
+      } as WalletCheckResult);
 
-      registerStakeTools(mockServer as any);
+      registerStakeTools(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'update-seigniorage'
+        (call: readonly unknown[]) => call[0] === 'update-seigniorage'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       await toolFunction({
         layer2Identifier: 'hammer',

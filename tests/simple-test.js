@@ -1,4 +1,4 @@
-import { spawn } from 'child_process';
+import { spawn } from 'node:child_process';
 
 console.log('Testing get-agendas tool registration...\n');
 
@@ -7,10 +7,10 @@ const serverProcess = spawn('node', ['dist/src/index.js'], {
   stdio: ['pipe', 'pipe', 'pipe'],
 });
 
-let output = '';
+let _output = '';
 
 serverProcess.stdout.on('data', (data) => {
-  output += data.toString();
+  _output += data.toString();
   console.log('Server output:', data.toString());
 });
 
@@ -26,12 +26,12 @@ serverProcess.on('close', (code) => {
 setTimeout(() => {
   console.log('Sending test message...');
   serverProcess.stdin.write(
-    JSON.stringify({
+    `${JSON.stringify({
       jsonrpc: '2.0',
       id: 1,
       method: 'tools/list',
       params: {},
-    }) + '\n'
+    })}\n`
   );
 }, 1000);
 

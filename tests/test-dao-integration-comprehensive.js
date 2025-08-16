@@ -1,5 +1,5 @@
-import { spawn } from 'child_process';
-import { setTimeout } from 'timers/promises';
+import { spawn } from 'node:child_process';
+import { setTimeout } from 'node:timers/promises';
 
 console.log('🧪 Comprehensive DAO Integration Testing Suite\n');
 
@@ -33,7 +33,7 @@ function sendRequest(method, params = {}) {
 
   const toolName = params.name || 'unknown';
   console.log(`📤 Sending: ${method} (tool: ${toolName})`);
-  serverProcess.stdin.write(JSON.stringify(request) + '\n');
+  serverProcess.stdin.write(`${JSON.stringify(request)}\n`);
 }
 
 function parseResponse(data) {
@@ -49,7 +49,7 @@ function parseResponse(data) {
       if (response.jsonrpc === '2.0' && (response.result || response.error)) {
         return response;
       }
-    } catch (error) {}
+    } catch (_error) {}
   }
 
   return null;
@@ -64,11 +64,11 @@ function logTestResult(testName, success, message = '') {
     timestamp: new Date().toISOString(),
   };
   testResults.push(result);
-  console.log(`${status} ${testName}${message ? ': ' + message : ''}`);
+  console.log(`${status} ${testName}${message ? `: ${message}` : ''}`);
 }
 
 serverProcess.stdout.on('data', (data) => {
-  const dataStr = data.toString();
+  const _dataStr = data.toString();
 
   // 디버그 정보 필터링 (필요시 주석 해제)
   /*
@@ -80,7 +80,7 @@ serverProcess.stdout.on('data', (data) => {
   const response = parseResponse(data);
   if (response) {
     if (response.result) {
-      if (response.result.content && response.result.content[0]) {
+      if (response.result.content?.[0]) {
         const content = response.result.content[0].text;
         try {
           const parsed = JSON.parse(content);
@@ -93,7 +93,7 @@ serverProcess.stdout.on('data', (data) => {
               parsed.message?.substring(0, 100)
             );
           }
-        } catch (e) {
+        } catch (_e) {
           logTestResult(currentTest, true, content.substring(0, 100));
         }
       } else {

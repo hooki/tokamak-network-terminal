@@ -1,8 +1,13 @@
-// Define MCPResponse type
+// Define MCPResponse type with flexible properties
 export type MCPResponse = {
   status: 'success' | 'error' | 'continue';
   message: string;
-  [key: string]: any;
+  nextStep?: string;
+  callback?: string;
+  data?: unknown;
+  network?: string;
+  executeNextStepAfter?: number;
+  [key: string]: unknown;
 };
 
 export function createMCPResponse(response: MCPResponse): string {
@@ -51,10 +56,14 @@ export function createErrorResponse(message: string | MCPResponse) {
  * Create success response content
  */
 export function createSuccessResponse(message: string | MCPResponse) {
-  console.log('createSuccessResponse called with:', message);
+  if (process.env.NODE_ENV !== 'test') {
+    console.log('createSuccessResponse called with:', message);
+  }
   if (typeof message === 'string') {
     const result = createResponse('success', message);
-    console.log('createSuccessResponse string result:', result);
+    if (process.env.NODE_ENV !== 'test') {
+      console.log('createSuccessResponse string result:', result);
+    }
     return result;
   } else {
     const result = {
@@ -65,7 +74,9 @@ export function createSuccessResponse(message: string | MCPResponse) {
         },
       ],
     };
-    console.log('createSuccessResponse object result:', result);
+    if (process.env.NODE_ENV !== 'test') {
+      console.log('createSuccessResponse object result:', result);
+    }
     return result;
   }
 }

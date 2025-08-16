@@ -28,23 +28,28 @@ describe('layer2.ts', () => {
   describe('getNetworkLayer2Operators', () => {
     it('should return mainnet layer2 operators', () => {
       const operators = getNetworkLayer2Operators('mainnet');
-      expect(operators.tokamak1).toBeDefined();
-      expect(operators.tokamak1.address).toBe(
+      // biome-ignore lint/complexity/useLiteralKeys: TypeScript noPropertyAccessFromIndexSignature requires bracket notation
+      expect(operators['tokamak1']).toBeDefined();
+      // biome-ignore lint/complexity/useLiteralKeys: TypeScript noPropertyAccessFromIndexSignature requires bracket notation
+      expect(operators['tokamak1']?.address).toBe(
         '0xf3B17FDB808c7d0Df9ACd24dA34700ce069007DF'
       );
     });
 
     it('should return sepolia layer2 operators', () => {
       const operators = getNetworkLayer2Operators('sepolia');
-      expect(operators.TokamakOperator_v2).toBeDefined();
-      expect(operators.TokamakOperator_v2.address).toBe(
+      // biome-ignore lint/complexity/useLiteralKeys: TypeScript noPropertyAccessFromIndexSignature requires bracket notation
+      expect(operators['TokamakOperator_v2']).toBeDefined();
+      // biome-ignore lint/complexity/useLiteralKeys: TypeScript noPropertyAccessFromIndexSignature requires bracket notation
+      expect(operators['TokamakOperator_v2']?.address).toBe(
         '0xCBeF7Cc221c04AD2E68e623613cc5d33b0fE1599'
       );
     });
 
     it('should fallback to mainnet for unknown network', () => {
       const operators = getNetworkLayer2Operators('unknown');
-      expect(operators.tokamak1).toBeDefined();
+      // biome-ignore lint/complexity/useLiteralKeys: TypeScript noPropertyAccessFromIndexSignature requires bracket notation
+      expect(operators['tokamak1']).toBeDefined();
     });
   });
 });

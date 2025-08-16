@@ -1,8 +1,16 @@
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { GetAccountReturnType } from '@wagmi/core';
+import type { MockedFunction } from 'vitest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerWalletTools } from '../wallet.js';
 
-// Mock MCP Server
-const mockServer = {
+// Define proper mock types
+interface MockServer {
+  registerTool: MockedFunction<McpServer['registerTool']>;
+}
+
+// Mock MCP Server with proper typing
+const mockServer: MockServer = {
   registerTool: vi.fn(),
 };
 
@@ -43,6 +51,8 @@ vi.mock('../../utils/descriptionBuilder.js', () => ({
 
 vi.mock('../../utils/response.js', () => ({
   createMCPResponse: vi.fn((response) => JSON.stringify(response)),
+  createSuccessResponse: vi.fn(),
+  createErrorResponse: vi.fn(),
 }));
 
 vi.mock('../../utils/wagmi-config.js', () => ({
@@ -54,6 +64,42 @@ vi.mock('../../utils/wallet.js', () => ({
   generateQRCode: vi.fn(),
 }));
 
+// Helper function to safely get tool function from mock calls
+function getToolFunction(toolName: string) {
+  const toolCall = mockServer.registerTool.mock.calls.find(
+    (call) => call[0] === toolName
+  );
+  expect(toolCall).toBeDefined();
+  return toolCall?.[2];
+}
+
+// Helper to create mock account data
+function createMockAccountData(overrides: Partial<GetAccountReturnType> = {}) {
+  return {
+    address: undefined,
+    addresses: undefined,
+    chain: undefined,
+    chainId: undefined,
+    connector: undefined,
+    isConnected: false,
+    isReconnecting: false,
+    isConnecting: false,
+    isDisconnected: true,
+    status: 'disconnected' as const,
+    ...overrides,
+  };
+}
+
+// Helper to create mock request handler extra
+function createMockRequestExtra() {
+  return {
+    signal: new AbortController().signal,
+    requestId: 'test-request-id',
+    sendNotification: vi.fn(),
+    sendRequest: vi.fn(),
+  };
+}
+
 describe('wallet.ts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -61,7 +107,7 @@ describe('wallet.ts', () => {
 
   describe('registerWalletTools', () => {
     it('should register wait-wallet-connect tool', () => {
-      registerWalletTools(mockServer as any);
+      registerWalletTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledWith(
         'wait-wallet-connect',
@@ -78,7 +124,7 @@ describe('wallet.ts', () => {
     });
 
     it('should register connect-wallet tool', () => {
-      registerWalletTools(mockServer as any);
+      registerWalletTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledWith(
         'connect-wallet',
@@ -94,7 +140,7 @@ describe('wallet.ts', () => {
     });
 
     it('should register exactly 2 tools', () => {
-      registerWalletTools(mockServer as any);
+      registerWalletTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledTimes(2);
     });
@@ -107,24 +153,31 @@ describe('wallet.ts', () => {
         await import('../../utils/response.js')
       ).createMCPResponse;
 
-      mockGetAccount.mockReturnValue({
-        isConnected: true,
-        address: '0x1234567890123456789012345678901234567890',
-      } as any);
+      mockGetAccount.mockReturnValue(
+        createMockAccountData({
+          isConnected: true,
+          address:
+            '0x1234567890123456789012345678901234567890' as `0x${string}`,
+          status: 'connected',
+          isDisconnected: false,
+        }) as GetAccountReturnType
+      );
       mockCreateMCPResponse.mockReturnValue('success response');
 
-      registerWalletTools(mockServer as any);
+      registerWalletTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'wait-wallet-connect'
+      const toolFunction = getToolFunction('wait-wallet-connect');
+      expect(toolFunction).toBeDefined();
+
+      if (!toolFunction) return; // Type guard for toolFunction
+
+      const result = await toolFunction(
+        {
+          callback: 'test-callback',
+          timeout: 1000,
+        },
+        createMockRequestExtra()
       );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
-
-      const result = await toolFunction({
-        callback: 'test-callback',
-        timeout: 1000,
-      });
 
       expect(mockGetAccount).toHaveBeenCalledWith({ id: 'wagmi-config' });
       expect(mockCreateMCPResponse).toHaveBeenCalledWith({
@@ -148,21 +201,28 @@ describe('wallet.ts', () => {
         await import('../../utils/response.js')
       ).createMCPResponse;
 
-      mockGetAccount.mockReturnValue({ isConnected: false } as any);
+      mockGetAccount.mockReturnValue(
+        createMockAccountData({
+          isConnected: false,
+          status: 'disconnected',
+        }) as GetAccountReturnType
+      );
       mockCreateMCPResponse.mockReturnValue('error response');
 
-      registerWalletTools(mockServer as any);
+      registerWalletTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'wait-wallet-connect'
+      const toolFunction = getToolFunction('wait-wallet-connect');
+      expect(toolFunction).toBeDefined();
+
+      if (!toolFunction) return; // Type guard for toolFunction
+
+      const result = await toolFunction(
+        {
+          callback: 'test-callback',
+          timeout: 100, // Short timeout for testing
+        },
+        createMockRequestExtra()
       );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
-
-      const result = await toolFunction({
-        callback: 'test-callback',
-        timeout: 100, // Short timeout for testing
-      });
 
       expect(mockCreateMCPResponse).toHaveBeenCalledWith({
         status: 'error',
@@ -181,23 +241,29 @@ describe('wallet.ts', () => {
     it('should use default timeout when not provided', async () => {
       const mockGetAccount = vi.mocked(await import('@wagmi/core')).getAccount;
 
-      mockGetAccount.mockReturnValue({
-        isConnected: true,
-        address: '0x123',
-      } as any);
-
-      registerWalletTools(mockServer as any);
-
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'wait-wallet-connect'
+      mockGetAccount.mockReturnValue(
+        createMockAccountData({
+          isConnected: true,
+          address: '0x123' as `0x${string}`,
+          status: 'connected',
+          isDisconnected: false,
+        }) as GetAccountReturnType
       );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
 
-      await toolFunction({
-        callback: 'test-callback',
-        timeout: 100, // Provide short timeout for testing
-      });
+      registerWalletTools(mockServer as unknown as McpServer);
+
+      const toolFunction = getToolFunction('wait-wallet-connect');
+      expect(toolFunction).toBeDefined();
+
+      if (!toolFunction) return; // Type guard for toolFunction
+
+      await toolFunction(
+        {
+          callback: 'test-callback',
+          timeout: 100, // Provide short timeout for testing
+        },
+        createMockRequestExtra()
+      );
 
       expect(mockGetAccount).toHaveBeenCalled();
     });
@@ -219,17 +285,19 @@ describe('wallet.ts', () => {
       mockGenerateQRCode.mockResolvedValue('qr-code-text');
       mockCreateMCPResponse.mockReturnValue('success response');
 
-      registerWalletTools(mockServer as any);
+      registerWalletTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'connect-wallet'
+      const toolFunction = getToolFunction('connect-wallet');
+      expect(toolFunction).toBeDefined();
+
+      if (!toolFunction) return; // Type guard for toolFunction
+
+      const result = await toolFunction(
+        {
+          callback: 'test-callback',
+        },
+        createMockRequestExtra()
       );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
-
-      const result = await toolFunction({
-        callback: 'test-callback',
-      });
 
       expect(mockConnectWallet).toHaveBeenCalled();
       expect(mockGenerateQRCode).toHaveBeenCalledWith('test-uri');
@@ -276,17 +344,19 @@ describe('wallet.ts', () => {
       mockGenerateQRCode.mockRejectedValue(new Error('QR generation failed'));
       mockCreateMCPResponse.mockReturnValue('error response');
 
-      registerWalletTools(mockServer as any);
+      registerWalletTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'connect-wallet'
+      const toolFunction = getToolFunction('connect-wallet');
+      expect(toolFunction).toBeDefined();
+
+      if (!toolFunction) return; // Type guard for toolFunction
+
+      const result = await toolFunction(
+        {
+          callback: 'test-callback',
+        },
+        createMockRequestExtra()
       );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
-
-      const result = await toolFunction({
-        callback: 'test-callback',
-      });
 
       expect(mockCreateMCPResponse).toHaveBeenCalledWith({
         status: 'error',
@@ -309,18 +379,20 @@ describe('wallet.ts', () => {
 
       mockConnectWallet.mockRejectedValue(new Error('Connection failed'));
 
-      registerWalletTools(mockServer as any);
+      registerWalletTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'connect-wallet'
-      );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      const toolFunction = getToolFunction('connect-wallet');
+      expect(toolFunction).toBeDefined();
+
+      if (!toolFunction) return; // Type guard for toolFunction
 
       await expect(
-        toolFunction({
-          callback: 'test-callback',
-        })
+        toolFunction(
+          {
+            callback: 'test-callback',
+          },
+          createMockRequestExtra()
+        )
       ).rejects.toThrow('Connection failed');
     });
   });

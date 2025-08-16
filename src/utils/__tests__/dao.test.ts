@@ -1,4 +1,5 @@
 import { getPublicClient, readContract, readContracts } from '@wagmi/core';
+import type { PublicClient } from 'viem';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   type CandidateInfo,
@@ -82,6 +83,17 @@ vi.mock('../../abis/operatorManager.js', () => ({
     },
   ],
 }));
+
+// Type definitions for better type safety
+type MockedReadContractsResult = {
+  result?: unknown;
+  error?: Error | null;
+  status?: 'success' | 'failure';
+}[];
+
+type MockedPublicClient = Partial<PublicClient> & {
+  getBlock: ReturnType<typeof vi.fn>;
+};
 
 describe('DAO Utils', () => {
   const mockCandidateInfo: CandidateInfo = {
@@ -350,15 +362,15 @@ describe('DAO Utils', () => {
       const result = await getDAOMemberOperatorManagerInfo('mainnet');
 
       expect(result).toHaveLength(1);
-      expect(result[0].operatorManager).toBe(
+      expect(result[0]?.operatorManager).toBe(
         '0x1111111111111111111111111111111111111111'
       );
-      expect(result[0].manager).toBeNull();
+      expect(result[0]?.manager).toBeNull();
     });
   });
 
   describe('getDAOMembersStakingInfo', () => {
-    const mockMembers: DAOMemberCandidateInfo[] = [
+    const _mockMembers: DAOMemberCandidateInfo[] = [
       {
         candidate: '0x1111111111111111111111111111111111111111',
         candidateInfo: mockCandidateInfo,
@@ -386,7 +398,7 @@ describe('DAO Utils', () => {
         getBlock: vi.fn().mockResolvedValue({
           timestamp: 1640995200,
         }),
-      } as any);
+      } as MockedPublicClient as PublicClient);
 
       const result = await getDAOMembersStakingInfo('mainnet', false);
 
@@ -438,12 +450,12 @@ describe('DAO Utils', () => {
         getBlock: vi.fn().mockResolvedValue({
           timestamp: 1640995200,
         }),
-      } as any);
+      } as MockedPublicClient as PublicClient);
 
       const result = await getDAOMembersStakingInfo('mainnet', true);
 
       expect(result).toHaveLength(1);
-      expect(result[0].candidate).toBe(
+      expect(result[0]?.candidate).toBe(
         '0x1111111111111111111111111111111111111111'
       );
     });
@@ -515,12 +527,12 @@ describe('DAO Utils', () => {
 
       mockGetPublicClient.mockReturnValue({
         getBlock: vi.fn().mockRejectedValue(new Error('Block error')),
-      } as any);
+      } as MockedPublicClient as PublicClient);
 
       const result = await getDAOMembersStakingInfo('mainnet', false);
 
       expect(result).toHaveLength(1);
-      expect(result[0].lastUpdateSeigniorageTime).toBe(0n);
+      expect(result[0]?.lastUpdateSeigniorageTime).toBe(0n);
     });
   });
 
@@ -714,17 +726,17 @@ describe('DAO Utils', () => {
               result: '0x0000000000000000000000000000000000000000',
               status: 'success',
             }, // empty member
-          ] as any)
+          ] as MockedReadContractsResult)
           // getDAOMemberCandidateInfo의 candidateInfos 호출을 위한 mock
           .mockResolvedValueOnce([
             { result: mockCandidateInfoArray, status: 'success' }, // candidateInfo for member
-          ] as any)
+          ] as MockedReadContractsResult)
           // getChallengeInfo의 stake 조회를 위한 mock
           .mockResolvedValueOnce([
             { result: 1000000000000000000n, status: 'success' }, // member stake
             { result: 3000000000000000000n, status: 'success' }, // challenger stake
             { result: 2000000000000000000n, status: 'success' }, // minimumAmount
-          ] as any);
+          ] as MockedReadContractsResult);
 
         const result = await getChallengeInfo(
           0, // memberIndex
@@ -770,7 +782,7 @@ describe('DAO Utils', () => {
               result: '0x0000000000000000000000000000000000000000',
               status: 'success',
             }, // empty member
-          ] as any)
+          ] as MockedReadContractsResult)
           // getDAOMemberCandidateInfo의 candidateInfos 호출을 위한 mock
           .mockResolvedValueOnce([
             {
@@ -783,13 +795,13 @@ describe('DAO Utils', () => {
               ],
               status: 'success',
             }, // candidateInfo for member
-          ] as any)
+          ] as MockedReadContractsResult)
           // getChallengeInfo의 stake 조회를 위한 mock
           .mockResolvedValueOnce([
             { result: 2000000000000000000n, status: 'success' }, // member stake
             { result: 1500000000000000000n, status: 'success' }, // challenger stake (minStake보다 작지만 member보다 작음)
             { result: 2000000000000000000n, status: 'success' }, // minimumAmount
-          ] as any);
+          ] as MockedReadContractsResult);
 
         const result = await getChallengeInfo(
           1, // memberIndex

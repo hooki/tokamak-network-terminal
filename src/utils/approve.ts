@@ -29,6 +29,7 @@ export async function checkApproval(
 
     if (allowance < requiredAmount) {
       return {
+        isConnected: true,
         content: [
           {
             type: 'text' as const,
@@ -49,9 +50,21 @@ export async function checkApproval(
     };
 
     return {
+      isConnected: true,
       content: [{ type: 'text' as const, text: createMCPResponse(response) }],
     };
   }
 
-  return undefined;
+  return {
+    isConnected: true,
+    content: [
+      {
+        type: 'text' as const,
+        text: createMCPResponse({
+          status: 'success',
+          message: 'Token allowance is sufficient.',
+        }),
+      },
+    ],
+  };
 }

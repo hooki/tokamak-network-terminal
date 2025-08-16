@@ -1,8 +1,15 @@
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { MockedFunction } from 'vitest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerUnstakeTools } from '../unstake.js';
 
+// Define proper mock types
+interface MockServer {
+  registerTool: MockedFunction<McpServer['registerTool']>;
+}
+
 // Mock MCP Server
-const mockServer = {
+const mockServer: MockServer = {
   registerTool: vi.fn(),
 };
 
@@ -12,13 +19,17 @@ vi.mock('@wagmi/core', () => ({
   readContracts: vi.fn(),
   getAccount: vi.fn(),
   getBalance: vi.fn(),
-  createStorage: vi.fn((config) => ({
-    getItem: config.storage.getItem,
-    setItem: config.storage.setItem,
-    removeItem: config.storage.removeItem,
-  })),
-  createConfig: vi.fn((config) => ({
-    ...config,
+  createStorage: vi.fn(
+    (config: {
+      storage: { getItem: unknown; setItem: unknown; removeItem: unknown };
+    }) => ({
+      getItem: config.storage.getItem,
+      setItem: config.storage.setItem,
+      removeItem: config.storage.removeItem,
+    })
+  ),
+  createConfig: vi.fn((config: unknown) => ({
+    ...(config as object),
     _internal: {
       connectors: {
         setup: vi.fn(),
@@ -36,25 +47,26 @@ vi.mock('@wagmi/core/chains', () => ({
 
 // Mock viem functions
 vi.mock('viem', () => ({
-  parseAbi: vi.fn((abi) => abi),
+  parseAbi: vi.fn((abi: string[]) => abi),
   parseUnits: vi.fn(
-    (value, decimals) => BigInt(value) * BigInt(10 ** decimals)
+    (value: string, decimals: number) => BigInt(value) * BigInt(10 ** decimals)
   ),
 }));
 
 // Mock constants
 vi.mock('../../constants.js', () => ({
-  getNetworkAddresses: vi.fn((network) => ({
-    SEIG_MANAGER: '0x1234567890123456789012345678901234567890',
-    DEPOSIT_MANAGER: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
-    TON_ADDRESS: '0x9876543210987654321098765432109876543210',
-    WTON_ADDRESS: '0x1111111111111111111111111111111111111111',
+  getNetworkAddresses: vi.fn((_network: string) => ({
+    SEIG_MANAGER: '0x1234567890123456789012345678901234567890' as `0x${string}`,
+    DEPOSIT_MANAGER:
+      '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as `0x${string}`,
+    TON_ADDRESS: '0x9876543210987654321098765432109876543210' as `0x${string}`,
+    WTON_ADDRESS: '0x1111111111111111111111111111111111111111' as `0x${string}`,
   })),
 }));
 
 // Mock utils
 vi.mock('../../utils/descriptionBuilder.js', () => ({
-  DescriptionBuilder: vi.fn().mockImplementation((str) => ({
+  DescriptionBuilder: vi.fn().mockImplementation((str: string) => ({
     withWalletConnect: vi.fn().mockReturnThis(),
     toString: vi.fn().mockReturnValue(`${str}_with_wallet_connect`),
   })),
@@ -65,7 +77,13 @@ vi.mock('../../utils/layer2.js', () => ({
 }));
 
 vi.mock('../../utils/response.js', () => ({
-  createMCPResponse: vi.fn((response) => JSON.stringify(response)),
+  createMCPResponse: vi.fn((response: unknown) => JSON.stringify(response)),
+  createSuccessResponse: vi.fn((message) => ({
+    content: [{ type: 'text', text: message }],
+  })),
+  createErrorResponse: vi.fn((message) => ({
+    content: [{ type: 'text', text: message }],
+  })),
 }));
 
 vi.mock('../../utils/wagmi-config.js', () => ({
@@ -83,7 +101,7 @@ describe('unstake.ts', () => {
 
   describe('registerUnstakeTools', () => {
     it('should register unstake-tokens tool', () => {
-      registerUnstakeTools(mockServer as any);
+      registerUnstakeTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledWith(
         'unstake-tokens',
@@ -102,7 +120,7 @@ describe('unstake.ts', () => {
     });
 
     it('should register exactly 1 tool', () => {
-      registerUnstakeTools(mockServer as any);
+      registerUnstakeTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledTimes(1);
     });
@@ -121,16 +139,20 @@ describe('unstake.ts', () => {
         '0x1234567890123456789012345678901234567890'
       );
       mockCheckWalletConnection.mockResolvedValue({
+        isConnected: false,
         content: [{ type: 'text', text: 'wallet not connected' }],
       });
 
-      registerUnstakeTools(mockServer as any);
+      registerUnstakeTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'unstake-tokens'
-      );
+      const toolCall = (
+        mockServer.registerTool as ReturnType<typeof vi.fn>
+      ).mock.calls.find((call) => call[0] === 'unstake-tokens');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool registration not found');
+      const toolFunction = toolCall[2] as (
+        params: Record<string, unknown>
+      ) => Promise<unknown>;
 
       const result = await toolFunction({
         layer2Identifier: 'hammer',
@@ -143,6 +165,7 @@ describe('unstake.ts', () => {
         'unstake-tokens 0x1234567890123456789012345678901234567890 100 --network mainnet'
       );
       expect(result).toEqual({
+        isConnected: false,
         content: [{ type: 'text', text: 'wallet not connected' }],
       });
     });
@@ -156,9 +179,9 @@ describe('unstake.ts', () => {
       const mockResolveLayer2Address = vi.mocked(
         await import('../../utils/layer2.js')
       ).resolveLayer2Address;
-      const mockCreateMCPResponse = vi.mocked(
+      const mockCreateErrorResponse = vi.mocked(
         await import('../../utils/response.js')
-      ).createMCPResponse;
+      ).createErrorResponse;
       const mockCheckWalletConnection = vi.mocked(
         await import('../../utils/wallet.js')
       ).checkWalletConnection;
@@ -167,25 +190,39 @@ describe('unstake.ts', () => {
         '0x1234567890123456789012345678901234567890'
       );
       mockGetAccount.mockReturnValue({
-        address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
-      } as any);
+        address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as `0x${string}`,
+        addresses: undefined,
+        chain: undefined,
+        chainId: undefined,
+        connector: undefined,
+        isConnected: false,
+        isConnecting: false,
+        isDisconnected: true,
+        isReconnecting: false,
+        status: 'disconnected',
+      } as unknown as ReturnType<typeof mockGetAccount>);
       mockReadContracts.mockResolvedValue([
         { result: BigInt('100000000000000000000000000'), status: 'success' }, // 100 tokens (27 decimals)
-      ] as any);
+      ] as Awaited<ReturnType<typeof mockReadContracts>>);
       mockParseUnits.mockReturnValue(BigInt('200000000000000000000000000')); // 200 tokens (27 decimals)
-      mockCreateMCPResponse.mockReturnValue('error response');
+      mockCreateErrorResponse.mockReturnValue({
+        content: [{ type: 'text', text: 'error response' }],
+      });
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
         content: [{ type: 'text', text: 'Wallet is connected' }],
       });
 
-      registerUnstakeTools(mockServer as any);
+      registerUnstakeTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'unstake-tokens'
-      );
+      const toolCall = (
+        mockServer.registerTool as ReturnType<typeof vi.fn>
+      ).mock.calls.find((call) => call[0] === 'unstake-tokens');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool registration not found');
+      const toolFunction = toolCall[2] as (
+        params: Record<string, unknown>
+      ) => Promise<unknown>;
 
       const result = await toolFunction({
         layer2Identifier: 'hammer',
@@ -210,10 +247,9 @@ describe('unstake.ts', () => {
           ],
         }
       );
-      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
-        status: 'error',
-        message: expect.stringContaining('Insufficient staked amount'),
-      });
+      expect(mockCreateErrorResponse).toHaveBeenCalledWith(
+        expect.stringContaining('Insufficient staked amount')
+      );
       expect(result).toEqual({
         content: [
           {
@@ -236,9 +272,9 @@ describe('unstake.ts', () => {
       const mockResolveLayer2Address = vi.mocked(
         await import('../../utils/layer2.js')
       ).resolveLayer2Address;
-      const mockCreateMCPResponse = vi.mocked(
+      const mockCreateSuccessResponse = vi.mocked(
         await import('../../utils/response.js')
-      ).createMCPResponse;
+      ).createSuccessResponse;
       const mockCheckWalletConnection = vi.mocked(
         await import('../../utils/wallet.js')
       ).checkWalletConnection;
@@ -247,26 +283,40 @@ describe('unstake.ts', () => {
         '0x1234567890123456789012345678901234567890'
       );
       mockGetAccount.mockReturnValue({
-        address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
-      } as any);
+        address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as `0x${string}`,
+        addresses: undefined,
+        chain: undefined,
+        chainId: undefined,
+        connector: undefined,
+        isConnected: false,
+        isConnecting: false,
+        isDisconnected: true,
+        isReconnecting: false,
+        status: 'disconnected',
+      } as unknown as ReturnType<typeof mockGetAccount>);
       mockReadContracts.mockResolvedValue([
         { result: BigInt('500000000000000000000000000'), status: 'success' }, // 500 tokens (27 decimals)
-      ] as any);
-      mockWriteContract.mockResolvedValue('0xtxhash' as any);
+      ] as Awaited<ReturnType<typeof mockReadContracts>>);
+      mockWriteContract.mockResolvedValue('0xtxhash' as `0x${string}`);
       mockParseUnits.mockReturnValue(BigInt('100000000000000000000000000')); // 100 tokens (27 decimals)
-      mockCreateMCPResponse.mockReturnValue('success response');
+      mockCreateSuccessResponse.mockReturnValue({
+        content: [{ type: 'text', text: 'success response' }],
+      });
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
         content: [{ type: 'text', text: 'Wallet is connected' }],
       });
 
-      registerUnstakeTools(mockServer as any);
+      registerUnstakeTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'unstake-tokens'
-      );
+      const toolCall = (
+        mockServer.registerTool as ReturnType<typeof vi.fn>
+      ).mock.calls.find((call) => call[0] === 'unstake-tokens');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool registration not found');
+      const toolFunction = toolCall[2] as (
+        params: Record<string, unknown>
+      ) => Promise<unknown>;
 
       const result = await toolFunction({
         layer2Identifier: 'hammer',
@@ -288,10 +338,9 @@ describe('unstake.ts', () => {
           chainId: 1,
         }
       );
-      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
-        status: 'success',
-        message: 'Unstake tokens successfully on mainnet (tx: 0xtxhash)',
-      });
+      expect(mockCreateSuccessResponse).toHaveBeenCalledWith(
+        'Unstake tokens successfully on mainnet (tx: 0xtxhash)'
+      );
       expect(result).toEqual({
         content: [
           {
@@ -321,24 +370,36 @@ describe('unstake.ts', () => {
         '0x1234567890123456789012345678901234567890'
       );
       mockGetAccount.mockReturnValue({
-        address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
-      } as any);
+        address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as `0x${string}`,
+        addresses: undefined,
+        chain: undefined,
+        chainId: undefined,
+        connector: undefined,
+        isConnected: false,
+        isConnecting: false,
+        isDisconnected: true,
+        isReconnecting: false,
+        status: 'disconnected',
+      } as unknown as ReturnType<typeof mockGetAccount>);
       mockReadContracts.mockResolvedValue([
         { result: BigInt('500000000000000000000000000'), status: 'success' },
-      ] as any);
-      mockWriteContract.mockResolvedValue('0xtxhash' as any);
+      ] as Awaited<ReturnType<typeof mockReadContracts>>);
+      mockWriteContract.mockResolvedValue('0xtxhash' as `0x${string}`);
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
         content: [{ type: 'text', text: 'Wallet is connected' }],
       });
 
-      registerUnstakeTools(mockServer as any);
+      registerUnstakeTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'unstake-tokens'
-      );
+      const toolCall = (
+        mockServer.registerTool as ReturnType<typeof vi.fn>
+      ).mock.calls.find((call) => call[0] === 'unstake-tokens');
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool registration not found');
+      const toolFunction = toolCall[2] as (
+        params: Record<string, unknown>
+      ) => Promise<unknown>;
 
       await toolFunction({
         layer2Identifier: 'hammer',

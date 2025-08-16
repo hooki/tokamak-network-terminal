@@ -37,7 +37,7 @@ describe('approve.ts', () => {
       ).readContract;
       mockReadContract.mockResolvedValue(1000000000000000000n); // 1 ETH allowance
 
-      const result = await checkApproval(
+      const result: WalletCheckResult = await checkApproval(
         '0x1234567890123456789012345678901234567890' as `0x${string}`,
         '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as `0x${string}`,
         18,
@@ -60,7 +60,11 @@ describe('approve.ts', () => {
           chainId: 1,
         }
       );
-      expect(result).toBeUndefined();
+      expect(result).toBeDefined();
+      expect(result.isConnected).toBe(true);
+      expect(result.content[0]?.text).toContain(
+        'Token allowance is sufficient'
+      );
     });
 
     it('should return approval request when allowance is insufficient', async () => {
@@ -69,7 +73,7 @@ describe('approve.ts', () => {
       ).readContract;
       mockReadContract.mockResolvedValue(100000000000000000n); // 0.1 ETH allowance
 
-      const result = await checkApproval(
+      const result: WalletCheckResult = await checkApproval(
         '0x1234567890123456789012345678901234567890' as `0x${string}`,
         '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as `0x${string}`,
         18,
@@ -80,8 +84,9 @@ describe('approve.ts', () => {
       );
 
       expect(result).toBeDefined();
-      expect(result?.content).toBeDefined();
-      expect(result?.content[0].type).toBe('text');
+      expect(result.content).toBeDefined();
+      expect(result.content.length).toBeGreaterThan(0);
+      expect(result.content[0]?.type).toBe('text');
     });
 
     it('should handle errors gracefully', async () => {
@@ -90,7 +95,7 @@ describe('approve.ts', () => {
       ).readContract;
       mockReadContract.mockRejectedValue(new Error('Contract error'));
 
-      const result = await checkApproval(
+      const result: WalletCheckResult = await checkApproval(
         '0x1234567890123456789012345678901234567890' as `0x${string}`,
         '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as `0x${string}`,
         18,
@@ -101,8 +106,9 @@ describe('approve.ts', () => {
       );
 
       expect(result).toBeDefined();
-      expect(result?.content).toBeDefined();
-      expect(result?.content[0].type).toBe('text');
+      expect(result.content).toBeDefined();
+      expect(result.content.length).toBeGreaterThan(0);
+      expect(result.content[0]?.type).toBe('text');
     });
 
     it('should use sepolia chainId when network is sepolia', async () => {

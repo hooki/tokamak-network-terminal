@@ -1,10 +1,61 @@
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { GetAccountReturnType } from '@wagmi/core';
+import type { MockedFunction } from 'vitest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerWithdrawTools } from '../withdraw.js';
 
-// Mock MCP Server
-const mockServer = {
+// Import global types
+/// <reference path="../../../global.d.ts" />
+
+// Define types to match the global types
+interface WalletCheckResult {
+  content: Array<{
+    type: 'text';
+    text: string;
+  }>;
+  isError?: boolean;
+  isConnected: boolean;
+  [key: string]: unknown;
+}
+
+// Define proper mock types
+interface MockServer {
+  registerTool: MockedFunction<McpServer['registerTool']>;
+}
+
+const mockServer: MockServer = {
   registerTool: vi.fn(),
 };
+
+// Helper function to safely get tool function from mock calls
+function getToolFunction(toolName: string) {
+  const toolCall = mockServer.registerTool.mock.calls.find(
+    (call: readonly unknown[]) => call[0] === toolName
+  );
+  expect(toolCall).toBeDefined();
+  if (!toolCall) throw new Error('Tool call not found');
+  return toolCall[2] as (...args: unknown[]) => Promise<unknown>;
+}
+
+// Helper to create mock account data
+function createMockAccountData(
+  overrides: Partial<GetAccountReturnType> = {}
+): GetAccountReturnType {
+  const base = {
+    address: undefined,
+    addresses: undefined,
+    chain: undefined,
+    chainId: undefined,
+    connector: undefined,
+    isConnected: false,
+    isReconnecting: false,
+    isConnecting: false,
+    isDisconnected: true,
+    status: 'disconnected' as const,
+  } as const;
+
+  return { ...base, ...overrides } as GetAccountReturnType;
+}
 
 // Mock wagmi functions
 vi.mock('@wagmi/core', () => ({
@@ -46,7 +97,7 @@ vi.mock('viem', () => ({
 
 // Mock constants
 vi.mock('../../constants.js', () => ({
-  getNetworkAddresses: vi.fn((network) => ({
+  getNetworkAddresses: vi.fn((_network) => ({
     TON_ADDRESS: '0x1234567890123456789012345678901234567890',
     WTON_ADDRESS: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
     SWAPPROXY: '0x9876543210987654321098765432109876543210',
@@ -70,7 +121,22 @@ vi.mock('../../utils/layer2.js', () => ({
 }));
 
 vi.mock('../../utils/response.js', () => ({
-  createMCPResponse: vi.fn((response) => JSON.stringify(response)),
+  createSuccessResponse: vi.fn((message: string | object) => ({
+    content: [
+      {
+        type: 'text',
+        text: typeof message === 'string' ? message : JSON.stringify(message),
+      },
+    ],
+  })),
+  createErrorResponse: vi.fn((message: string | object) => ({
+    content: [
+      {
+        type: 'text',
+        text: typeof message === 'string' ? message : JSON.stringify(message),
+      },
+    ],
+  })),
 }));
 
 vi.mock('../../utils/wagmi-config.js', () => ({
@@ -88,7 +154,7 @@ describe('withdraw.ts', () => {
 
   describe('registerWithdrawTools', () => {
     it('should register get-current-block-number tool', () => {
-      registerWithdrawTools(mockServer as any);
+      registerWithdrawTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledWith(
         'get-current-block-number',
@@ -104,12 +170,12 @@ describe('withdraw.ts', () => {
     });
 
     it('should register exactly 3 tools', () => {
-      registerWithdrawTools(mockServer as any);
+      registerWithdrawTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledTimes(3);
     });
     it('should register pending-withdrawal-requests tool', () => {
-      registerWithdrawTools(mockServer as any);
+      registerWithdrawTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledWith(
         'pending-withdrawal-requests',
@@ -129,7 +195,7 @@ describe('withdraw.ts', () => {
     });
 
     it('should register withdraw-tokens tool', () => {
-      registerWithdrawTools(mockServer as any);
+      registerWithdrawTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledWith(
         'withdraw-tokens',
@@ -147,7 +213,7 @@ describe('withdraw.ts', () => {
     });
 
     it('should register exactly 3 tools', () => {
-      registerWithdrawTools(mockServer as any);
+      registerWithdrawTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledTimes(3);
     });
@@ -158,20 +224,18 @@ describe('withdraw.ts', () => {
       const mockGetBlockNumber = vi.mocked(
         await import('@wagmi/core')
       ).getBlockNumber;
-      const mockCreateMCPResponse = vi.mocked(
+      const mockCreateSuccessResponse = vi.mocked(
         await import('../../utils/response.js')
-      ).createMCPResponse;
+      ).createSuccessResponse;
 
       mockGetBlockNumber.mockResolvedValue(BigInt('18456789'));
-      mockCreateMCPResponse.mockReturnValue('success response');
+      mockCreateSuccessResponse.mockReturnValue({
+        content: [{ type: 'text', text: 'success response' }],
+      });
 
-      registerWithdrawTools(mockServer as any);
+      registerWithdrawTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-current-block-number'
-      );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      const toolFunction = getToolFunction('get-current-block-number');
 
       const result = await toolFunction({
         network: 'mainnet',
@@ -181,12 +245,9 @@ describe('withdraw.ts', () => {
         { id: 'wagmi-config' },
         { chainId: 1 }
       );
-      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
-        status: 'success',
-        message: expect.stringContaining(
-          'Current block number on mainnet: 18456789'
-        ),
-      });
+      expect(mockCreateSuccessResponse).toHaveBeenCalledWith(
+        expect.stringContaining('Current block number on mainnet: 18456789')
+      );
       expect(result).toEqual({
         content: [
           {
@@ -204,13 +265,9 @@ describe('withdraw.ts', () => {
 
       mockGetBlockNumber.mockResolvedValue(BigInt('12345678'));
 
-      registerWithdrawTools(mockServer as any);
+      registerWithdrawTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-current-block-number'
-      );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      const toolFunction = getToolFunction('get-current-block-number');
 
       await toolFunction({
         network: 'sepolia',
@@ -226,30 +283,26 @@ describe('withdraw.ts', () => {
       const mockGetBlockNumber = vi.mocked(
         await import('@wagmi/core')
       ).getBlockNumber;
-      const mockCreateMCPResponse = vi.mocked(
+      const mockCreateErrorResponse = vi.mocked(
         await import('../../utils/response.js')
-      ).createMCPResponse;
+      ).createErrorResponse;
 
       mockGetBlockNumber.mockRejectedValue(new Error('Network error'));
-      mockCreateMCPResponse.mockReturnValue('error response');
+      mockCreateErrorResponse.mockReturnValue({
+        content: [{ type: 'text', text: 'error response' }],
+      });
 
-      registerWithdrawTools(mockServer as any);
+      registerWithdrawTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-current-block-number'
-      );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      const toolFunction = getToolFunction('get-current-block-number');
 
       const result = await toolFunction({
         network: 'mainnet',
       });
 
-      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
-        status: 'error',
-        message:
-          'Failed to get current block number on mainnet: Error: Network error',
-      });
+      expect(mockCreateErrorResponse).toHaveBeenCalledWith(
+        'Failed to get current block number on mainnet: Error: Network error'
+      );
       expect(result).toEqual({
         content: [
           {
@@ -263,19 +316,17 @@ describe('withdraw.ts', () => {
 
   describe('pending-withdrawal-requests tool', () => {
     it('should return error when wallet address is not provided', async () => {
-      const mockCreateMCPResponse = vi.mocked(
+      const mockCreateErrorResponse = vi.mocked(
         await import('../../utils/response.js')
-      ).createMCPResponse;
+      ).createErrorResponse;
 
-      mockCreateMCPResponse.mockReturnValue('error response');
+      mockCreateErrorResponse.mockReturnValue({
+        content: [{ type: 'text', text: 'error response' }],
+      });
 
-      registerWithdrawTools(mockServer as any);
+      registerWithdrawTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'pending-withdrawal-requests'
-      );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      const toolFunction = getToolFunction('pending-withdrawal-requests');
 
       const result = await toolFunction({
         layer2Identifier: 'hammer',
@@ -283,10 +334,9 @@ describe('withdraw.ts', () => {
         walletAddress: '',
       });
 
-      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
-        status: 'error',
-        message: 'Wallet address is required',
-      });
+      expect(mockCreateErrorResponse).toHaveBeenCalledWith(
+        'Wallet address is required'
+      );
       expect(result).toEqual({
         content: [
           {
@@ -302,9 +352,9 @@ describe('withdraw.ts', () => {
       const mockReadContracts = vi.mocked(
         await import('@wagmi/core')
       ).readContracts;
-      const mockCreateMCPResponse = vi.mocked(
+      const mockCreateSuccessResponse = vi.mocked(
         await import('../../utils/response.js')
-      ).createMCPResponse;
+      ).createSuccessResponse;
       const mockCheckWalletConnection = vi.mocked(
         await import('../../utils/wallet.js')
       ).checkWalletConnection;
@@ -312,23 +362,25 @@ describe('withdraw.ts', () => {
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
         content: [{ type: 'text', text: 'Wallet is connected' }],
-      });
-      mockGetAccount.mockReturnValue({
-        address: '0x1234567890123456789012345678901234567890',
-      } as any);
+      } as WalletCheckResult);
+      mockGetAccount.mockReturnValue(
+        createMockAccountData({
+          address: '0x1234567890123456789012345678901234567890',
+          isConnected: true,
+          status: 'connected',
+        })
+      );
       mockReadContracts.mockResolvedValue([
         { result: BigInt(0), status: 'success' }, // withdrawalRequestIndex
         { result: BigInt(0), status: 'success' }, // numRequests
-      ] as any);
-      mockCreateMCPResponse.mockReturnValue('no requests response');
+      ]);
+      mockCreateSuccessResponse.mockReturnValue({
+        content: [{ type: 'text', text: 'no requests response' }],
+      });
 
-      registerWithdrawTools(mockServer as any);
+      registerWithdrawTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'pending-withdrawal-requests'
-      );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      const toolFunction = getToolFunction('pending-withdrawal-requests');
 
       const result = await toolFunction({
         layer2Identifier: 'hammer',
@@ -336,10 +388,9 @@ describe('withdraw.ts', () => {
         walletAddress: '0x1234567890123456789012345678901234567890',
       });
 
-      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
-        status: 'success',
-        message: 'No withdrawal request found on mainnet',
-      });
+      expect(mockCreateSuccessResponse).toHaveBeenCalledWith(
+        'No withdrawal request found on mainnet'
+      );
       expect(result).toEqual({
         content: [
           {
@@ -356,9 +407,9 @@ describe('withdraw.ts', () => {
         await import('@wagmi/core')
       ).readContracts;
       const mockFormatUnits = vi.mocked(await import('viem')).formatUnits;
-      const mockCreateMCPResponse = vi.mocked(
+      const mockCreateSuccessResponse = vi.mocked(
         await import('../../utils/response.js')
-      ).createMCPResponse;
+      ).createSuccessResponse;
       const mockCheckWalletConnection = vi.mocked(
         await import('../../utils/wallet.js')
       ).checkWalletConnection;
@@ -366,15 +417,19 @@ describe('withdraw.ts', () => {
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
         content: [{ type: 'text', text: 'Wallet is connected' }],
-      });
-      mockGetAccount.mockReturnValue({
-        address: '0x1234567890123456789012345678901234567890',
-      } as any);
+      } as WalletCheckResult);
+      mockGetAccount.mockReturnValue(
+        createMockAccountData({
+          address: '0x1234567890123456789012345678901234567890',
+          isConnected: true,
+          status: 'connected',
+        })
+      );
       mockReadContracts
         .mockResolvedValueOnce([
           { result: BigInt(0), status: 'success' }, // withdrawalRequestIndex
           { result: BigInt(2), status: 'success' }, // numRequests
-        ] as any)
+        ])
         .mockResolvedValueOnce([
           {
             result: [
@@ -384,19 +439,23 @@ describe('withdraw.ts', () => {
             ],
             status: 'success',
           }, // pending request
-        ] as any);
+        ]);
       mockFormatUnits.mockReturnValue('100.0');
-      mockCreateMCPResponse.mockImplementation((response) =>
-        JSON.stringify(response)
+      mockCreateSuccessResponse.mockImplementation(
+        (message: string | object) => ({
+          content: [
+            {
+              type: 'text',
+              text:
+                typeof message === 'string' ? message : JSON.stringify(message),
+            },
+          ],
+        })
       );
 
-      registerWithdrawTools(mockServer as any);
+      registerWithdrawTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'pending-withdrawal-requests'
-      );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      const toolFunction = getToolFunction('pending-withdrawal-requests');
 
       const result = await toolFunction({
         layer2Identifier: 'hammer',
@@ -404,10 +463,9 @@ describe('withdraw.ts', () => {
         walletAddress: '0x1234567890123456789012345678901234567890',
       });
 
-      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
-        status: 'success',
-        message: expect.stringContaining('withdrawableBlockNumber'),
-      });
+      expect(mockCreateSuccessResponse).toHaveBeenCalledWith(
+        expect.stringContaining('withdrawableBlockNumber')
+      );
       expect(result).toEqual({
         content: [
           {
@@ -430,22 +488,22 @@ describe('withdraw.ts', () => {
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
         content: [{ type: 'text', text: 'Wallet is connected' }],
-      });
-      mockGetAccount.mockReturnValue({
-        address: '0x1234567890123456789012345678901234567890',
-      } as any);
+      } as WalletCheckResult);
+      mockGetAccount.mockReturnValue(
+        createMockAccountData({
+          address: '0x1234567890123456789012345678901234567890',
+          isConnected: true,
+          status: 'connected',
+        })
+      );
       mockReadContracts.mockResolvedValue([
         { result: BigInt(0), status: 'success' },
         { result: BigInt(0), status: 'success' },
-      ] as any);
+      ]);
 
-      registerWithdrawTools(mockServer as any);
+      registerWithdrawTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'pending-withdrawal-requests'
-      );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      const toolFunction = getToolFunction('pending-withdrawal-requests');
 
       await toolFunction({
         layer2Identifier: 'hammer',
@@ -475,15 +533,11 @@ describe('withdraw.ts', () => {
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: false,
         content: [{ type: 'text', text: 'wallet not connected' }],
-      });
+      } as WalletCheckResult);
 
-      registerWithdrawTools(mockServer as any);
+      registerWithdrawTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'withdraw-tokens'
-      );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      const toolFunction = getToolFunction('withdraw-tokens');
 
       const result = await toolFunction({
         layer2Identifier: 'hammer',
@@ -505,9 +559,9 @@ describe('withdraw.ts', () => {
       const mockReadContracts = vi.mocked(
         await import('@wagmi/core')
       ).readContracts;
-      const mockCreateMCPResponse = vi.mocked(
+      const mockCreateErrorResponse = vi.mocked(
         await import('../../utils/response.js')
-      ).createMCPResponse;
+      ).createErrorResponse;
       const mockCheckWalletConnection = vi.mocked(
         await import('../../utils/wallet.js')
       ).checkWalletConnection;
@@ -515,33 +569,34 @@ describe('withdraw.ts', () => {
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
         content: [{ type: 'text', text: 'Wallet is connected' }],
-      });
-      mockGetAccount.mockReturnValue({
-        address: '0x1234567890123456789012345678901234567890',
-      } as any);
+      } as WalletCheckResult);
+      mockGetAccount.mockReturnValue(
+        createMockAccountData({
+          address: '0x1234567890123456789012345678901234567890',
+          isConnected: true,
+          status: 'connected',
+        })
+      );
       mockReadContracts.mockResolvedValue([
         { result: BigInt(0), status: 'success' }, // withdrawalRequestIndex
         { result: BigInt(0), status: 'success' }, // numRequests
-      ] as any);
-      mockCreateMCPResponse.mockReturnValue('error response');
+      ]);
+      mockCreateErrorResponse.mockReturnValue({
+        content: [{ type: 'text', text: 'error response' }],
+      });
 
-      registerWithdrawTools(mockServer as any);
+      registerWithdrawTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'withdraw-tokens'
-      );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      const toolFunction = getToolFunction('withdraw-tokens');
 
       const result = await toolFunction({
         layer2Identifier: 'hammer',
         network: 'mainnet',
       });
 
-      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
-        status: 'error',
-        message: 'No withdrawal request found on mainnet',
-      });
+      expect(mockCreateErrorResponse).toHaveBeenCalledWith(
+        'No withdrawal request found on mainnet'
+      );
       expect(result).toEqual({
         content: [
           {
@@ -560,9 +615,9 @@ describe('withdraw.ts', () => {
       const mockWriteContract = vi.mocked(
         await import('@wagmi/core')
       ).writeContract;
-      const mockCreateMCPResponse = vi.mocked(
+      const mockCreateSuccessResponse = vi.mocked(
         await import('../../utils/response.js')
-      ).createMCPResponse;
+      ).createSuccessResponse;
       const mockCheckWalletConnection = vi.mocked(
         await import('../../utils/wallet.js')
       ).checkWalletConnection;
@@ -570,15 +625,19 @@ describe('withdraw.ts', () => {
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
         content: [{ type: 'text', text: 'Wallet is connected' }],
-      });
-      mockGetAccount.mockReturnValue({
-        address: '0x1234567890123456789012345678901234567890',
-      } as any);
+      } as WalletCheckResult);
+      mockGetAccount.mockReturnValue(
+        createMockAccountData({
+          address: '0x1234567890123456789012345678901234567890',
+          isConnected: true,
+          status: 'connected',
+        })
+      );
       mockReadContracts
         .mockResolvedValueOnce([
           { result: BigInt(0), status: 'success' }, // withdrawalRequestIndex
           { result: BigInt(2), status: 'success' }, // numRequests
-        ] as any)
+        ])
         .mockResolvedValueOnce([
           {
             result: [
@@ -588,19 +647,23 @@ describe('withdraw.ts', () => {
             ],
             status: 'success',
           }, // pending request
-        ] as any);
-      mockWriteContract.mockResolvedValue('0xtxhash' as any);
-      mockCreateMCPResponse.mockImplementation((response) =>
-        JSON.stringify(response)
+        ]);
+      mockWriteContract.mockResolvedValue('0xtxhash');
+      mockCreateSuccessResponse.mockImplementation(
+        (message: string | object) => ({
+          content: [
+            {
+              type: 'text',
+              text:
+                typeof message === 'string' ? message : JSON.stringify(message),
+            },
+          ],
+        })
       );
 
-      registerWithdrawTools(mockServer as any);
+      registerWithdrawTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'withdraw-tokens'
-      );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      const toolFunction = getToolFunction('withdraw-tokens');
 
       const result = await toolFunction({
         layer2Identifier: 'hammer',
@@ -619,10 +682,9 @@ describe('withdraw.ts', () => {
           chainId: 1,
         }
       );
-      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
-        status: 'success',
-        message: 'Withdraw tokens successfully on mainnet (tx: 0xtxhash)',
-      });
+      expect(mockCreateSuccessResponse).toHaveBeenCalledWith(
+        'Withdraw tokens successfully on mainnet (tx: 0xtxhash)'
+      );
       expect(result).toEqual({
         content: [
           {
@@ -650,23 +712,23 @@ describe('withdraw.ts', () => {
       mockCheckWalletConnection.mockResolvedValue({
         isConnected: true,
         content: [{ type: 'text', text: 'Wallet is connected' }],
-      });
-      mockGetAccount.mockReturnValue({
-        address: '0x1234567890123456789012345678901234567890',
-      } as any);
+      } as WalletCheckResult);
+      mockGetAccount.mockReturnValue(
+        createMockAccountData({
+          address: '0x1234567890123456789012345678901234567890',
+          isConnected: true,
+          status: 'connected',
+        })
+      );
       mockReadContracts.mockResolvedValue([
         { result: BigInt(0), status: 'success' },
         { result: BigInt(1), status: 'success' },
-      ] as any);
-      mockWriteContract.mockResolvedValue('0xtxhash' as any);
+      ]);
+      mockWriteContract.mockResolvedValue('0xtxhash');
 
-      registerWithdrawTools(mockServer as any);
+      registerWithdrawTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'withdraw-tokens'
-      );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      const toolFunction = getToolFunction('withdraw-tokens');
 
       await toolFunction({
         layer2Identifier: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',

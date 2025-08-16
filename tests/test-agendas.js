@@ -1,5 +1,4 @@
 // Test script for get-agendas tool
-const { spawn } = require('child_process');
 
 // Test cases for get-agendas
 const testCases = [

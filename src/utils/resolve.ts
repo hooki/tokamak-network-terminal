@@ -9,9 +9,10 @@ const resolveTokenAddress = (
     return tokenAddressOrName as Address;
   } else {
     const networkTokens = getNetworkTokens(network);
-    if (tokenAddressOrName in networkTokens)
+    if (networkTokens && tokenAddressOrName in networkTokens)
       return networkTokens[tokenAddressOrName as keyof typeof networkTokens];
   }
+  return undefined;
 };
 
 const resolveAddress = (

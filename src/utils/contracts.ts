@@ -1,14 +1,21 @@
 import { readContracts } from '@wagmi/core';
+import type { Abi } from 'viem';
 import { daoCommitteeAbi } from '../abis/daoCommittee.js';
 import { wagmiConfig } from './wagmi-config.js';
+
+type NetworkAddresses = {
+  AGENDA_MANAGER: `0x${string}`;
+  DAO_COMMITTEE: `0x${string}`;
+  [key: string]: `0x${string}`;
+};
 
 /**
  * Read agenda data from contract
  */
 export async function readAgendaData(
   agendaId: string,
-  networkAddresses: any,
-  daoAgendaManagerAbi: any,
+  networkAddresses: NetworkAddresses,
+  daoAgendaManagerAbi: Abi,
   chainId: 1 | 11155111
 ) {
   const results = await readContracts(wagmiConfig, {
@@ -37,8 +44,8 @@ export async function readAgendaData(
  * Read committee version from contract
  */
 export async function readCommitteeVersion(
-  networkAddresses: any,
-  daoCommitteeAbi: any,
+  networkAddresses: NetworkAddresses,
+  daoCommitteeAbi: Abi,
   chainId: 1 | 11155111
 ) {
   const results = await readContracts(wagmiConfig, {
@@ -61,8 +68,8 @@ export async function readCommitteeVersion(
  */
 export async function readCurrentAgendaStatus(
   agendaId: string,
-  networkAddresses: any,
-  daoCommitteeAbi: any,
+  networkAddresses: NetworkAddresses,
+  daoCommitteeAbi: Abi,
   chainId: 1 | 11155111
 ) {
   const results = await readContracts(wagmiConfig, {

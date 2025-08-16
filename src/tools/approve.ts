@@ -1,12 +1,14 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getAccount, readContract, writeContract } from '@wagmi/core';
 import { mainnet, sepolia } from '@wagmi/core/chains';
-import type { Address } from 'viem';
 import { parseAbi, parseUnits } from 'viem';
 import { z } from 'zod';
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import { resolveAddress, resolveTokenAddress } from '../utils/resolve.js';
-import { createMCPResponse } from '../utils/response.js';
+import {
+  createErrorResponse,
+  createSuccessResponse,
+} from '../utils/response.js';
 import { wagmiConfig } from '../utils/wagmi-config.js';
 import { checkWalletConnection } from '../utils/wallet.js';
 
@@ -63,7 +65,7 @@ export function registerApproveTools(server: McpServer) {
       amount,
       network = 'mainnet',
       decimals,
-      callback,
+      callback: _callback = '',
       isCallback,
     }) => {
       const resolvedToken = resolveTokenAddress(token, network);
@@ -71,39 +73,21 @@ export function registerApproveTools(server: McpServer) {
       const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
 
       if (resolvedToken === undefined) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: createMCPResponse({
-                status: 'error',
-                message: `UNKNOWN TOKEN on ${network}`,
-              }),
-            },
-          ],
-        };
+        return createErrorResponse(`UNKNOWN TOKEN on ${network}`);
       }
 
       if (resolvedSpender === undefined) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: createMCPResponse({
-                status: 'error',
-                message: `UNKNOWN SPENDER on ${network}`,
-              }),
-            },
-          ],
-        };
+        return createErrorResponse(`UNKNOWN SPENDER on ${network}`);
       }
 
       const account = getAccount(wagmiConfig);
-      if (account.address === undefined)
-        return checkWalletConnection(
+      if (account.address === undefined) {
+        const walletCheck = await checkWalletConnection(
           isCallback,
           `approve ${token} for ${spender} amount ${amount} --network ${network}`
         );
+        return walletCheck || createErrorResponse('Wallet connection failed');
+      }
 
       let parsedAmount: bigint;
       if (amount.toLowerCase() === 'max') {
@@ -123,17 +107,7 @@ export function registerApproveTools(server: McpServer) {
               }))
           );
         } catch {
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text: createMCPResponse({
-                  status: 'error',
-                  message: `Invalid amount format on ${network}`,
-                }),
-              },
-            ],
-          };
+          return createErrorResponse(`Invalid amount format on ${network}`);
         }
       }
 
@@ -145,17 +119,9 @@ export function registerApproveTools(server: McpServer) {
         chainId,
       });
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: createMCPResponse({
-              status: 'success',
-              message: `Approve ${amount} tokens from ${token} to ${spender} successfully on ${network} (tx: ${tx})`,
-            }),
-          },
-        ],
-      };
+      return createSuccessResponse(
+        `Approve ${amount} tokens from ${token} to ${spender} successfully on ${network} (tx: ${tx})`
+      );
     }
   );
 }

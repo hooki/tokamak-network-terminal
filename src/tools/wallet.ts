@@ -58,7 +58,7 @@ export function registerWalletTools(server: McpServer) {
             text: createMCPResponse({
               status: 'continue',
               message: `Wallet connected: ${account.address}`,
-              nextStep: callback,
+              ...(callback && { nextStep: callback }),
             }),
           },
         ],
@@ -106,7 +106,7 @@ export function registerWalletTools(server: McpServer) {
               status: 'continue',
               message: 'Wallet connection options generated',
               nextStep: 'wait-wallet-connect',
-              callback: callback,
+              ...(callback && { callback }),
             })}\n\n`,
           },
           {

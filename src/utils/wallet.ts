@@ -1,8 +1,21 @@
 import { metaMask } from '@wagmi/connectors';
 import { connect, getAccount } from '@wagmi/core';
-import qrcode from 'qrcode-terminal';
+import * as qrcode from 'qrcode-terminal';
 import { createMCPResponse, type MCPResponse } from './response.js';
 import { wagmiConfig } from './wagmi-config.js';
+
+// Import global types
+/// <reference path="../../global.d.ts" />
+
+// Define WalletCheckResult interface for this module
+interface WalletCheckResult {
+  content: Array<{
+    type: 'text';
+    text: string;
+  }>;
+  isConnected: boolean;
+  isError?: boolean;
+}
 
 export async function connectWallet(): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -38,7 +51,7 @@ export async function checkWalletConnection(
         status: 'continue',
         message: 'waiting for wallet connection',
         nextStep: callback,
-        executeNextStepAfter: '10s',
+        executeNextStepAfter: 10000,
       };
 
       return {

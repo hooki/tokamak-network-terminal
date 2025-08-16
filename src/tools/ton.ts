@@ -9,17 +9,17 @@ import { mainnet, sepolia } from '@wagmi/core/chains';
 import {
   encodeAbiParameters,
   isAddress,
-  isAddressEqual,
   parseAbi,
   parseEther,
   parseUnits,
 } from 'viem';
 import { z } from 'zod';
 import { getNetworkAddresses } from '../constants.js';
-import { checkApproval } from '../utils/approve.js';
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
-import { getTokenBalance, getTokenDecimals } from '../utils/erc20.js';
-import { createMCPResponse } from '../utils/response.js';
+import {
+  createErrorResponse,
+  createSuccessResponse,
+} from '../utils/response.js';
 import { wagmiConfig } from '../utils/wagmi-config.js';
 import { checkWalletConnection } from '../utils/wallet.js';
 
@@ -63,8 +63,13 @@ export function registerTONCommands(server: McpServer) {
         callbackCommand += ` and transfer to ${transferToAddress}`;
 
       const account = getAccount(wagmiConfig)?.address;
-      if (!account)
-        return await checkWalletConnection(isCallback, callbackCommand);
+      if (!account) {
+        const walletCheck = await checkWalletConnection(
+          isCallback,
+          callbackCommand
+        );
+        return walletCheck || createErrorResponse('Wallet connection failed');
+      }
 
       // Get the connected wallet address
       // check if the token amount is greater than the balance
@@ -91,17 +96,7 @@ export function registerTONCommands(server: McpServer) {
       const balance = results[0].result as bigint;
       const decimals = results[1].result as number;
       if (balance < parseUnits(tokenAmount, decimals)) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: createMCPResponse({
-                status: 'error',
-                message: `Insufficient balance on ${network}`,
-              }),
-            },
-          ],
-        };
+        return createErrorResponse(`Insufficient balance on ${network}`);
       }
 
       // SwapProxy를 이용한 Wrap TON to WTON
@@ -143,29 +138,13 @@ export function registerTONCommands(server: McpServer) {
           chainId,
         });
 
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: createMCPResponse({
-                status: 'success',
-                message: `Wrap TON tokens to WTON and transfer to ${account} successfully on ${network} (wrap tx: ${tx}) and (transfer tx: ${tx1})`,
-              }),
-            },
-          ],
-        };
+        return createSuccessResponse(
+          `Wrap TON tokens to WTON and transfer to ${account} successfully on ${network} (wrap tx: ${tx}) and (transfer tx: ${tx1})`
+        );
       } else {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: createMCPResponse({
-                status: 'success',
-                message: `Wrap TON tokens to WTON and transfer to ${account} successfully on ${network} (tx: ${tx})`,
-              }),
-            },
-          ],
-        };
+        return createSuccessResponse(
+          `Wrap TON tokens to WTON and transfer to ${account} successfully on ${network} (tx: ${tx})`
+        );
       }
     }
   );
@@ -209,8 +188,13 @@ export function registerTONCommands(server: McpServer) {
         callbackCommand += ` and transfer to ${transferToAddress}`;
 
       const account = getAccount(wagmiConfig)?.address;
-      if (!account)
-        return await checkWalletConnection(isCallback, callbackCommand);
+      if (!account) {
+        const walletCheck = await checkWalletConnection(
+          isCallback,
+          callbackCommand
+        );
+        return walletCheck || createErrorResponse('Wallet connection failed');
+      }
 
       // Get the connected wallet address
       // check if the token amount is greater than the balance
@@ -237,17 +221,7 @@ export function registerTONCommands(server: McpServer) {
       const balance = results[0].result as bigint;
       const decimals = results[1].result as number;
       if (balance < parseUnits(tokenAmount, decimals)) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: createMCPResponse({
-                status: 'error',
-                message: `Insufficient balance on ${network}`,
-              }),
-            },
-          ],
-        };
+        return createErrorResponse(`Insufficient balance on ${network}`);
       }
 
       if (!transferToAddress || account === transferToAddress) {
@@ -264,17 +238,9 @@ export function registerTONCommands(server: McpServer) {
           chainId,
         });
 
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: createMCPResponse({
-                status: 'success',
-                message: `Unwrap WTON tokens to TON and transfer to ${transferToAddress} successfully on ${network} (tx: ${tx})`,
-              }),
-            },
-          ],
-        };
+        return createSuccessResponse(
+          `Unwrap WTON tokens to TON and transfer to ${transferToAddress} successfully on ${network} (tx: ${tx})`
+        );
       } else if (
         transferToAddress &&
         isAddress(transferToAddress) &&
@@ -293,29 +259,11 @@ export function registerTONCommands(server: McpServer) {
           chainId,
         });
 
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: createMCPResponse({
-                status: 'success',
-                message: `Unwrap WTON tokens to TON and transfer to ${transferToAddress} successfully on ${network} (tx: ${tx})`,
-              }),
-            },
-          ],
-        };
+        return createSuccessResponse(
+          `Unwrap WTON tokens to TON and transfer to ${transferToAddress} successfully on ${network} (tx: ${tx})`
+        );
       } else {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: createMCPResponse({
-                status: 'error',
-                message: `Invalid transferToAddress on ${network}`,
-              }),
-            },
-          ],
-        };
+        return createErrorResponse(`Invalid transferToAddress on ${network}`);
       }
     }
   );

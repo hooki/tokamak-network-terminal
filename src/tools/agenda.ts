@@ -3,6 +3,53 @@ import { readContracts } from '@wagmi/core';
 import { mainnet, sepolia } from '@wagmi/core/chains';
 import { encodeAbiParameters, encodeFunctionData } from 'viem';
 import { z } from 'zod';
+
+// TypeScript interfaces for contract result types
+export interface AgendaData {
+  createdTimestamp: bigint;
+  noticeEndTimestamp: bigint;
+  votingPeriodInSeconds: bigint;
+  votingStartedTimestamp: bigint;
+  votingEndTimestamp: bigint;
+  executableLimitTimestamp: bigint;
+  executedTimestamp: bigint;
+  countingYes: bigint;
+  countingNo: bigint;
+  countingAbstain: bigint;
+  status: number;
+  result: number;
+  voters: readonly string[];
+  executed: boolean;
+}
+
+interface CurrentAgendaStatus {
+  readonly 0: bigint; // agendaResult
+  readonly 1: bigint; // agendaStatus
+}
+
+// Type guards for contract results
+function isValidAgendaData(data: unknown): data is AgendaData {
+  return (
+    data !== null &&
+    typeof data === 'object' &&
+    data !== undefined &&
+    'createdTimestamp' in data &&
+    'status' in data &&
+    'executed' in data
+  );
+}
+
+function isValidCurrentAgendaStatus(
+  data: unknown
+): data is CurrentAgendaStatus {
+  return (
+    Array.isArray(data) &&
+    data.length >= 2 &&
+    typeof data[0] === 'bigint' &&
+    typeof data[1] === 'bigint'
+  );
+}
+
 import { agendaManagerAbi } from '../abis/agendaManager.js';
 import { daoAgendaManagerAbi } from '../abis/daoAgendaManager.js';
 import { daoCommitteeAbi } from '../abis/daoCommittee.js';
@@ -17,8 +64,6 @@ import {
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import {
   createErrorResponse,
-  createMCPResponse,
-  createResponse,
   createSuccessResponse,
 } from '../utils/response.js';
 import { formatTimestamp } from '../utils/time.js';
@@ -77,30 +122,15 @@ export function registerAgendaTools(server: McpServer) {
           );
         }
 
-        const agendaData = results[0].result as any;
-        if (!agendaData) {
+        const agendaResult = results[0].result;
+        if (!isValidAgendaData(agendaResult)) {
           return createErrorResponse(
             `Agenda ${agendaId} not found on ${network}`
           );
         }
 
-        // Extract agenda data
-        const {
-          createdTimestamp,
-          noticeEndTimestamp,
-          votingPeriodInSeconds,
-          votingStartedTimestamp,
-          votingEndTimestamp,
-          executableLimitTimestamp,
-          executedTimestamp,
-          countingYes,
-          countingNo,
-          countingAbstain,
-          status,
-          result,
-          voters,
-          executed,
-        } = agendaData;
+        // Extract agenda data (only status is needed for basic version handling)
+        const { status } = agendaResult;
 
         // Check committee version
         if (results[1].error) {
@@ -110,7 +140,7 @@ export function registerAgendaTools(server: McpServer) {
           const message = createAgendaMessage(
             agendaId,
             network,
-            agendaData,
+            agendaResult,
             statusText,
             undefined,
             'Version 1'
@@ -141,20 +171,23 @@ export function registerAgendaTools(server: McpServer) {
               );
             }
 
-            const statusData = result2[0].result as any;
+            const statusData = result2[0].result;
+            if (!isValidCurrentAgendaStatus(statusData)) {
+              return createErrorResponse(
+                `Invalid agenda status data format on ${network}`
+              );
+            }
             // statusData is an array [agendaResult, agendaStatus]
-            const agendaResult =
-              statusData?.[0] !== undefined ? Number(statusData[0]) : 0;
-            const agendaStatus =
-              statusData?.[1] !== undefined ? Number(statusData[1]) : 0;
+            const currentAgendaResult = Number(statusData[0]);
+            const currentAgendaStatus = Number(statusData[1]);
 
-            const agendaResultText = getAgendaResultText(agendaResult);
-            const agendaStatusText = getAgendaStatusText(agendaStatus);
+            const agendaResultText = getAgendaResultText(currentAgendaResult);
+            const agendaStatusText = getAgendaStatusText(currentAgendaStatus);
 
             const message = createAgendaMessage(
               agendaId,
               network,
-              agendaData,
+              agendaResult,
               agendaStatusText,
               agendaResultText,
               `Committee v${committeeVersion}`
@@ -332,7 +365,7 @@ export function registerAgendaTools(server: McpServer) {
         } else if (start && !end) {
           // Start specified, no end: get from start to start + 49
           startId = parseInt(start);
-          if (isNaN(startId) || startId < 0) {
+          if (Number.isNaN(startId) || startId < 0) {
             return createErrorResponse(
               'Invalid start ID. Must be a non-negative number.'
             );
@@ -350,7 +383,7 @@ export function registerAgendaTools(server: McpServer) {
         } else if (!start && end) {
           // End specified, no start: get from end - 49 to end
           endId = parseInt(end);
-          if (isNaN(endId) || endId < 0) {
+          if (Number.isNaN(endId) || endId < 0) {
             return createErrorResponse(
               'Invalid end ID. Must be a non-negative number.'
             );
@@ -364,10 +397,20 @@ export function registerAgendaTools(server: McpServer) {
           agendaCount = endId - startId + 1;
         } else {
           // Both start and end specified
-          startId = parseInt(start!);
-          endId = parseInt(end!);
+          if (!start || !end) {
+            return createErrorResponse(
+              'Both start and end parameters are required when specifying a range'
+            );
+          }
+          startId = parseInt(start);
+          endId = parseInt(end);
 
-          if (isNaN(startId) || isNaN(endId) || startId < 0 || endId < 0) {
+          if (
+            Number.isNaN(startId) ||
+            Number.isNaN(endId) ||
+            startId < 0 ||
+            endId < 0
+          ) {
             return createErrorResponse(
               'Invalid start or end ID. Must be non-negative numbers.'
             );
@@ -436,13 +479,13 @@ export function registerAgendaTools(server: McpServer) {
           const result = results[i];
           const agendaId = startId + i;
 
-          if (result.error) {
-            failedAgendas.push({ id: agendaId, error: result.error.message });
+          if (result?.error) {
+            failedAgendas.push({ id: agendaId, error: result?.error.message });
             continue;
           }
 
-          const agendaData = result.result as any;
-          if (!agendaData) {
+          const resultData = result?.result;
+          if (!isValidAgendaData(resultData)) {
             failedAgendas.push({ id: agendaId, error: 'Agenda not found' });
             continue;
           }
@@ -463,7 +506,7 @@ export function registerAgendaTools(server: McpServer) {
             result: agendaResult,
             voters,
             executed,
-          } = agendaData;
+          } = resultData;
 
           let statusText = 'Unknown';
           let resultText = 'Unknown';
@@ -474,16 +517,14 @@ export function registerAgendaTools(server: McpServer) {
             const statusResult = results[statusResultIndex];
 
             if (statusResult && !statusResult.error && statusResult.result) {
-              try {
-                const statusData = statusResult.result as any;
-                const currentResult =
-                  statusData?.[0] !== undefined ? Number(statusData[0]) : 0;
-                const currentStatus =
-                  statusData?.[1] !== undefined ? Number(statusData[1]) : 0;
+              if (isValidCurrentAgendaStatus(statusResult.result)) {
+                const statusData = statusResult.result;
+                const currentResult = Number(statusData[0]);
+                const currentStatus = Number(statusData[1]);
                 resultText = getAgendaResultText(currentResult);
                 statusText = getAgendaStatusText(currentStatus);
-              } catch (error) {
-                // Fallback to basic status if parsing fails
+              } else {
+                // Fallback to basic status if data format is invalid
                 statusText = getAgendaStatusTextV1(status);
               }
             } else {

@@ -71,7 +71,8 @@ export const LAYER2_OPERATORS: Record<string, Layer2Operators> = {
 
 // 네트워크별 Layer2 오퍼레이터를 가져오는 헬퍼 함수
 export function getNetworkLayer2Operators(network: string): Layer2Operators {
-  return LAYER2_OPERATORS[network] || LAYER2_OPERATORS.mainnet;
+  // biome-ignore lint/complexity/useLiteralKeys: TypeScript noPropertyAccessFromIndexSignature requires bracket notation
+  return LAYER2_OPERATORS[network] || LAYER2_OPERATORS['mainnet'] || {};
 }
 
 // 특정 네트워크의 Layer2 주소를 해석하는 함수

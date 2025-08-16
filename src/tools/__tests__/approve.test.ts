@@ -1,8 +1,16 @@
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { GetAccountReturnType } from '@wagmi/core';
+import type { MockedFunction } from 'vitest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerApproveTools } from '../approve.js';
 
-// Mock MCP Server
-const mockServer = {
+// Define proper mock types
+interface MockServer {
+  registerTool: MockedFunction<McpServer['registerTool']>;
+}
+
+// Mock MCP Server with proper typing
+const mockServer: MockServer = {
   registerTool: vi.fn(),
 };
 
@@ -58,6 +66,12 @@ vi.mock('../../utils/resolve.js', () => ({
 
 vi.mock('../../utils/response.js', () => ({
   createMCPResponse: vi.fn((response) => JSON.stringify(response)),
+  createSuccessResponse: vi.fn((message) => ({
+    content: [{ type: 'text', text: message }],
+  })),
+  createErrorResponse: vi.fn((message) => ({
+    content: [{ type: 'text', text: message }],
+  })),
 }));
 
 vi.mock('../../utils/wagmi-config.js', () => ({
@@ -68,6 +82,42 @@ vi.mock('../../utils/wallet.js', () => ({
   checkWalletConnection: vi.fn(),
 }));
 
+// Helper function to safely get tool function from mock calls
+function getToolFunction(toolName: string) {
+  const toolCall = mockServer.registerTool.mock.calls.find(
+    (call) => call[0] === toolName
+  );
+  expect(toolCall).toBeDefined();
+  return toolCall?.[2];
+}
+
+// Helper to create mock account data
+function createMockAccountData(overrides: Partial<GetAccountReturnType> = {}) {
+  return {
+    address: undefined,
+    addresses: undefined,
+    chain: undefined,
+    chainId: undefined,
+    connector: undefined,
+    isConnected: false,
+    isReconnecting: false,
+    isConnecting: false,
+    isDisconnected: true,
+    status: 'disconnected' as const,
+    ...overrides,
+  };
+}
+
+// Helper to create mock request handler extra
+function createMockRequestExtra() {
+  return {
+    signal: new AbortController().signal,
+    requestId: 'test-request-id',
+    sendNotification: vi.fn(),
+    sendRequest: vi.fn(),
+  };
+}
+
 describe('approve.ts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -75,7 +125,7 @@ describe('approve.ts', () => {
 
   describe('registerApproveTools', () => {
     it('should register approve tool', () => {
-      registerApproveTools(mockServer as any);
+      registerApproveTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledWith(
         'approve',
@@ -97,7 +147,7 @@ describe('approve.ts', () => {
     });
 
     it('should register exactly 1 tool', () => {
-      registerApproveTools(mockServer as any);
+      registerApproveTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledTimes(1);
     });
@@ -108,38 +158,38 @@ describe('approve.ts', () => {
       const mockResolveTokenAddress = vi.mocked(
         await import('../../utils/resolve.js')
       ).resolveTokenAddress;
-      const mockCreateMCPResponse = vi.mocked(
+      const _mockCreateMCPResponse = vi.mocked(
         await import('../../utils/response.js')
       ).createMCPResponse;
 
       mockResolveTokenAddress.mockReturnValue(undefined);
 
-      registerApproveTools(mockServer as any);
+      registerApproveTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'approve'
+      const toolFunction = getToolFunction('approve');
+      expect(toolFunction).toBeDefined();
+
+      if (!toolFunction) return; // Type guard for toolFunction
+
+      const result = await toolFunction(
+        {
+          token: 'UNKNOWN_TOKEN',
+          spender: '0x1234567890123456789012345678901234567890',
+          amount: '100',
+          network: 'mainnet',
+        },
+        createMockRequestExtra()
       );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
 
-      const result = await toolFunction({
-        token: 'UNKNOWN_TOKEN',
-        spender: '0x1234567890123456789012345678901234567890',
-        amount: '100',
-        network: 'mainnet',
-      });
+      const mockCreateErrorResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createErrorResponse;
 
-      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
-        status: 'error',
-        message: 'UNKNOWN TOKEN on mainnet',
-      });
+      expect(mockCreateErrorResponse).toHaveBeenCalledWith(
+        'UNKNOWN TOKEN on mainnet'
+      );
       expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: expect.any(String),
-          },
-        ],
+        content: [{ type: 'text', text: 'UNKNOWN TOKEN on mainnet' }],
       });
     });
 
@@ -150,41 +200,37 @@ describe('approve.ts', () => {
       const mockResolveAddress = vi.mocked(
         await import('../../utils/resolve.js')
       ).resolveAddress;
-      const mockCreateMCPResponse = vi.mocked(
-        await import('../../utils/response.js')
-      ).createMCPResponse;
-
       mockResolveTokenAddress.mockReturnValue(
         '0x1234567890123456789012345678901234567890'
       );
       mockResolveAddress.mockReturnValue(undefined);
 
-      registerApproveTools(mockServer as any);
+      registerApproveTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'approve'
+      const toolFunction = getToolFunction('approve');
+      expect(toolFunction).toBeDefined();
+
+      if (!toolFunction) return; // Type guard for toolFunction
+
+      const result = await toolFunction(
+        {
+          token: 'TON',
+          spender: 'UNKNOWN_SPENDER',
+          amount: '100',
+          network: 'mainnet',
+        },
+        createMockRequestExtra()
       );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
 
-      const result = await toolFunction({
-        token: 'TON',
-        spender: 'UNKNOWN_SPENDER',
-        amount: '100',
-        network: 'mainnet',
-      });
+      const mockCreateErrorResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createErrorResponse;
 
-      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
-        status: 'error',
-        message: 'UNKNOWN SPENDER on mainnet',
-      });
+      expect(mockCreateErrorResponse).toHaveBeenCalledWith(
+        'UNKNOWN SPENDER on mainnet'
+      );
       expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: expect.any(String),
-          },
-        ],
+        content: [{ type: 'text', text: 'UNKNOWN SPENDER on mainnet' }],
       });
     });
 
@@ -206,31 +252,44 @@ describe('approve.ts', () => {
       mockResolveAddress.mockReturnValue(
         '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
       );
-      mockGetAccount.mockReturnValue({ address: undefined } as any);
+      mockGetAccount.mockReturnValue(
+        createMockAccountData({
+          address: undefined,
+          isConnected: false,
+          isConnecting: false,
+          isDisconnected: true,
+          isReconnecting: false,
+          status: 'disconnected',
+        }) as GetAccountReturnType
+      );
       mockCheckWalletConnection.mockResolvedValue({
+        isConnected: false,
         content: [{ type: 'text', text: 'wallet not connected' }],
       });
 
-      registerApproveTools(mockServer as any);
+      registerApproveTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'approve'
+      const toolFunction = getToolFunction('approve');
+      expect(toolFunction).toBeDefined();
+
+      if (!toolFunction) return; // Type guard for toolFunction
+
+      const result = await toolFunction(
+        {
+          token: 'TON',
+          spender: 'WTON',
+          amount: '100',
+          network: 'mainnet',
+        },
+        createMockRequestExtra()
       );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
-
-      const result = await toolFunction({
-        token: 'TON',
-        spender: 'WTON',
-        amount: '100',
-        network: 'mainnet',
-      });
 
       expect(mockCheckWalletConnection).toHaveBeenCalledWith(
         undefined,
         'approve TON for WTON amount 100 --network mainnet'
       );
       expect(result).toEqual({
+        isConnected: false,
         content: [{ type: 'text', text: 'wallet not connected' }],
       });
     });
@@ -256,26 +315,40 @@ describe('approve.ts', () => {
       mockResolveAddress.mockReturnValue(
         '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
       );
-      mockGetAccount.mockReturnValue({
-        address: '0x1234567890123456789012345678901234567890',
-      } as any);
-      mockWriteContract.mockResolvedValue('0xtxhash' as any);
+      mockGetAccount.mockReturnValue(
+        createMockAccountData({
+          address:
+            '0x1234567890123456789012345678901234567890' as `0x${string}`,
+          addresses: [
+            '0x1234567890123456789012345678901234567890' as `0x${string}`,
+          ],
+          chainId: 1,
+          isConnected: true,
+          isConnecting: false,
+          isDisconnected: false,
+          isReconnecting: false,
+          status: 'connected',
+        }) as GetAccountReturnType
+      );
+      mockWriteContract.mockResolvedValue('0xtxhash' as `0x${string}`);
       mockCreateMCPResponse.mockReturnValue('success response');
 
-      registerApproveTools(mockServer as any);
+      registerApproveTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'approve'
+      const toolFunction = getToolFunction('approve');
+      expect(toolFunction).toBeDefined();
+
+      if (!toolFunction) return; // Type guard for toolFunction
+
+      const result = await toolFunction(
+        {
+          token: 'TON',
+          spender: 'WTON',
+          amount: 'max',
+          network: 'mainnet',
+        },
+        createMockRequestExtra()
       );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
-
-      const result = await toolFunction({
-        token: 'TON',
-        spender: 'WTON',
-        amount: 'max',
-        network: 'mainnet',
-      });
 
       expect(mockWriteContract).toHaveBeenCalledWith(
         { id: 'wagmi-config' },
@@ -292,17 +365,22 @@ describe('approve.ts', () => {
           chainId: 1,
         }
       );
-      expect(mockCreateMCPResponse).toHaveBeenCalledWith({
-        status: 'success',
-        message: expect.stringContaining(
+      const mockCreateSuccessResponse = vi.mocked(
+        await import('../../utils/response.js')
+      ).createSuccessResponse;
+
+      expect(mockCreateSuccessResponse).toHaveBeenCalledWith(
+        expect.stringContaining(
           'Approve max tokens from TON to WTON successfully'
-        ),
-      });
+        )
+      );
       expect(result).toEqual({
         content: [
           {
             type: 'text',
-            text: 'success response',
+            text: expect.stringContaining(
+              'Approve max tokens from TON to WTON successfully'
+            ),
           },
         ],
       });
@@ -330,28 +408,42 @@ describe('approve.ts', () => {
       mockResolveAddress.mockReturnValue(
         '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
       );
-      mockGetAccount.mockReturnValue({
-        address: '0x1234567890123456789012345678901234567890',
-      } as any);
-      mockWriteContract.mockResolvedValue('0xtxhash' as any);
+      mockGetAccount.mockReturnValue(
+        createMockAccountData({
+          address:
+            '0x1234567890123456789012345678901234567890' as `0x${string}`,
+          addresses: [
+            '0x1234567890123456789012345678901234567890' as `0x${string}`,
+          ],
+          chainId: 1,
+          isConnected: true,
+          isConnecting: false,
+          isDisconnected: false,
+          isReconnecting: false,
+          status: 'connected',
+        }) as GetAccountReturnType
+      );
+      mockWriteContract.mockResolvedValue('0xtxhash' as `0x${string}`);
       mockParseUnits.mockReturnValue(BigInt('100000000000000000000')); // 100 tokens with 18 decimals
       mockCreateMCPResponse.mockReturnValue('success response');
 
-      registerApproveTools(mockServer as any);
+      registerApproveTools(mockServer as unknown as McpServer);
 
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'approve'
+      const toolFunction = getToolFunction('approve');
+      expect(toolFunction).toBeDefined();
+
+      if (!toolFunction) return; // Type guard for toolFunction
+
+      const result = await toolFunction(
+        {
+          token: 'TON',
+          spender: 'WTON',
+          amount: '100',
+          network: 'mainnet',
+          decimals: 18,
+        },
+        createMockRequestExtra()
       );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
-
-      const result = await toolFunction({
-        token: 'TON',
-        spender: 'WTON',
-        amount: '100',
-        network: 'mainnet',
-        decimals: 18,
-      });
 
       expect(mockParseUnits).toHaveBeenCalledWith('100', 18);
       expect(mockWriteContract).toHaveBeenCalledWith(
@@ -371,7 +463,9 @@ describe('approve.ts', () => {
         content: [
           {
             type: 'text',
-            text: 'success response',
+            text: expect.stringContaining(
+              'Approve 100 tokens from TON to WTON successfully'
+            ),
           },
         ],
       });
@@ -395,25 +489,39 @@ describe('approve.ts', () => {
       mockResolveAddress.mockReturnValue(
         '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
       );
-      mockGetAccount.mockReturnValue({
-        address: '0x1234567890123456789012345678901234567890',
-      } as any);
-      mockWriteContract.mockResolvedValue('0xtxhash' as any);
-
-      registerApproveTools(mockServer as any);
-
-      const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'approve'
+      mockGetAccount.mockReturnValue(
+        createMockAccountData({
+          address:
+            '0x1234567890123456789012345678901234567890' as `0x${string}`,
+          addresses: [
+            '0x1234567890123456789012345678901234567890' as `0x${string}`,
+          ],
+          chainId: 11155111,
+          isConnected: true,
+          isConnecting: false,
+          isDisconnected: false,
+          isReconnecting: false,
+          status: 'connected',
+        }) as GetAccountReturnType
       );
-      expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      mockWriteContract.mockResolvedValue('0xtxhash' as `0x${string}`);
 
-      await toolFunction({
-        token: 'TON',
-        spender: 'WTON',
-        amount: 'max',
-        network: 'sepolia',
-      });
+      registerApproveTools(mockServer as unknown as McpServer);
+
+      const toolFunction = getToolFunction('approve');
+      expect(toolFunction).toBeDefined();
+
+      if (!toolFunction) return; // Type guard for toolFunction
+
+      await toolFunction(
+        {
+          token: 'TON',
+          spender: 'WTON',
+          amount: 'max',
+          network: 'sepolia',
+        },
+        createMockRequestExtra()
+      );
 
       expect(mockWriteContract).toHaveBeenCalledWith(
         { id: 'wagmi-config' },

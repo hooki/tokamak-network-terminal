@@ -1,8 +1,15 @@
+// Mock MCP Server with proper typing
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { MockedFunction } from 'vitest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerTokenTools } from '../token.js';
 
-// Mock MCP Server
-const mockServer = {
+// Define proper mock types
+interface MockServer {
+  registerTool: MockedFunction<McpServer['registerTool']>;
+}
+
+const mockServer: MockServer = {
   registerTool: vi.fn(),
 };
 
@@ -41,7 +48,7 @@ vi.mock('viem', () => ({
 
 // Mock constants
 vi.mock('../../constants.js', () => ({
-  getNetworkTokens: vi.fn((network) => ({
+  getNetworkTokens: vi.fn((_network) => ({
     TON: '0x1234567890123456789012345678901234567890',
     WTON: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
   })),
@@ -57,6 +64,12 @@ vi.mock('../../utils/descriptionBuilder.js', () => ({
 
 vi.mock('../../utils/response.js', () => ({
   createMCPResponse: vi.fn((response) => JSON.stringify(response)),
+  createSuccessResponse: vi.fn((message) => ({
+    content: [{ type: 'text', text: message }],
+  })),
+  createErrorResponse: vi.fn((message) => ({
+    content: [{ type: 'text', text: message }],
+  })),
 }));
 
 vi.mock('../../utils/wagmi-config.js', () => ({
@@ -70,7 +83,7 @@ describe('token.ts', () => {
 
   describe('registerTokenTools', () => {
     it('should register get-ethereum-balance tool', () => {
-      registerTokenTools(mockServer as any);
+      registerTokenTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledWith(
         'get-ethereum-balance',
@@ -87,7 +100,7 @@ describe('token.ts', () => {
     });
 
     it('should register get-token-balance tool', () => {
-      registerTokenTools(mockServer as any);
+      registerTokenTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledWith(
         'get-token-balance',
@@ -105,7 +118,7 @@ describe('token.ts', () => {
     });
 
     it('should register exactly 3 tools', () => {
-      registerTokenTools(mockServer as any);
+      registerTokenTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledTimes(3);
     });
@@ -119,17 +132,25 @@ describe('token.ts', () => {
         await import('../../utils/response.js')
       ).createMCPResponse;
 
-      mockGetBalance.mockResolvedValue({ value: 1000000000000000000n } as any);
+      mockGetBalance.mockResolvedValue({
+        value: 1000000000000000000n,
+        decimals: 18,
+        formatted: '1.0',
+        symbol: 'ETH',
+      });
       mockFormatEther.mockReturnValue('1.0');
 
-      registerTokenTools(mockServer as any);
+      registerTokenTools(mockServer as unknown as McpServer);
 
       // Get the registered function
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-ethereum-balance'
+        (call: readonly unknown[]) => call[0] === 'get-ethereum-balance'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       const result = await toolFunction({
         address: '0x1234567890123456789012345678901234567890',
@@ -160,15 +181,23 @@ describe('token.ts', () => {
 
     it('should call getBalance with correct parameters for sepolia', async () => {
       const mockGetBalance = vi.mocked(await import('@wagmi/core')).getBalance;
-      mockGetBalance.mockResolvedValue({ value: 500000000000000000n } as any);
+      mockGetBalance.mockResolvedValue({
+        value: 500000000000000000n,
+        decimals: 18,
+        formatted: '0.5',
+        symbol: 'ETH',
+      });
 
-      registerTokenTools(mockServer as any);
+      registerTokenTools(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-ethereum-balance'
+        (call: readonly unknown[]) => call[0] === 'get-ethereum-balance'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       await toolFunction({
         address: '0x1234567890123456789012345678901234567890',
@@ -191,19 +220,23 @@ describe('token.ts', () => {
       const mockParseAbi = vi.mocked(await import('viem')).parseAbi;
 
       mockReadContracts.mockResolvedValue([
-        { result: 1000000000000000000n, status: 'success' },
-        { result: 18, status: 'success' },
-      ] as any);
+        { result: 1000000000000000000n, status: 'success' as const },
+        { result: 18, status: 'success' as const },
+      ]);
       mockFormatUnits.mockReturnValue('1.0');
-      (mockParseAbi as any).mockImplementation((abi: any) => abi);
+      // biome-ignore lint/suspicious/noExplicitAny: Mock implementation requires any for generic abi parameter
+      (mockParseAbi as any).mockImplementation((abi: unknown) => abi);
 
-      registerTokenTools(mockServer as any);
+      registerTokenTools(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-token-balance'
+        (call: readonly unknown[]) => call[0] === 'get-token-balance'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       const result = await toolFunction({
         address: '0x1234567890123456789012345678901234567890',
@@ -250,17 +283,20 @@ describe('token.ts', () => {
       ).getNetworkTokens;
 
       mockReadContracts.mockResolvedValue([
-        { result: 2000000000000000000n, status: 'success' },
-        { result: 18, status: 'success' },
-      ] as any);
+        { result: 2000000000000000000n, status: 'success' as const },
+        { result: 18, status: 'success' as const },
+      ]);
 
-      registerTokenTools(mockServer as any);
+      registerTokenTools(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-token-balance'
+        (call: readonly unknown[]) => call[0] === 'get-token-balance'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       await toolFunction({
         address: '0x1234567890123456789012345678901234567890',
@@ -289,15 +325,21 @@ describe('token.ts', () => {
         await import('../../utils/response.js')
       ).createMCPResponse;
 
-      (mockGetNetworkTokens as any).mockReturnValue({});
+      mockGetNetworkTokens.mockReturnValue({
+        TON: '0x2be5e8c109e2197D077D13A82dAead6a9b3433C5',
+        WTON: '0xc4A11aaf6ea915Ed7Ac194161d2fC9384F15bff2',
+      });
 
-      registerTokenTools(mockServer as any);
+      registerTokenTools(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-token-balance'
+        (call: readonly unknown[]) => call[0] === 'get-token-balance'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       const result = await toolFunction({
         address: '0x1234567890123456789012345678901234567890',

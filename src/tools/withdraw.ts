@@ -2,7 +2,6 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
   getAccount,
   getBlockNumber,
-  readContract,
   readContracts,
   writeContract,
 } from '@wagmi/core';
@@ -12,7 +11,10 @@ import { z } from 'zod';
 import { getNetworkAddresses } from '../constants.js';
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import { resolveLayer2Address } from '../utils/layer2.js';
-import { createMCPResponse } from '../utils/response.js';
+import {
+  createErrorResponse,
+  createSuccessResponse,
+} from '../utils/response.js';
 import { wagmiConfig } from '../utils/wagmi-config.js';
 import { checkWalletConnection } from '../utils/wallet.js';
 
@@ -39,29 +41,13 @@ export function registerWithdrawTools(server: McpServer) {
         const blockNumber = await getBlockNumber(wagmiConfig, { chainId });
         const currentTime = new Date().toISOString();
 
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: createMCPResponse({
-                status: 'success',
-                message: `Current block number on ${network}: ${blockNumber}\nCurrent time (UTC): ${currentTime}`,
-              }),
-            },
-          ],
-        };
+        return createSuccessResponse(
+          `Current block number on ${network}: ${blockNumber}\nCurrent time (UTC): ${currentTime}`
+        );
       } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: createMCPResponse({
-                status: 'error',
-                message: `Failed to get current block number on ${network}: ${error}`,
-              }),
-            },
-          ],
-        };
+        return createErrorResponse(
+          `Failed to get current block number on ${network}: ${error}`
+        );
       }
     }
   );
@@ -95,17 +81,7 @@ export function registerWithdrawTools(server: McpServer) {
       const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
 
       if (!walletAddress) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: createMCPResponse({
-                status: 'error',
-                message: 'Wallet address is required',
-              }),
-            },
-          ],
-        };
+        return createErrorResponse('Wallet address is required');
       }
 
       const abi = parseAbi([
@@ -161,8 +137,8 @@ export function registerWithdrawTools(server: McpServer) {
           contracts: batch,
         });
 
-        batchResults.forEach((result: any) => {
-          if (result.status === 'success' && result.result) {
+        batchResults.forEach((result) => {
+          if (result.status === 'success') {
             const request = result.result as [bigint, bigint, boolean];
             if (request[1] !== 0n && !request[2]) {
               pendingWithdrawalRequests.push(request);
@@ -172,38 +148,22 @@ export function registerWithdrawTools(server: McpServer) {
       }
 
       if (pendingWithdrawalRequests.length === 0) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: createMCPResponse({
-                status: 'success',
-                message: `No withdrawal request found on ${network}`,
-              }),
-            },
-          ],
-        };
+        return createSuccessResponse(
+          `No withdrawal request found on ${network}`
+        );
       }
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: createMCPResponse({
-              status: 'success',
-              message: JSON.stringify(
-                pendingWithdrawalRequests.map((request) => ({
-                  withdrawableBlockNumber: request[0].toString(), // BigInt → string
-                  amount: formatUnits(request[1], 27),
-                  processed: request[2],
-                })),
-                null,
-                2
-              ),
-            }),
-          },
-        ],
-      };
+      return createSuccessResponse(
+        JSON.stringify(
+          pendingWithdrawalRequests.map((request) => ({
+            withdrawableBlockNumber: request[0].toString(), // BigInt → string
+            amount: formatUnits(request[1], 27),
+            processed: request[2],
+          })),
+          null,
+          2
+        )
+      );
     }
   );
 
@@ -301,8 +261,8 @@ export function registerWithdrawTools(server: McpServer) {
           contracts: batch,
         });
 
-        batchResults.forEach((result: any) => {
-          if (result.status === 'success' && result.result) {
+        batchResults.forEach((result) => {
+          if (result.status === 'success') {
             const request = result.result as [bigint, bigint, boolean];
             if (request[1] !== 0n && !request[2]) {
               pendingWithdrawalRequests.push(request);
@@ -312,17 +272,7 @@ export function registerWithdrawTools(server: McpServer) {
       }
 
       if (pendingWithdrawalRequests.length === 0) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: createMCPResponse({
-                status: 'error',
-                message: `No withdrawal request found on ${network}`,
-              }),
-            },
-          ],
-        };
+        return createErrorResponse(`No withdrawal request found on ${network}`);
       }
 
       const tx = await writeContract(wagmiConfig, {
@@ -333,17 +283,9 @@ export function registerWithdrawTools(server: McpServer) {
         chainId,
       });
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: createMCPResponse({
-              status: 'success',
-              message: `Withdraw tokens successfully on ${network} (tx: ${tx})`,
-            }),
-          },
-        ],
-      };
+      return createSuccessResponse(
+        `Withdraw tokens successfully on ${network} (tx: ${tx})`
+      );
     }
   );
 }

@@ -119,7 +119,7 @@ export function registerTokenTools(server: McpServer) {
       if (tokenAddressOrName.startsWith('0x')) {
         tokenAddress = tokenAddressOrName as Address;
       } else {
-        if (!(tokenAddressOrName in networkTokens)) {
+        if (!networkTokens || !(tokenAddressOrName in networkTokens)) {
           return {
             content: [
               {
@@ -133,8 +133,9 @@ export function registerTokenTools(server: McpServer) {
           };
         }
 
-        tokenAddress =
-          networkTokens[tokenAddressOrName as keyof typeof networkTokens];
+        tokenAddress = networkTokens?.[
+          tokenAddressOrName as keyof typeof networkTokens
+        ] as Address;
       }
 
       const results = await readContracts(wagmiConfig, {
@@ -216,7 +217,7 @@ export function registerTokenTools(server: McpServer) {
       amount: string;
       toAddress: Address;
       network?: string;
-      isCallback?: boolean;
+      isCallback?: boolean | undefined;
     }) => {
       try {
         // Input validation
@@ -263,14 +264,17 @@ export function registerTokenTools(server: McpServer) {
         } else {
           // It's a symbol
           const upperSymbol = tokenAddressOrSymbol.toUpperCase();
-          if (!(upperSymbol in networkTokens)) {
-            const supportedTokens = Object.keys(networkTokens).join(', ');
+          if (!networkTokens || !(upperSymbol in networkTokens)) {
+            const supportedTokens = networkTokens
+              ? Object.keys(networkTokens).join(', ')
+              : 'none';
             return createErrorResponse(
               `Unknown token symbol "${tokenAddressOrSymbol}" on ${network}. Supported tokens: ${supportedTokens}`
             );
           }
-          tokenAddress =
-            networkTokens[upperSymbol as keyof typeof networkTokens];
+          tokenAddress = networkTokens?.[
+            upperSymbol as keyof typeof networkTokens
+          ] as Address;
           tokenSymbol = upperSymbol;
         }
 

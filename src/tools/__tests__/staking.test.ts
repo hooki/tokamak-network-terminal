@@ -1,8 +1,19 @@
+// Mock MCP Server with proper typing
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { ReadContractsReturnType } from '@wagmi/core';
+import type { MockedFunction } from 'vitest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerStakingInfoTools } from '../staking.js';
 
-// Mock MCP Server
-const mockServer = {
+// Import global types
+/// <reference path="../../../global.d.ts" />
+
+// Define proper mock types
+interface MockServer {
+  registerTool: MockedFunction<McpServer['registerTool']>;
+}
+
+const mockServer: MockServer = {
   registerTool: vi.fn(),
 };
 
@@ -42,7 +53,7 @@ vi.mock('viem', () => ({
 
 // Mock constants
 vi.mock('../../constants.js', () => ({
-  getNetworkAddresses: vi.fn((network) => ({
+  getNetworkAddresses: vi.fn((_network) => ({
     TON_ADDRESS: '0x1234567890123456789012345678901234567890',
     WTON_ADDRESS: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
     SWAPPROXY: '0x9876543210987654321098765432109876543210',
@@ -68,6 +79,12 @@ vi.mock('../../utils/layer2.js', () => ({
 
 vi.mock('../../utils/response.js', () => ({
   createMCPResponse: vi.fn((response) => JSON.stringify(response)),
+  createSuccessResponse: vi.fn((message) => ({
+    content: [{ type: 'text', text: message }],
+  })),
+  createErrorResponse: vi.fn((message) => ({
+    content: [{ type: 'text', text: message }],
+  })),
 }));
 
 vi.mock('../../utils/wagmi-config.js', () => ({
@@ -81,16 +98,16 @@ describe('staking.ts', () => {
 
   describe('registerStakingInfoTools', () => {
     it('should register get-staked-balance tool', () => {
-      registerStakingInfoTools(mockServer as any);
+      registerStakingInfoTools(mockServer as unknown as McpServer);
 
       // Check if get-staked-balance was registered
       const calls = mockServer.registerTool.mock.calls;
       const stakedBalanceCall = calls.find(
-        (call: any) => call[0] === 'get-staked-balance'
+        (call: readonly unknown[]) => call[0] === 'get-staked-balance'
       );
 
       expect(stakedBalanceCall).toBeDefined();
-      expect(stakedBalanceCall![1]).toEqual(
+      expect(stakedBalanceCall?.[1]).toEqual(
         expect.objectContaining({
           title: 'Get staked balance for Layer2 operator(s)',
           description: expect.stringContaining(
@@ -106,7 +123,7 @@ describe('staking.ts', () => {
     });
 
     it('should register get-total-staked tool', () => {
-      registerStakingInfoTools(mockServer as any);
+      registerStakingInfoTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledWith(
         'get-total-staked',
@@ -125,16 +142,16 @@ describe('staking.ts', () => {
     });
 
     it('should register get-total-staked-layer tool', () => {
-      registerStakingInfoTools(mockServer as any);
+      registerStakingInfoTools(mockServer as unknown as McpServer);
 
       // Check if get-total-staked-layer was registered (it should be the 3rd call)
       const calls = mockServer.registerTool.mock.calls;
       const totalStakedLayerCall = calls.find(
-        (call: any) => call[0] === 'get-total-staked-layer'
+        (call: readonly unknown[]) => call[0] === 'get-total-staked-layer'
       );
 
       expect(totalStakedLayerCall).toBeDefined();
-      expect(totalStakedLayerCall![1]).toEqual(
+      expect(totalStakedLayerCall?.[1]).toEqual(
         expect.objectContaining({
           title: 'Get total staked amount for Layer2 operator',
           description: expect.stringContaining(
@@ -149,7 +166,7 @@ describe('staking.ts', () => {
     });
 
     it('should register exactly 3 tools', () => {
-      registerStakingInfoTools(mockServer as any);
+      registerStakingInfoTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledTimes(3);
     });
@@ -157,7 +174,7 @@ describe('staking.ts', () => {
 
   describe('get-staked-balance tool', () => {
     it('should return error when wallet address is not provided', async () => {
-      const mockReadContracts = vi.mocked(
+      const _mockReadContracts = vi.mocked(
         await import('@wagmi/core')
       ).readContracts;
       const mockCreateMCPResponse = vi.mocked(
@@ -166,13 +183,16 @@ describe('staking.ts', () => {
 
       mockCreateMCPResponse.mockReturnValue('error response');
 
-      registerStakingInfoTools(mockServer as any);
+      registerStakingInfoTools(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-staked-balance'
+        (call: readonly unknown[]) => call[0] === 'get-staked-balance'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       const result = await toolFunction({
         layer2Identifier: 'hammer',
@@ -206,19 +226,22 @@ describe('staking.ts', () => {
       mockReadContracts.mockResolvedValue([
         { result: BigInt('100000000000000000000000000'), status: 'success' }, // 100 tokens (27 decimals)
         { result: BigInt('500000000000000000000000000'), status: 'success' }, // 500 tokens (27 decimals)
-      ] as any);
+      ] as ReadContractsReturnType);
       mockFormatUnits
         .mockReturnValueOnce('100.0') // staked amount
         .mockReturnValueOnce('500.0'); // total staked amount
       mockCreateMCPResponse.mockReturnValue('success response');
 
-      registerStakingInfoTools(mockServer as any);
+      registerStakingInfoTools(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-staked-balance'
+        (call: readonly unknown[]) => call[0] === 'get-staked-balance'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       const result = await toolFunction({
         layer2Identifiers: 'hammer',
@@ -266,16 +289,19 @@ describe('staking.ts', () => {
 
       mockReadContracts.mockResolvedValue([
         { result: BigInt('100000000000000000000000000'), status: 'success' },
-      ] as any);
+      ] as ReadContractsReturnType);
       mockFormatUnits.mockReturnValue('100.0');
 
-      registerStakingInfoTools(mockServer as any);
+      registerStakingInfoTools(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-staked-balance'
+        (call: readonly unknown[]) => call[0] === 'get-staked-balance'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       await toolFunction({
         layer2Identifiers: 'hammer',
@@ -308,20 +334,23 @@ describe('staking.ts', () => {
         { result: BigInt('100000000000000000000000000'), status: 'success' }, // hammer
         { result: BigInt('50000000000000000000000000'), status: 'success' }, // level
         { result: BigInt('75000000000000000000000000'), status: 'success' }, // tokamak1
-      ] as any);
+      ] as ReadContractsReturnType);
       mockFormatUnits
         .mockReturnValueOnce('100.0') // hammer
         .mockReturnValueOnce('50.0') // level
         .mockReturnValueOnce('75.0'); // tokamak1
       mockCreateMCPResponse.mockReturnValue('success response');
 
-      registerStakingInfoTools(mockServer as any);
+      registerStakingInfoTools(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-staked-balance'
+        (call: readonly unknown[]) => call[0] === 'get-staked-balance'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       const result = await toolFunction({
         layer2Identifiers: ['hammer', 'level', 'tokamak1'],
@@ -391,13 +420,16 @@ describe('staking.ts', () => {
 
       mockCreateMCPResponse.mockReturnValue('error response');
 
-      registerStakingInfoTools(mockServer as any);
+      registerStakingInfoTools(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-total-staked'
+        (call: readonly unknown[]) => call[0] === 'get-total-staked'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       const result = await toolFunction({
         network: 'mainnet',
@@ -429,17 +461,20 @@ describe('staking.ts', () => {
 
       mockReadContracts.mockResolvedValue([
         { result: BigInt('1000000000000000000000000000'), status: 'success' }, // 1000 tokens (27 decimals)
-      ] as any);
+      ] as ReadContractsReturnType);
       mockFormatUnits.mockReturnValue('1000.0');
       mockCreateMCPResponse.mockReturnValue('success response');
 
-      registerStakingInfoTools(mockServer as any);
+      registerStakingInfoTools(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-total-staked'
+        (call: readonly unknown[]) => call[0] === 'get-total-staked'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       const result = await toolFunction({
         walletAddress: '0x1234567890123456789012345678901234567890',
@@ -483,16 +518,19 @@ describe('staking.ts', () => {
 
       mockReadContracts.mockResolvedValue([
         { result: BigInt('1000000000000000000000000000'), status: 'success' },
-      ] as any);
+      ] as ReadContractsReturnType);
       mockFormatUnits.mockReturnValue('1000.0');
 
-      registerStakingInfoTools(mockServer as any);
+      registerStakingInfoTools(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-total-staked'
+        (call: readonly unknown[]) => call[0] === 'get-total-staked'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       await toolFunction({
         walletAddress: '0x1234567890123456789012345678901234567890',
@@ -525,17 +563,20 @@ describe('staking.ts', () => {
       mockReadContracts.mockResolvedValue([
         { result: BigInt('1000000000000000000000000000'), status: 'success' }, // 1000 tokens (27 decimals)
         { result: 27, status: 'success' }, // 27 decimals
-      ] as any);
+      ] as ReadContractsReturnType);
       mockFormatUnits.mockReturnValue('1000.0');
       mockCreateMCPResponse.mockReturnValue('success response');
 
-      registerStakingInfoTools(mockServer as any);
+      registerStakingInfoTools(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-total-staked-layer'
+        (call: readonly unknown[]) => call[0] === 'get-total-staked-layer'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       const result = await toolFunction({
         layer2Identifier: 'hammer',
@@ -584,16 +625,19 @@ describe('staking.ts', () => {
       mockReadContracts.mockResolvedValue([
         { result: BigInt('1000000000000000000000000000'), status: 'success' },
         { result: 27, status: 'success' },
-      ] as any);
+      ] as ReadContractsReturnType);
       mockFormatUnits.mockReturnValue('1000.0');
 
-      registerStakingInfoTools(mockServer as any);
+      registerStakingInfoTools(mockServer as unknown as McpServer);
 
       const toolCall = mockServer.registerTool.mock.calls.find(
-        (call: any) => call[0] === 'get-total-staked-layer'
+        (call: readonly unknown[]) => call[0] === 'get-total-staked-layer'
       );
       expect(toolCall).toBeDefined();
-      const toolFunction = toolCall![2];
+      if (!toolCall) throw new Error('Tool call not found');
+      const toolFunction = toolCall[2] as (
+        ...args: unknown[]
+      ) => Promise<unknown>;
 
       await toolFunction({
         layer2Identifier: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',

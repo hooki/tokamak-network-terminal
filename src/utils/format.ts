@@ -20,7 +20,9 @@ export function formatWeiToToken(
       maximumFractionDigits: 2,
     });
   } catch (error) {
-    console.error('Error formatting token amount:', error);
+    if (process.env.NODE_ENV !== 'test') {
+      console.error('Error formatting token amount:', error);
+    }
     return '0';
   }
 }
@@ -80,7 +82,9 @@ export function formatWeiToTokenPrecise(
       maximumFractionDigits: 2,
     });
   } catch (error) {
-    console.error('Error formatting token amount:', error);
+    if (process.env.NODE_ENV !== 'test') {
+      console.error('Error formatting token amount:', error);
+    }
     return '0';
   }
 }

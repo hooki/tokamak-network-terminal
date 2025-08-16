@@ -8,7 +8,6 @@ import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import { resolveLayer2Address } from '../utils/layer2.js';
 import { createMCPResponse } from '../utils/response.js';
 import { wagmiConfig } from '../utils/wagmi-config.js';
-import { checkWalletConnection } from '../utils/wallet.js';
 
 export function registerStakingInfoTools(server: McpServer) {
   server.registerTool(
@@ -81,7 +80,7 @@ export function registerStakingInfoTools(server: McpServer) {
         // Process results for each identifier
         const stakingResults = [];
         for (let i = 0; i < identifiers.length; i++) {
-          const stakedAmount = results[i].result as bigint;
+          const stakedAmount = results[i]?.result as bigint;
 
           if (stakedAmount === undefined) {
             throw new Error(
@@ -99,7 +98,7 @@ export function registerStakingInfoTools(server: McpServer) {
         // Create response message
         let message = '';
         if (identifiers.length === 1) {
-          message = `${stakingResults[0].amount} staked WTON to ${identifiers[0]} on ${network} (address: ${walletAddress})`;
+          message = `${stakingResults[0]?.amount} staked WTON to ${identifiers[0]} on ${network} (address: ${walletAddress})`;
         } else {
           message = `Staked amounts for ${walletAddress} on ${network}:\n`;
           stakingResults.forEach((result) => {
@@ -241,7 +240,7 @@ export function registerStakingInfoTools(server: McpServer) {
     },
     async ({ layer2Identifier, network = 'mainnet' }) => {
       const targetAddress = resolveLayer2Address(layer2Identifier, network);
-      const networkAddresses = getNetworkAddresses(network);
+      const _networkAddresses = getNetworkAddresses(network);
       const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
 
       try {

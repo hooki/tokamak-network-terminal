@@ -1,16 +1,53 @@
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { GetAccountReturnType } from '@wagmi/core';
+import type { MockedFunction } from 'vitest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerTokenTools } from '../token.js';
 
-// Mock MCP Server
-const mockServer = {
+// Define proper mock types
+interface MockServer {
+  registerTool: MockedFunction<McpServer['registerTool']>;
+}
+
+const mockServer: MockServer = {
   registerTool: vi.fn(),
-} as unknown as Parameters<typeof registerTokenTools>[0] & {
-  registerTool: {
-    mock: {
-      calls: unknown[][];
-    };
-  };
 };
+
+// Helper function to safely get tool function from mock calls
+function getToolFunction(toolName: string) {
+  const toolCall = mockServer.registerTool.mock.calls.find(
+    (call) => call[0] === toolName
+  );
+  expect(toolCall).toBeDefined();
+  return toolCall?.[2];
+}
+
+// Helper to create mock account data
+function createMockAccountData(overrides: Partial<GetAccountReturnType> = {}) {
+  return {
+    address: undefined,
+    addresses: undefined,
+    chain: undefined,
+    chainId: undefined,
+    connector: undefined,
+    isConnected: false,
+    isReconnecting: false,
+    isConnecting: false,
+    isDisconnected: true,
+    status: 'disconnected' as const,
+    ...overrides,
+  };
+}
+
+// Helper to create mock request handler extra
+function createMockRequestExtra() {
+  return {
+    signal: new AbortController().signal,
+    requestId: 'test-request-id',
+    sendNotification: vi.fn(),
+    sendRequest: vi.fn(),
+  };
+}
 
 // Mock wagmi functions
 vi.mock('@wagmi/core', () => ({
@@ -104,7 +141,7 @@ describe('send-token tool', () => {
 
   describe('registerTokenTools', () => {
     it('should register send-token tool', () => {
-      registerTokenTools(mockServer);
+      registerTokenTools(mockServer as unknown as McpServer);
 
       expect(mockServer.registerTool).toHaveBeenCalledWith(
         'send-token',
@@ -127,22 +164,8 @@ describe('send-token tool', () => {
   });
 
   describe('send-token functionality', () => {
-    let sendTokenHandler: (params: {
-      tokenAddressOrSymbol: string;
-      amount: string;
-      toAddress: string;
-      network?: string;
-      isCallback?: boolean;
-    }) => Promise<unknown>;
-
     beforeEach(() => {
-      registerTokenTools(mockServer);
-      const sendTokenCall = mockServer.registerTool.mock.calls.find(
-        (call: unknown[]) => call[0] === 'send-token'
-      );
-      if (sendTokenCall) {
-        sendTokenHandler = sendTokenCall[2] as typeof sendTokenHandler;
-      }
+      registerTokenTools(mockServer as unknown as McpServer);
     });
 
     it('should validate amount input', async () => {
@@ -153,12 +176,20 @@ describe('send-token tool', () => {
         content: [{ type: 'text', text: 'error' }],
       });
 
-      await sendTokenHandler({
-        tokenAddressOrSymbol: 'TON',
-        amount: 'invalid',
-        toAddress: '0x1234567890123456789012345678901234567890',
-        network: 'mainnet',
-      });
+      const toolFunction = getToolFunction('send-token');
+      expect(toolFunction).toBeDefined();
+
+      if (!toolFunction) return;
+
+      await toolFunction(
+        {
+          tokenAddressOrSymbol: 'TON',
+          amount: 'invalid',
+          toAddress: '0x1234567890123456789012345678901234567890',
+          network: 'mainnet',
+        },
+        createMockRequestExtra()
+      );
 
       expect(mockCreateErrorResponse).toHaveBeenCalledWith(
         'Invalid amount. Must be a positive number.'
@@ -176,12 +207,20 @@ describe('send-token tool', () => {
         content: [{ type: 'text', text: 'error' }],
       });
 
-      await sendTokenHandler({
-        tokenAddressOrSymbol: 'TON',
-        amount: '10',
-        toAddress: 'invalid-address',
-        network: 'mainnet',
-      });
+      const toolFunction = getToolFunction('send-token');
+      expect(toolFunction).toBeDefined();
+
+      if (!toolFunction) return;
+
+      await toolFunction(
+        {
+          tokenAddressOrSymbol: 'TON',
+          amount: '10',
+          toAddress: 'invalid-address',
+          network: 'mainnet',
+        },
+        createMockRequestExtra()
+      );
 
       expect(mockCreateErrorResponse).toHaveBeenCalledWith(
         'Invalid recipient address format.'
@@ -202,12 +241,14 @@ describe('send-token tool', () => {
       const mockIsAddress = vi.mocked(await import('viem')).isAddress;
 
       mockIsAddress.mockReturnValue(true);
-      mockCheckWalletConnection.mockResolvedValue(null);
-      mockGetAccount.mockReturnValue({
-        address: '0x1234567890123456789012345678901234567890',
-        isConnected: true,
-        status: 'connected',
-      } as any);
+      mockCheckWalletConnection.mockResolvedValue(undefined);
+      mockGetAccount.mockReturnValue(
+        createMockAccountData({
+          address: '0x1234567890123456789012345678901234567890',
+          isConnected: true,
+          status: 'connected',
+        }) as GetAccountReturnType
+      );
       mockGetNetworkTokens.mockReturnValue({
         TON: '0x2be5e8c109e2197D077D13A82dAead6a9b3433C5',
         WTON: '0xc4A11aaf6ea915Ed7Ac194161d2fC9384F15bff2',
@@ -216,12 +257,20 @@ describe('send-token tool', () => {
         content: [{ type: 'text', text: 'error' }],
       });
 
-      await sendTokenHandler({
-        tokenAddressOrSymbol: 'UNKNOWN',
-        amount: '10',
-        toAddress: '0x1234567890123456789012345678901234567890',
-        network: 'mainnet',
-      });
+      const toolFunction = getToolFunction('send-token');
+      expect(toolFunction).toBeDefined();
+
+      if (!toolFunction) return;
+
+      await toolFunction(
+        {
+          tokenAddressOrSymbol: 'UNKNOWN',
+          amount: '10',
+          toAddress: '0x1234567890123456789012345678901234567890',
+          network: 'mainnet',
+        },
+        createMockRequestExtra()
+      );
 
       expect(mockCreateErrorResponse).toHaveBeenCalledWith(
         'Unknown token symbol "UNKNOWN" on mainnet. Supported tokens: TON, WTON'
@@ -250,12 +299,14 @@ describe('send-token tool', () => {
       const mockFormatUnits = vi.mocked(await import('viem')).formatUnits;
 
       mockIsAddress.mockReturnValue(true);
-      mockCheckWalletConnection.mockResolvedValue(null);
-      mockGetAccount.mockReturnValue({
-        address: '0x1234567890123456789012345678901234567890',
-        isConnected: true,
-        status: 'connected',
-      } as any);
+      mockCheckWalletConnection.mockResolvedValue(undefined);
+      mockGetAccount.mockReturnValue(
+        createMockAccountData({
+          address: '0x1234567890123456789012345678901234567890',
+          isConnected: true,
+          status: 'connected',
+        }) as GetAccountReturnType
+      );
       mockGetNetworkTokens.mockReturnValue({
         TON: '0x2be5e8c109e2197D077D13A82dAead6a9b3433C5',
         WTON: '0xc4A11aaf6ea915Ed7Ac194161d2fC9384F15bff2',
@@ -274,12 +325,20 @@ describe('send-token tool', () => {
         content: [{ type: 'text', text: 'success' }],
       });
 
-      const result = await sendTokenHandler({
-        tokenAddressOrSymbol: 'TON',
-        amount: '100',
-        toAddress: '0x9876543210987654321098765432109876543210',
-        network: 'mainnet',
-      });
+      const toolFunction = getToolFunction('send-token');
+      expect(toolFunction).toBeDefined();
+
+      if (!toolFunction) return;
+
+      const result = await toolFunction(
+        {
+          tokenAddressOrSymbol: 'TON',
+          amount: '100',
+          toAddress: '0x9876543210987654321098765432109876543210',
+          network: 'mainnet',
+        },
+        createMockRequestExtra()
+      );
 
       expect(mockWriteContract).toHaveBeenCalledWith(
         { id: 'wagmi-config' },
@@ -317,12 +376,14 @@ describe('send-token tool', () => {
       const mockFormatUnits = vi.mocked(await import('viem')).formatUnits;
 
       mockIsAddress.mockReturnValue(true);
-      mockCheckWalletConnection.mockResolvedValue(null);
-      mockGetAccount.mockReturnValue({
-        address: '0x1234567890123456789012345678901234567890',
-        isConnected: true,
-        status: 'connected',
-      } as any);
+      mockCheckWalletConnection.mockResolvedValue(undefined);
+      mockGetAccount.mockReturnValue(
+        createMockAccountData({
+          address: '0x1234567890123456789012345678901234567890',
+          isConnected: true,
+          status: 'connected',
+        }) as GetAccountReturnType
+      );
       mockReadContracts.mockResolvedValue([
         { result: 6, error: null }, // decimals (USDC has 6 decimals)
         { result: BigInt('1000000000'), error: null }, // balance (1000 USDC)
@@ -337,12 +398,20 @@ describe('send-token tool', () => {
         content: [{ type: 'text', text: 'success' }],
       });
 
-      const result = await sendTokenHandler({
-        tokenAddressOrSymbol: '0xA0b86a33E6441E5e5c7C2f32b5c6E5e5d5e5e5e5',
-        amount: '100',
-        toAddress: '0x9876543210987654321098765432109876543210',
-        network: 'mainnet',
-      });
+      const toolFunction = getToolFunction('send-token');
+      expect(toolFunction).toBeDefined();
+
+      if (!toolFunction) return;
+
+      const result = await toolFunction(
+        {
+          tokenAddressOrSymbol: '0xA0b86a33E6441E5e5c7C2f32b5c6E5e5d5e5e5e5',
+          amount: '100',
+          toAddress: '0x9876543210987654321098765432109876543210',
+          network: 'mainnet',
+        },
+        createMockRequestExtra()
+      );
 
       expect(mockWriteContract).toHaveBeenCalledWith(
         { id: 'wagmi-config' },
@@ -377,12 +446,14 @@ describe('send-token tool', () => {
       const mockFormatUnits = vi.mocked(await import('viem')).formatUnits;
 
       mockIsAddress.mockReturnValue(true);
-      mockCheckWalletConnection.mockResolvedValue(null);
-      mockGetAccount.mockReturnValue({
-        address: '0x1234567890123456789012345678901234567890',
-        isConnected: true,
-        status: 'connected',
-      } as any);
+      mockCheckWalletConnection.mockResolvedValue(undefined);
+      mockGetAccount.mockReturnValue(
+        createMockAccountData({
+          address: '0x1234567890123456789012345678901234567890',
+          isConnected: true,
+          status: 'connected',
+        }) as GetAccountReturnType
+      );
       mockGetNetworkTokens.mockReturnValue({
         TON: '0x2be5e8c109e2197D077D13A82dAead6a9b3433C5',
         WTON: '0xc4A11aaf6ea915Ed7Ac194161d2fC9384F15bff2',
@@ -398,12 +469,20 @@ describe('send-token tool', () => {
         content: [{ type: 'text', text: 'error' }],
       });
 
-      const result = await sendTokenHandler({
-        tokenAddressOrSymbol: 'TON',
-        amount: '100',
-        toAddress: '0x9876543210987654321098765432109876543210',
-        network: 'mainnet',
-      });
+      const toolFunction = getToolFunction('send-token');
+      expect(toolFunction).toBeDefined();
+
+      if (!toolFunction) return;
+
+      const result = await toolFunction(
+        {
+          tokenAddressOrSymbol: 'TON',
+          amount: '100',
+          toAddress: '0x9876543210987654321098765432109876543210',
+          network: 'mainnet',
+        },
+        createMockRequestExtra()
+      );
 
       expect(mockCreateErrorResponse).toHaveBeenCalledWith(
         'Insufficient balance. You have 50 TON, but trying to send 100 TON.'

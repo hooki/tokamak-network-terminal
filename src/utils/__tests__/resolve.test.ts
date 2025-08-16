@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { getNetworkAddresses, getNetworkTokens } from '../../constants.js';
 import { resolveAddress, resolveTokenAddress } from '../resolve.js';
 
 describe('resolve.ts', () => {

@@ -3,15 +3,10 @@ import { writeContract } from '@wagmi/core';
 import { mainnet, sepolia } from '@wagmi/core/chains';
 import { encodeAbiParameters, parseAbi, parseEther } from 'viem';
 import { z } from 'zod';
-import {
-  DEPOSIT_MANAGER,
-  getNetworkAddresses,
-  TON_ADDRESS,
-  WTON_ADDRESS,
-} from '../constants.js';
+import { getNetworkAddresses } from '../constants.js';
 import { DescriptionBuilder } from '../utils/descriptionBuilder.js';
 import { resolveLayer2Address } from '../utils/layer2.js';
-import { createMCPResponse } from '../utils/response.js';
+import { createSuccessResponse } from '../utils/response.js';
 import { wagmiConfig } from '../utils/wagmi-config.js';
 import { checkWalletConnection } from '../utils/wallet.js';
 
@@ -75,17 +70,9 @@ export function registerStakeTools(server: McpServer) {
         chainId,
       });
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: createMCPResponse({
-              status: 'success',
-              message: `Stake tokens successfully on ${network} (tx: ${tx})`,
-            }),
-          },
-        ],
-      };
+      return createSuccessResponse(
+        `Stake tokens successfully on ${network} (tx: ${tx})`
+      );
     }
   );
 
@@ -134,17 +121,9 @@ export function registerStakeTools(server: McpServer) {
         chainId,
       });
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: createMCPResponse({
-              status: 'success',
-              message: `Update seigniorage successfully on ${network} (tx: ${tx})`,
-            }),
-          },
-        ],
-      };
+      return createSuccessResponse(
+        `Update seigniorage successfully on ${network} (tx: ${tx})`
+      );
     }
   );
 }

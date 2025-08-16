@@ -3,14 +3,11 @@ import {
   getAccount,
   getPublicClient,
   readContract,
-  readContracts,
   writeContract,
 } from '@wagmi/core';
 import { mainnet, sepolia } from '@wagmi/core/chains';
-import { connectMutationOptions } from '@wagmi/core/query';
 import { z } from 'zod';
 import { daoCandidateAbi } from '../abis/daoCandidate.js';
-import { daoCommitteeAbi } from '../abis/daoCommittee.js';
 import { operatorManagerAbi } from '../abis/operatorManager.js';
 import { getNetworkAddresses } from '../constants.js';
 import {
@@ -25,7 +22,6 @@ import {
 import { formatTokenAmountWithUnitPrecise } from '../utils/format.js';
 import {
   createErrorResponse,
-  createMCPResponse,
   createSuccessResponse,
 } from '../utils/response.js';
 import { wagmiConfig } from '../utils/wagmi-config.js';
@@ -281,8 +277,8 @@ export function registerDAOTools(server: McpServer) {
     },
     async ({ network = 'mainnet', candidateContract, claim = false }) => {
       // console.log('Function called with:', { network, candidateContract, claim });
-      const networkAddresses = getNetworkAddresses(network);
-      const chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
+      const _networkAddresses = getNetworkAddresses(network);
+      const _chainId = network === 'sepolia' ? sepolia.id : mainnet.id;
 
       try {
         // console.log('Calling getDAOMembersActivityReward...');
@@ -339,7 +335,7 @@ export function registerDAOTools(server: McpServer) {
             chainId: network === 'sepolia' ? sepolia.id : mainnet.id,
           });
           claimer = manager as `0x${string}`;
-        } catch (error) {
+        } catch (_error) {
           // operatorManager 에 manager함수가 없는 경우. 그냥 candidate 주소를 사용한다.
           claimer = candidate;
         }
@@ -582,10 +578,10 @@ export function registerDAOTools(server: McpServer) {
               chainId,
             });
             operator = manager as `0x${string}`;
-          } catch (error) {
+          } catch (_error) {
             operator = operatorAddress;
           }
-        } catch (error) {
+        } catch (_error) {
           operator = null;
         }
 
